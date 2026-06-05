@@ -152,4 +152,10 @@
     <style name="SnackBarButtonDark" parent="@style/Widget.MaterialComponents.Button.TextButton.Snackbar">
         <item name="android:textColor">@color/snackBarButtonColor</item>
     </style>
+
+    <style name="Widget.MPM.Menu" parent="android:Widget.PopupMenu">
+    </style>
+
+    <style name="Widget.MPM.Menu.Dark" parent="Widget.MPM.Menu">
+    </style>
 </resources>
