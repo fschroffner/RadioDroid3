@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -69,6 +70,7 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
 
     private boolean isHls;
     private boolean isPlayingFlag;
+    private boolean isReceiverRegistered = false;
 
     private Handler playerThreadHandler;
 
@@ -152,7 +154,15 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
 
         player.setPlayWhenReady(true);
 
-        context.registerReceiver(networkChangedReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        if (!isReceiverRegistered) {
+            IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(networkChangedReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                context.registerReceiver(networkChangedReceiver, filter);
+            }
+            isReceiverRegistered = true;
+        }
 
         // State changed will be called when audio session id is available.
     }
@@ -164,7 +174,7 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
         cancelStopTask();
 
         if (player != null) {
-            context.unregisterReceiver(networkChangedReceiver);
+            unregisterNetworkReceiver();
             player.stop();
             player.release();
             player = null;
@@ -178,7 +188,7 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
         cancelStopTask();
 
         if (player != null) {
-            context.unregisterReceiver(networkChangedReceiver);
+            unregisterNetworkReceiver();
             player.stop();
             player.release();
             player = null;
@@ -365,6 +375,13 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
     @Override
     public String getExtension() {
         return isHls ? "ts" : "mp3";
+    }
+
+    private void unregisterNetworkReceiver() {
+        if (isReceiverRegistered) {
+            context.unregisterReceiver(networkChangedReceiver);
+            isReceiverRegistered = false;
+        }
     }
 
     private void cancelStopTask() {
