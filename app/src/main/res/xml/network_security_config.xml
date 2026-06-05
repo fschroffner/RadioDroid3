@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow all clear text traffic -->
-    <base-config cleartextTrafficPermitted="true"/>
+    <!-- Cleartext (HTTP) is intentionally permitted for radio stream URLs,
+         which are user-provided and frequently use plain HTTP. -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
 </network-security-config>
