@@ -3,7 +3,7 @@ package net.programmierecke.radiodroid2.station.live;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.google.android.exoplayer2.metadata.icy.IcyHeaders;
+import androidx.media3.extractor.metadata.icy.IcyHeaders;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

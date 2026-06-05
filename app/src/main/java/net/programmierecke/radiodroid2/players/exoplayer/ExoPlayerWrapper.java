@@ -16,25 +16,25 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.preference.PreferenceManager;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.PlaybackParameters;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.analytics.AnalyticsListener;
-import com.google.android.exoplayer2.audio.AudioAttributes;
-import com.google.android.exoplayer2.metadata.Metadata;
-import com.google.android.exoplayer2.metadata.icy.IcyHeaders;
-import com.google.android.exoplayer2.metadata.icy.IcyInfo;
-import com.google.android.exoplayer2.metadata.id3.Id3Frame;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultLoadErrorHandlingPolicy;
-import com.google.android.exoplayer2.upstream.HttpDataSource;
+import androidx.media3.common.AudioAttributes;
+import androidx.media3.common.C;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.Metadata;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.PlaybackParameters;
+import androidx.media3.common.Player;
+import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.HttpDataSource;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.analytics.AnalyticsListener;
+import androidx.media3.exoplayer.hls.HlsMediaSource;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.exoplayer.source.ProgressiveMediaSource;
+import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter;
+import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy;
+import androidx.media3.extractor.metadata.icy.IcyHeaders;
+import androidx.media3.extractor.metadata.icy.IcyInfo;
+import androidx.media3.extractor.metadata.id3.Id3Frame;
 
 import net.programmierecke.radiodroid2.BuildConfig;
 import net.programmierecke.radiodroid2.R;
@@ -60,7 +60,7 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
 
     private String streamUrl;
 
-    private final DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+    private DefaultBandwidthMeter bandwidthMeter;
 
     private RecordableListener recordableListener;
 
@@ -129,6 +129,10 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context.getApplicationContext());
         final int retryTimeout = prefs.getInt("settings_retry_timeout", 10);
         final int retryDelay = prefs.getInt("settings_retry_delay", 100);
+
+        if (bandwidthMeter == null) {
+            bandwidthMeter = new DefaultBandwidthMeter.Builder(context).build();
+        }
 
         DataSource.Factory dataSourceFactory = new RadioDataSourceFactory(httpClient, bandwidthMeter, this, retryTimeout, retryDelay);
         // Produces Extractor instances for parsing the media data.
@@ -437,7 +441,7 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
 
     private class AnalyticEventListener implements AnalyticsListener {
         @Override
-        public void onPlayerStateChanged(EventTime eventTime, boolean playWhenReady, int playbackState) {
+        public void onPlaybackStateChanged(EventTime eventTime, int playbackState) {
             isPlayingFlag = playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING;
 
             switch (playbackState) {
@@ -449,82 +453,6 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
                     stateListener.onStateChanged(PlayState.PrePlaying);
                     break;
             }
-
-        }
-
-        @Override
-        public void onTimelineChanged(@NonNull EventTime eventTime, int reason) {
-
-        }
-
-        @Override
-        public void onPlaybackParametersChanged(@NonNull EventTime eventTime, @NonNull PlaybackParameters playbackParameters) {
-
-        }
-
-        @Override
-        public void onRepeatModeChanged(@NonNull EventTime eventTime, int repeatMode) {
-
-        }
-
-        @Override
-        public void onShuffleModeChanged(@NonNull EventTime eventTime, boolean shuffleModeEnabled) {
-
-        }
-
-        @Override
-        public void onBandwidthEstimate(@NonNull EventTime eventTime, int totalLoadTimeMs, long totalBytesLoaded, long bitrateEstimate) {
-
-        }
-
-        @Override
-        public void onSurfaceSizeChanged(@NonNull EventTime eventTime, int width, int height) {
-
-        }
-
-        @Override
-        public void onMetadata(@NonNull EventTime eventTime, @NonNull Metadata metadata) {
-
-        }
-
-        @Override
-        public void onAudioAttributesChanged(@NonNull EventTime eventTime, @NonNull AudioAttributes audioAttributes) {
-
-        }
-
-        @Override
-        public void onVolumeChanged(@NonNull EventTime eventTime, float volume) {
-
-        }
-
-        @Override
-        public void onDroppedVideoFrames(@NonNull EventTime eventTime, int droppedFrames, long elapsedMs) {
-
-        }
-
-        @Override
-        public void onDrmKeysLoaded(@NonNull EventTime eventTime) {
-
-        }
-
-        @Override
-        public void onDrmSessionManagerError(@NonNull EventTime eventTime, @NonNull Exception error) {
-
-        }
-
-        @Override
-        public void onDrmKeysRestored(@NonNull EventTime eventTime) {
-
-        }
-
-        @Override
-        public void onDrmKeysRemoved(@NonNull EventTime eventTime) {
-
-        }
-
-        @Override
-        public void onDrmSessionReleased(@NonNull EventTime eventTime) {
-
         }
     }
 }

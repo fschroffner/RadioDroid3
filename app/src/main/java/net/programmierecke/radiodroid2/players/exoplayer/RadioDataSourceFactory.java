@@ -2,8 +2,8 @@ package net.programmierecke.radiodroid2.players.exoplayer;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.TransferListener;
+import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.TransferListener;
 
 import okhttp3.OkHttpClient;
 
