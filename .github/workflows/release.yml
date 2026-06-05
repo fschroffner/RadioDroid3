@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag (e.g. v0.86)'
+        required: true
+        default: 'v0.86'
 
 jobs:
   release:
@@ -26,6 +32,11 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: |
         APK_PATH=$(find app/build/outputs/apk/free/debug -name "*.apk" | head -1)
-        gh release create "${{ github.ref_name }}" "$APK_PATH" \
-          --title "RadioDroid ${{ github.ref_name }}" \
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          TAG="${{ inputs.tag_name }}"
+        else
+          TAG="${{ github.ref_name }}"
+        fi
+        gh release create "$TAG" "$APK_PATH" \
+          --title "RadioDroid $TAG" \
           --generate-notes
