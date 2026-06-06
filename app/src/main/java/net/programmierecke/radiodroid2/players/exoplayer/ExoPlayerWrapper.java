@@ -283,6 +283,20 @@ public class ExoPlayerWrapper implements PlayerWrapper, IcyDataSource.IcyDataSou
                 } else if (entry instanceof Id3Frame) {
                     final Id3Frame id3Frame = ((Id3Frame) entry);
                     Log.d(TAG, "id3 metadata: " + id3Frame);
+                    if (entry instanceof androidx.media3.extractor.metadata.id3.TextInformationFrame) {
+                        androidx.media3.extractor.metadata.id3.TextInformationFrame textFrame =
+                            (androidx.media3.extractor.metadata.id3.TextInformationFrame) entry;
+                        String frameId = textFrame.id;
+                        if (("TIT2".equals(frameId) || "TT2".equals(frameId)) && !textFrame.values.isEmpty()) {
+                            Map<String, String> rawMetadata = new HashMap<>();
+                            rawMetadata.put("StreamTitle", textFrame.values.get(0));
+                            onDataSourceStreamLiveInfo(new StreamLiveInfo(rawMetadata));
+                        } else if (("TPE1".equals(frameId) || "TP1".equals(frameId)) && !textFrame.values.isEmpty()) {
+                            Map<String, String> rawMetadata = new HashMap<>();
+                            rawMetadata.put("StreamTitle", textFrame.values.get(0));
+                            onDataSourceStreamLiveInfo(new StreamLiveInfo(rawMetadata));
+                        }
+                    }
                 }
             }
         }

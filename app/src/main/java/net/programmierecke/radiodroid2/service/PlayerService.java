@@ -22,6 +22,7 @@ import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.media.audiofx.AudioEffect;
 import android.net.wifi.WifiManager;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.Handler;
@@ -580,7 +581,11 @@ public class PlayerService extends JobIntentService implements RadioPlayer.Playe
                     Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                             .setContentTitle("")
                             .setContentText("").build();
-                    startForeground(NOTIFY_ID, notification);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        startForeground(NOTIFY_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+                    } else {
+                        startForeground(NOTIFY_ID, notification);
+                    }
                     stopForeground(true);
                 } else {
                     stopSelf();
@@ -964,7 +969,11 @@ public class PlayerService extends JobIntentService implements RadioPlayer.Playe
                         .setShowCancelButton(true));
         Notification notification = notificationBuilder.build();
 
-        startForeground(NOTIFY_ID, notification);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFY_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } else {
+            startForeground(NOTIFY_ID, notification);
+        }
         notificationIsActive = true;
 
         if (currentPlayerState == PlayState.Paused || currentPlayerState == PlayState.Idle) {
