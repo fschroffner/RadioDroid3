@@ -632,7 +632,9 @@ public class FragmentPlayerFull extends Fragment {
 
         @Override
         public void update(Observable o, Object arg) {
-            updateFavouriteButton();
+            if (isAdded()) {
+                requireActivity().runOnUiThread(() -> updateFavouriteButton());
+            }
         }
     }
 

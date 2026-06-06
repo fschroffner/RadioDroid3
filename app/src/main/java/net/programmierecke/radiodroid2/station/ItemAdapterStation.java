@@ -344,6 +344,7 @@ public class ItemAdapterStation
         holder.starredStatusIcon.setContentDescription(inFavourites ? getContext().getString(R.string.action_favorite) : "");
 
         if (prefs.getBoolean("click_trend_icon_visible", true)) {
+            holder.imageTrend.setVisibility(View.VISIBLE);
             if (station.ClickTrend < 0) {
                 holder.imageTrend.setImageResource(R.drawable.ic_trending_down_black_24dp);
                 holder.imageTrend.setContentDescription(getContext().getString(R.string.icon_click_trend_decreasing));
