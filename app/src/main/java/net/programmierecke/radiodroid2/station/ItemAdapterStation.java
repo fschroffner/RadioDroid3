@@ -344,6 +344,7 @@ public class ItemAdapterStation
         holder.starredStatusIcon.setContentDescription(inFavourites ? getContext().getString(R.string.action_favorite) : "");
 
         if (prefs.getBoolean("click_trend_icon_visible", true)) {
+            holder.imageTrend.setVisibility(View.VISIBLE);
             if (station.ClickTrend < 0) {
                 holder.imageTrend.setImageResource(R.drawable.ic_trending_down_black_24dp);
                 holder.imageTrend.setContentDescription(getContext().getString(R.string.icon_click_trend_decreasing));
@@ -473,8 +474,10 @@ public class ItemAdapterStation
 
     @Override
     public void onMoved(StationViewHolder viewHolder, int from, int to) {
-        stationActionsListener.onStationMoved(from, to);
+        // notifyItemMoved must be called BEFORE mutating the underlying data list so that
+        // RecyclerView's animation machinery sees a consistent pre-move state (#1231/#962).
         notifyItemMoved(from, to);
+        stationActionsListener.onStationMoved(from, to);
     }
 
     @Override

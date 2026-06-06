@@ -119,6 +119,7 @@ public class AlarmReceiver extends BroadcastReceiver {
     }
 
     IPlayerService itsPlayerService;
+    private Context playContext;
     private ServiceConnection svcConn = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder binder) {
             if(BuildConfig.DEBUG) { Log.d(TAG, "Service came online"); }
@@ -129,6 +130,9 @@ public class AlarmReceiver extends BroadcastReceiver {
                 itsPlayerService.Play(true);
                 // default timeout 1 hour
                 itsPlayerService.addTimer(timeout*60);
+                // Cancel any backup alarm notification that may still be playing
+                NotificationManager nm = (NotificationManager) playContext.getSystemService(Context.NOTIFICATION_SERVICE);
+                nm.cancel(BACKUP_NOTIFICATION_ID);
             } catch (RemoteException e) {
                 Log.e(TAG,"play error:"+e);
             }
@@ -196,6 +200,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                                 wifiLock = null;
                             }
                         } else {
+                            playContext = context;
                             Intent anIntent = new Intent(context, PlayerService.class);
                             context.getApplicationContext().bindService(anIntent, svcConn, context.BIND_AUTO_CREATE);
                             context.getApplicationContext().startService(anIntent);
