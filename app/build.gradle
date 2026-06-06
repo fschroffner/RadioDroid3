@@ -46,12 +46,12 @@ android {
     }
 
     defaultConfig {
-        applicationId "net.programmierecke.radiodroid2"
+        applicationId "com.github.fschroffner.radiodroid3"
         minSdk 21
         targetSdk 35
 
-        versionCode 96
-        versionName "0.86"
+        versionCode 1
+        versionName "1.0.0"
 
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
@@ -65,7 +65,7 @@ android {
         // Define your application name here.
         // It must neither be present in /res/values/strings.xml
         // nor in /res/values/string_no_translate.xml
-        resValue 'string', 'app_name_untranslated', 'RadioDroid'
+        resValue 'string', 'app_name_untranslated', 'RadioDroid 3'
 
         // There is no easy way to get available locales during runtime, and especially before
         // tests setup.
