@@ -474,8 +474,10 @@ public class ItemAdapterStation
 
     @Override
     public void onMoved(StationViewHolder viewHolder, int from, int to) {
-        stationActionsListener.onStationMoved(from, to);
+        // notifyItemMoved must be called BEFORE mutating the underlying data list so that
+        // RecyclerView's animation machinery sees a consistent pre-move state (#1231/#962).
         notifyItemMoved(from, to);
+        stationActionsListener.onStationMoved(from, to);
     }
 
     @Override

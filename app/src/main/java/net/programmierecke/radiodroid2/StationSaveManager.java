@@ -13,7 +13,6 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.collection.ArraySet;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import net.programmierecke.radiodroid2.station.DataRadioStation;
@@ -529,7 +528,6 @@ public class StationSaveManager extends Observable {
             final RadioDroidApp radioDroidApp = (RadioDroidApp) context.getApplicationContext();
             final OkHttpClient httpClient = radioDroidApp.getHttpClient();
             ArrayList<String> listUuids = new ArrayList<String>();
-            ArraySet<DataRadioStation> loadedItems = null;
 
             BufferedReader br = new BufferedReader(reader);
             while ((line = br.readLine()) != null) {
@@ -537,11 +535,9 @@ public class StationSaveManager extends Observable {
                 if (line.startsWith(M3U_PREFIX)) {
                     try {
                         String uuid = line.substring(M3U_PREFIX.length()).trim();
-                        DataRadioStation station = Utils.getStationByUuid(httpClient, context, uuid);
-                        if (station != null) {
-                            station.queue = this;
-                            loadedItems.add(station);
-                        }
+                        // Collect UUIDs in order so the sort step below can restore the original
+                        // sequence after the bulk fetch (#963 – export/import order not preserved).
+                        listUuids.add(uuid);
                     } catch (Exception e) {
                         Log.e("LOAD", e.toString());
                     }
