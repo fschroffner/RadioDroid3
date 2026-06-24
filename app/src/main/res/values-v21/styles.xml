@@ -54,6 +54,92 @@
         <item name="viewInflaterClass">androidx.appcompat.app.AppCompatViewInflater</item>
     </style>
 
+    <!-- OLED Black Theme -->
+    <style name="MyMaterialTheme.Oled" parent="MyMaterialTheme.Base.Oled">
+        <item name="android:windowContentTransitions">true</item>
+        <item name="android:windowAllowEnterTransitionOverlap">true</item>
+        <item name="android:windowAllowReturnTransitionOverlap">true</item>
+        <item name="android:windowSharedElementEnterTransition">@android:transition/move</item>
+        <item name="android:windowSharedElementExitTransition">@android:transition/move</item>
+    </style>
+
+    <style name="MyMaterialTheme.Base.Oled" parent="Theme.MaterialComponents">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="dialogTheme">@style/DialogTheme.Oled</item>
+        <item name="alertDialogTheme">@style/AlertTheme.Oled</item>
+        <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme.Oled</item>
+        <item name="android:windowBackground">@color/windowBackgroundOled</item>
+        <item name="android:statusBarColor">@color/windowBackgroundOled</item>
+        <item name="colorPrimary">@color/colorPrimaryOled</item>
+        <item name="colorPrimaryDark">@color/windowBackgroundOled</item>
+        <item name="colorAccent">@color/colorAccentOled</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+        <item name="colorPlayerBackground">@color/colorPlayerBackgroundOled</item>
+        <item name="colorPlayerShadow">@color/colorPlayerShadowOled</item>
+        <item name="tagBackgroundColor">@color/tagBackgroundColorOled</item>
+        <item name="menuTextColorSelected">@color/menuTextColorSelectedOled</item>
+        <item name="menuTextColorDefault">@color/menuTextColorDefaultOled</item>
+        <item name="android:itemTextAppearance">@style/MenuTextAppearance</item>
+        <item name="menuBottomTextColorSelected">@color/menuBottomTextColorSelectedOled</item>
+        <item name="menuBottomTextColorDefault">@color/menuBottomTextColorDefaultOled</item>
+        <item name="menuBottomBackgroundColor">@color/menuBottomBackgroundColorOled</item>
+        <item name="swipeDeleteIconColor">@color/swipeDeleteIconColorOled</item>
+        <item name="swipeDeleteBackgroundColor">@color/swipeDeleteBackgroundColorDark</item>
+        <item name="colorTabUnderline">@color/colorTabUnderlineOled</item>
+        <item name="android:itemBackground">@color/windowBackgroundOled</item>
+        <item name="iconsInItemBackgroundColor">@color/iconsInItemBackgroundColorOled</item>
+        <item name="met_baseColor">?android:textColorPrimary</item>
+        <item name="met_textColorHint">?android:textColorHint</item>
+        <item name="met_primaryColor">?android:colorPrimaryDark</item>
+        <item name="snackbarButtonStyle">@style/SnackBarButtonOled</item>
+        <item name="colorAccentMy">@color/colorAccentOled</item>
+        <item name="viewInflaterClass">androidx.appcompat.app.AppCompatViewInflater</item>
+    </style>
+
+    <!-- Pink Pastel Theme -->
+    <style name="MyMaterialTheme.Pink" parent="MyMaterialTheme.Base.Pink">
+        <item name="android:windowContentTransitions">true</item>
+        <item name="android:windowAllowEnterTransitionOverlap">true</item>
+        <item name="android:windowAllowReturnTransitionOverlap">true</item>
+        <item name="android:windowSharedElementEnterTransition">@android:transition/move</item>
+        <item name="android:windowSharedElementExitTransition">@android:transition/move</item>
+    </style>
+
+    <style name="MyMaterialTheme.Base.Pink" parent="Theme.MaterialComponents.Light">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="dialogTheme">@style/DialogTheme.Pink</item>
+        <item name="alertDialogTheme">@style/AlertTheme.Pink</item>
+        <item name="bottomSheetDialogTheme">@style/BottomSheetDialogTheme.Pink</item>
+        <item name="android:windowBackground">@color/windowBackgroundPink</item>
+        <item name="android:statusBarColor">@color/colorPrimaryDarkPink</item>
+        <item name="colorPrimary">@color/colorPrimaryPink</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDarkPink</item>
+        <item name="colorAccent">@color/colorAccentPink</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+        <item name="colorPlayerBackground">@color/colorPlayerBackgroundPink</item>
+        <item name="colorPlayerShadow">@color/colorPlayerShadowPink</item>
+        <item name="tagBackgroundColor">@color/tagBackgroundColorPink</item>
+        <item name="menuTextColorSelected">@color/menuTextColorSelectedPink</item>
+        <item name="menuTextColorDefault">@color/menuTextColorDefaultPink</item>
+        <item name="itemTextAppearance">@style/MenuTextAppearance</item>
+        <item name="menuBottomTextColorSelected">@color/menuBottomTextColorSelectedPink</item>
+        <item name="menuBottomTextColorDefault">@color/menuBottomTextColorDefaultPink</item>
+        <item name="menuBottomBackgroundColor">@color/menuBottomBackgroundColorPink</item>
+        <item name="swipeDeleteIconColor">@color/swipeDeleteIconColorPink</item>
+        <item name="swipeDeleteBackgroundColor">@color/swipeDeleteBackgroundColor</item>
+        <item name="colorTabUnderline">@color/colorTabUnderlinePink</item>
+        <item name="android:itemBackground">@color/windowBackgroundPink</item>
+        <item name="iconsInItemBackgroundColor">@color/iconsInItemBackgroundColorPink</item>
+        <item name="met_baseColor">?android:textColorPrimary</item>
+        <item name="met_textColorHint">?android:textColorHint</item>
+        <item name="met_primaryColor">?android:colorPrimary</item>
+        <item name="snackbarButtonStyle">@style/SnackBarButtonPink</item>
+        <item name="colorAccentMy">@color/colorAccentPink</item>
+        <item name="viewInflaterClass">androidx.appcompat.app.AppCompatViewInflater</item>
+    </style>
+
     <style name="MyMaterialTheme.Base.Dark" parent="Theme.MaterialComponents">
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>

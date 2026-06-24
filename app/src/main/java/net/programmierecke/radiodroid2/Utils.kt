@@ -363,24 +363,36 @@ object Utils {
         return sharedPref.getString("theme_name", context.resources.getString(R.string.theme_light))!!
     }
 
-    @JvmStatic
-    fun getThemeResId(context: Context): Int {
-        val selectedTheme = getTheme(context)
-        return if (selectedTheme == context.resources.getString(R.string.theme_dark))
-            R.style.MyMaterialTheme_Dark
-        else
-            R.style.MyMaterialTheme
+    private fun isSystemDarkMode(context: Context): Boolean {
+        val nightMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        return nightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
     }
 
     @JvmStatic
-    fun isDarkTheme(context: Context): Boolean = getThemeResId(context) == R.style.MyMaterialTheme_Dark
+    fun getThemeResId(context: Context): Int {
+        return when (getTheme(context)) {
+            context.resources.getString(R.string.theme_dark) -> R.style.MyMaterialTheme_Dark
+            context.resources.getString(R.string.theme_oled) -> R.style.MyMaterialTheme_Oled
+            context.resources.getString(R.string.theme_pink) -> R.style.MyMaterialTheme_Pink
+            context.resources.getString(R.string.theme_system) ->
+                if (isSystemDarkMode(context)) R.style.MyMaterialTheme_Dark else R.style.MyMaterialTheme
+            else -> R.style.MyMaterialTheme
+        }
+    }
+
+    @JvmStatic
+    fun isDarkTheme(context: Context): Boolean {
+        val themeId = getThemeResId(context)
+        return themeId == R.style.MyMaterialTheme_Dark || themeId == R.style.MyMaterialTheme_Oled
+    }
 
     @JvmStatic
     fun getTimePickerThemeResId(context: Context): Int {
-        return if (getThemeResId(context) == R.style.MyMaterialTheme_Dark)
-            R.style.DialogTheme_Dark
-        else
-            R.style.DialogTheme
+        return when (getThemeResId(context)) {
+            R.style.MyMaterialTheme_Dark -> R.style.DialogTheme_Dark
+            R.style.MyMaterialTheme_Oled -> R.style.DialogTheme_Oled
+            else -> R.style.DialogTheme
+        }
     }
 
     @JvmStatic
