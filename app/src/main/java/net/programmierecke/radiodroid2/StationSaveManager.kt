@@ -341,7 +341,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
                 }
             }
             val fetched = Utils.getStationsByUuid(httpClient, context, listUuids)
-            listUuids.mapNotNull { uuid -> fetched.firstOrNull { it.StationUuid == uuid } }
+            listUuids.mapNotNull { uuid -> fetched?.firstOrNull { it.StationUuid == uuid } }
         } catch (e: Exception) {
             Log.e("LOAD", "File read failed: $e")
             null

@@ -17,7 +17,7 @@ import java.util.concurrent.Executors
 abstract class RadioDroidDatabase : RoomDatabase() {
     abstract fun songHistoryDao(): TrackHistoryDao
 
-    val queryExecutor: Executor = Executors.newSingleThreadExecutor { Thread(it, "RadioDroidDatabase Executor") }
+    val historyQueryExecutor: Executor = Executors.newSingleThreadExecutor { Thread(it, "RadioDroidDatabase Executor") }
 
     companion object {
         @Volatile private var INSTANCE: RadioDroidDatabase? = null
@@ -35,7 +35,7 @@ abstract class RadioDroidDatabase : RoomDatabase() {
         private val CALLBACK = object : Callback() {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
-                INSTANCE!!.queryExecutor.execute {
+                INSTANCE!!.historyQueryExecutor.execute {
                     INSTANCE!!.songHistoryDao().setLastHistoryItemEndTimeRelative(MAX_UNKNOWN_TRACK_DURATION)
                 }
             }

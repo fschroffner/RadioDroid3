@@ -54,7 +54,6 @@ import net.programmierecke.radiodroid2.players.mpd.MPDClient
 import net.programmierecke.radiodroid2.players.mpd.MPDServersRepository
 import net.programmierecke.radiodroid2.players.selector.PlayerType
 import net.programmierecke.radiodroid2.service.MediaSessionCallback
-import net.programmierecke.radiodroid2.service.MediaSessionCallback.EXTRA_STATION_UUID
 import net.programmierecke.radiodroid2.service.PlayerService
 import net.programmierecke.radiodroid2.service.PlayerServiceUtil
 import net.programmierecke.radiodroid2.station.DataRadioStation
@@ -264,8 +263,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         setupStartUpFragment()
     }
 
-    override fun onNavigationItemSelected(menuItem: MenuItem?): Boolean {
-        if (menuItem != null) selectedMenuItem = menuItem.itemId
+    override fun onNavigationItemSelected(menuItem: MenuItem): Boolean {
+        selectedMenuItem = menuItem.itemId
 
         if (playerBottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
             playerBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
@@ -409,9 +408,9 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
         if (MediaSessionCallback.ACTION_PLAY_STATION_BY_UUID == action) {
             val context = applicationContext
-            val stationUUID = extras.getString(EXTRA_STATION_UUID)
+            val stationUUID = extras.getString(MediaSessionCallback.EXTRA_STATION_UUID)
             if (TextUtils.isEmpty(stationUUID)) return
-            intent.removeExtra(EXTRA_STATION_UUID)
+            intent.removeExtra(MediaSessionCallback.EXTRA_STATION_UUID)
             val radioDroidApp = application as RadioDroidApp
             val httpClient = radioDroidApp.httpClient
 
@@ -511,7 +510,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         if (radioDroidApp != null) {
             val mpdClient: MPDClient = radioDroidApp.mpdClient
             val repository: MPDServersRepository = mpdClient.mpdServersRepository
-            mpd_is_visible = !repository.isEmpty
+            mpd_is_visible = !repository.isEmpty()
         }
         menuItemMpd!!.isVisible = mpd_is_visible
 
@@ -532,7 +531,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                 } else if (sharedPref.getBoolean("load_icons", false)) {
                     menuItemIconsView!!.isVisible = true
                 }
-                if (radioDroidApp!!.favouriteManager.isEmpty) {
+                if (radioDroidApp!!.favouriteManager.isEmpty()) {
                     menuItemDelete!!.isVisible = false
                 } else {
                     menuItemDelete!!.isVisible = true
@@ -545,7 +544,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                 menuItemSave!!.isVisible = true
                 menuItemSave!!.setTitle(R.string.nav_item_save_history_playlist)
 
-                if (!radioDroidApp!!.historyManager.isEmpty) {
+                if (!radioDroidApp!!.historyManager.isEmpty()) {
                     menuItemDelete!!.isVisible = true
                     menuItemDelete!!.setTitle(R.string.action_delete_history)
                 }
@@ -758,10 +757,10 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
         val startupAction = sharedPref.getString("startup_action", resources.getString(R.string.startup_show_history))!!
 
-        if (startupAction == resources.getString(R.string.startup_show_history) && hm.isEmpty) {
+        if (startupAction == resources.getString(R.string.startup_show_history) && hm.isEmpty()) {
             selectMenuItem(R.id.nav_item_stations); return
         }
-        if (startupAction == resources.getString(R.string.startup_show_favorites) && fm.isEmpty) {
+        if (startupAction == resources.getString(R.string.startup_show_favorites) && fm.isEmpty()) {
             selectMenuItem(R.id.nav_item_stations); return
         }
 

@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 import net.programmierecke.radiodroid2.utils.RecyclerItemMoveAndSwipeHelper
 import net.programmierecke.radiodroid2.utils.SwipeableViewHolder
 
-class ItemAdapaterContextMenuStation(
+open class ItemAdapaterContextMenuStation(
     fragmentActivity: FragmentActivity,
     resourceId: Int,
     filterType: StationsFilter.FilterType
@@ -24,7 +24,7 @@ class ItemAdapaterContextMenuStation(
     private var timeLastDragEnded = 0L
 
     override fun onDragged(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, dX: Double, dY: Double) {
-        val foregroundView = (viewHolder as SwipeableViewHolder).foregroundView
+        val foregroundView = (viewHolder as SwipeableViewHolder).getForegroundView()
         val stationViewHolder = viewHolder as ItemAdapterIconOnlyStation.StationViewHolder
 
         if (Math.abs(dX) > foregroundView.width * DISMISS_MENU_DRAG_THRESHOLD ||

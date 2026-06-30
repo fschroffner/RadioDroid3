@@ -32,7 +32,7 @@ object StationActions {
         val fragment = TimePickerFragment()
         fragment.setCallback { _, hourOfDay, minute ->
             Log.i(TAG, "Alarm time picked $hourOfDay:$minute")
-            radioDroidApp.getAlarmManager().add(station, hourOfDay, minute)
+            radioDroidApp.alarmManager.add(station, hourOfDay, minute)
         }
         fragment.show(activity.supportFragmentManager, "timePicker")
     }

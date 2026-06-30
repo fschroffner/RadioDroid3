@@ -292,7 +292,7 @@ class FragmentPlayerFull : Fragment() {
     private fun startUpdating() {
         if (!isVisible) return
         fullUpdate()
-        refreshHandler.executePeriodically(timedUpdateTask, TIMED_UPDATE_INTERVAL)
+        refreshHandler.executePeriodically(timedUpdateTask, TIMED_UPDATE_INTERVAL.toLong())
         val filter = IntentFilter().apply {
             addAction(PlayerService.PLAYER_SERVICE_TIMER_UPDATE)
             addAction(PlayerService.PLAYER_SERVICE_STATE_CHANGE)
@@ -334,7 +334,7 @@ class FragmentPlayerFull : Fragment() {
             val streamTitle = liveInfo.title
             textViewGeneralInfo.text = if (!TextUtils.isEmpty(streamTitle)) streamTitle else station.Name
 
-            val flag = CountryFlagsLoader.getInstance().getFlag(requireContext(), station.CountryCode)
+            val flag = CountryFlagsLoader.instance.getFlag(requireContext(), station.CountryCode)
             if (flag != null) {
                 val k = flag.minimumWidth / flag.minimumHeight.toFloat()
                 val viewHeight = artAndInfoPagerAdapter.textViewStationDescription.textSize
@@ -396,7 +396,7 @@ class FragmentPlayerFull : Fragment() {
             val recordingInfo = recordingsManager.getRunningRecordings().entries.first().value
             groupRecordings.visibility = View.VISIBLE
             imgRecordingIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.blink_recording))
-            textViewRecordingSize.text = Utils.getReadableBytes(recordingInfo.bytesWritten)
+            textViewRecordingSize.text = Utils.getReadableBytes(recordingInfo.bytesWritten.toDouble())
             textViewRecordingName.text = recordingInfo.fileName
         } else {
             groupRecordings.visibility = View.GONE
@@ -492,7 +492,7 @@ class FragmentPlayerFull : Fragment() {
             fragment?.requireActivity()?.runOnUiThread {
                 if (canceled) return@runOnUiThread
                 val albumArts = trackMetadata.albumArts
-                if (albumArts.isNotEmpty()) {
+                if (!albumArts.isNullOrEmpty()) {
                     val albumArtUrl = albumArts[0].url
                     if (!TextUtils.isEmpty(albumArtUrl)) {
                         Picasso.get().load(albumArtUrl).into(fragment.artAndInfoPagerAdapter.imageViewArt)
@@ -572,7 +572,7 @@ class FragmentPlayerFull : Fragment() {
         override fun run(f: FragmentPlayerFull) {
             val shoutcastInfo = PlayerServiceUtil.getShoutcastInfo()
             if (PlayerServiceUtil.isPlaying()) {
-                var networkUsageInfo = Utils.getReadableBytes(PlayerServiceUtil.getTransferredBytes())
+                var networkUsageInfo = Utils.getReadableBytes(PlayerServiceUtil.getTransferredBytes().toDouble())
                 if (shoutcastInfo != null && shoutcastInfo.bitrate > 0) networkUsageInfo += " (${shoutcastInfo.bitrate} kbps)"
                 f.textViewNetworkUsageInfo.text = networkUsageInfo
 

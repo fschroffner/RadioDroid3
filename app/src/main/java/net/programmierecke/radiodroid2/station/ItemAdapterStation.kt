@@ -33,7 +33,6 @@ import net.programmierecke.radiodroid2.CountryFlagsLoader
 import net.programmierecke.radiodroid2.FavouriteManager
 import net.programmierecke.radiodroid2.R
 import net.programmierecke.radiodroid2.RadioDroidApp
-import net.programmierecke.radiodroid2.StationActions
 import net.programmierecke.radiodroid2.Utils
 import net.programmierecke.radiodroid2.interfaces.IAdapterRefreshable
 import net.programmierecke.radiodroid2.players.PlayStationTask
@@ -59,7 +58,7 @@ open class ItemAdapterStation(
         fun onStationMoveFinished()
     }
 
-    interface FilterListener {
+    fun interface FilterListener {
         fun onSearchCompleted(searchStatus: StationsFilter.SearchStatus)
     }
 
@@ -286,7 +285,7 @@ open class ItemAdapterStation(
             holder.imageTrend.visibility = View.GONE
         }
 
-        val flag = CountryFlagsLoader.getInstance().getFlag(activity, station.CountryCode)
+        val flag = CountryFlagsLoader.instance.getFlag(activity, station.CountryCode)
         if (flag != null) {
             val k = flag.minimumWidth / flag.minimumHeight.toFloat()
             val viewHeight = holder.textViewShortDescription.textSize
@@ -346,7 +345,7 @@ open class ItemAdapterStation(
             }
 
             holder.viewTags!!.setTags(station.TagsAll.split(","))
-            holder.viewTags!!.setTagSelectionCallback(tagSelectionCallback)
+            holder.viewTags!!.mTagSelectionCallback = tagSelectionCallback
         }
         holder.viewDetails?.visibility = if (isExpanded) View.VISIBLE else View.GONE
     }

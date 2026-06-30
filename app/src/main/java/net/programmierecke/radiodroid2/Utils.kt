@@ -38,6 +38,7 @@ import okhttp3.ConnectionSpec
 import okhttp3.Credentials
 import okhttp3.HttpUrl
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -61,9 +62,9 @@ object Utils {
     private var loadIcons = -1
 
     @JvmStatic
-    fun parseIntWithDefault(number: String, defaultVal: Int): Int {
+    fun parseIntWithDefault(number: String?, defaultVal: Int): Int {
         return try {
-            number.toInt()
+            number?.toInt() ?: defaultVal
         } catch (e: NumberFormatException) {
             defaultVal
         }
@@ -133,11 +134,10 @@ object Utils {
         Log.i("DOWN", "Url=$theURI (not cached)")
 
         return try {
-            val url = HttpUrl.parse(theURI)
-            val requestBuilder = Request.Builder().url(url)
+            val requestBuilder = Request.Builder().url(theURI)
 
             if (dictParams != null) {
-                val jsonMediaType = MediaType.parse("application/json; charset=utf-8")
+                val jsonMediaType = "application/json; charset=utf-8".toMediaTypeOrNull()
                 val gson = Gson()
                 val json = gson.toJson(dictParams)
                 val requestBody = RequestBody.create(jsonMediaType, json)
@@ -148,10 +148,10 @@ object Utils {
 
             val request = requestBuilder.build()
             val response = httpClient.newCall(request).execute()
-            val responseStr = response.body()!!.string()
+            val responseStr = response.body!!.string()
 
             if (!response.isSuccessful) {
-                Log.e("UTIL", "Unsuccessful response: ${response.message()}\n$responseStr")
+                Log.e("UTIL", "Unsuccessful response: ${response.message}\n$responseStr")
                 return null
             }
 
@@ -317,7 +317,7 @@ object Utils {
         return p.matches(streamUrl)
     }
 
-    interface MeteredWarningCallback {
+    fun interface MeteredWarningCallback {
         fun warn(station: DataRadioStation, playerType: PlayerType)
     }
 
@@ -505,10 +505,10 @@ object Utils {
         val proxy = Proxy(proxySettings.type, proxyAddress)
         builder.proxy(proxy)
 
-        if (proxySettings.login.isNotEmpty()) {
+        if (!proxySettings.login.isNullOrEmpty()) {
             val proxyAuthenticator = Authenticator { _, response ->
-                val credential = Credentials.basic(proxySettings.login, proxySettings.password)
-                response.request().newBuilder()
+                val credential = Credentials.basic(proxySettings.login.orEmpty(), proxySettings.password.orEmpty())
+                response.request.newBuilder()
                     .header("Proxy-Authorization", credential)
                     .build()
             }

@@ -241,7 +241,7 @@ class StreamProxy(
 
     override fun isRecording() = recordableListener != null
 
-    override fun getRecordNameFormattingArgs(): Map<String, String>? = null
+    override fun getRecordNameFormattingArgs(): Map<String, String> = emptyMap()
 
     override fun getExtension() = "mp3"
 }

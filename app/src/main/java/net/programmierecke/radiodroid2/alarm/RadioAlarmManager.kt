@@ -36,7 +36,7 @@ class RadioAlarmManager(private val context: Context) {
             this.station = station
             this.hour = hour
             this.minute = minute
-            this.weekDays = mutableListOf()
+            this.weekDays = ArrayList()
             this.id = getFreeId()
         }
         list.add(alarm)
@@ -184,7 +184,6 @@ class RadioAlarmManager(private val context: Context) {
 
     fun changeWeekDays(alarmId: Int, weekday: Int) {
         val alarm = getById(alarmId) ?: return
-        if (alarm.weekDays == null) alarm.weekDays = mutableListOf()
         val pos = alarm.weekDays.indexOf(weekday)
         if (pos == -1) alarm.weekDays.add(weekday) else alarm.weekDays.removeAt(pos)
         save()

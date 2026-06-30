@@ -13,17 +13,17 @@ import java.nio.CharBuffer
 import java.nio.charset.Charset
 import java.util.LinkedList
 
-class MPDAsyncTask : Runnable {
-    interface ReadStage {
+open class MPDAsyncTask : Runnable {
+    fun interface ReadStage {
         fun onRead(task: MPDAsyncTask, result: String): Boolean
     }
 
-    interface WriteStage {
+    fun interface WriteStage {
         @Throws(IOException::class)
         fun onWrite(task: MPDAsyncTask, bufferedWriter: BufferedWriter): Boolean
     }
 
-    interface FailureCallback {
+    fun interface FailureCallback {
         fun onFailure(task: MPDAsyncTask)
     }
 

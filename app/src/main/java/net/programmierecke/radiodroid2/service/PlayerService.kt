@@ -182,10 +182,10 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         override fun getIsHls(): Boolean = isHls
 
         @Throws(RemoteException::class)
-        override fun isPlaying(): Boolean = radioPlayer.isPlaying
+        override fun isPlaying(): Boolean = radioPlayer.isPlaying()
 
         @Throws(RemoteException::class)
-        override fun getPlayerState(): PlayState = radioPlayer.playState
+        override fun getPlayerState(): PlayState = radioPlayer.getPlayState()
 
         @Throws(RemoteException::class)
         override fun startRecording() {
@@ -208,7 +208,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         }
 
         @Throws(RemoteException::class)
-        override fun isRecording(): Boolean = ::radioPlayer.isInitialized && radioPlayer.isRecording
+        override fun isRecording(): Boolean = ::radioPlayer.isInitialized && radioPlayer.isRecording()
 
         @Throws(RemoteException::class)
         override fun getCurrentRecordFileName(): String? {
@@ -223,11 +223,11 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
 
         @Throws(RemoteException::class)
         override fun getTransferredBytes(): Long =
-            if (::radioPlayer.isInitialized) radioPlayer.currentPlaybackTransferredBytes else 0
+            if (::radioPlayer.isInitialized) radioPlayer.getCurrentPlaybackTransferredBytes() else 0
 
         @Throws(RemoteException::class)
         override fun getBufferedSeconds(): Long =
-            if (::radioPlayer.isInitialized) radioPlayer.bufferedSeconds else 0
+            if (::radioPlayer.isInitialized) radioPlayer.getBufferedSeconds() else 0
 
         @Throws(RemoteException::class)
         override fun getLastPlayStartTime(): Long = lastPlayStartTime
@@ -253,7 +253,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
     private var mediaSessionCallback: MediaSessionCompat.Callback? = null
 
     private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-        if (!radioPlayer.isLocal) return@OnAudioFocusChangeListener
+        if (!radioPlayer.isLocal()) return@OnAudioFocusChangeListener
 
         when (focusChange) {
             AudioManager.AUDIOFOCUS_GAIN -> {
@@ -266,11 +266,11 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             }
             AudioManager.AUDIOFOCUS_LOSS -> {
                 if (BuildConfig.DEBUG) Log.d(TAG, "audio focus loss")
-                if (radioPlayer.isPlaying) pause(PauseReason.FOCUS_LOSS)
+                if (radioPlayer.isPlaying()) pause(PauseReason.FOCUS_LOSS)
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 if (BuildConfig.DEBUG) Log.d(TAG, "audio focus loss transient")
-                if (radioPlayer.isPlaying) pause(PauseReason.FOCUS_LOSS_TRANSIENT)
+                if (radioPlayer.isPlaying()) pause(PauseReason.FOCUS_LOSS_TRANSIENT)
             }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 if (BuildConfig.DEBUG) Log.d(TAG, "audio focus loss transient can duck")
@@ -466,7 +466,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             liveInfo = StreamLiveInfo(null)
             streamInfo = null
             acquireWakeLockAndWifiLock()
-            radioPlayer.play(currentStation, isAlarm)
+            currentStation?.let { radioPlayer.play(it, isAlarm) }
         }
     }
 
@@ -492,18 +492,18 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
     fun next() {
         val station = currentStation ?: return
         setMediaPlaybackState(PlaybackStateCompat.STATE_SKIPPING_TO_NEXT)
-        val nextStation = station.queue.getNextById(station.StationUuid)
+        val nextStation = station.queue?.getNextById(station.StationUuid)
         if (nextStation != null) {
-            if (radioPlayer.isPlaying) playWithoutWarnings(nextStation)
+            if (radioPlayer.isPlaying()) playWithoutWarnings(nextStation)
             else playAndWarnIfMetered(nextStation)
         }
     }
 
     fun previous() {
         val station = currentStation ?: return
-        val prevStation = station.queue.getPreviousById(station.StationUuid)
+        val prevStation = station.queue?.getPreviousById(station.StationUuid)
         if (prevStation != null) {
-            if (radioPlayer.isPlaying) playWithoutWarnings(prevStation)
+            if (radioPlayer.isPlaying()) playWithoutWarnings(prevStation)
             else playAndWarnIfMetered(prevStation)
         }
     }
@@ -524,7 +524,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         this.pauseReason = PauseReason.NONE
         this.lastMeteredConnectionWarningTime = 0
 
-        if (!radioPlayer.isPlaying) {
+        if (!radioPlayer.isPlaying()) {
             val radioDroidApp = application as RadioDroidApp
             var station = currentStation
             if (currentStation == null) {
@@ -584,7 +584,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
 
         if (state == PlaybackStateCompat.STATE_ERROR) {
             var error = ""
-            val currentPlayerState = radioPlayer.playState
+            val currentPlayerState = radioPlayer.getPlayState()
             if ((currentPlayerState == PlayState.Paused || currentPlayerState == PlayState.Idle)
                     && pauseReason == PauseReason.METERED_CONNECTION) {
                 error = itsContext.resources.getString(R.string.notify_metered_connection)
@@ -698,7 +698,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         val previousIntent = Intent(itsContext, PlayerService::class.java).apply { action = ACTION_SKIP_TO_PREVIOUS }
         val pendingIntentPrevious = PendingIntent.getService(itsContext, 0, previousIntent, pendingIntentFlag)
 
-        val currentPlayerState = radioPlayer.playState
+        val currentPlayerState = radioPlayer.getPlayState()
 
         var message = theMessage
         if ((currentPlayerState == PlayState.Paused || currentPlayerState == PlayState.Idle)
@@ -765,7 +765,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
     }
 
     private fun updateNotification() {
-        updateNotification(radioPlayer.playState)
+        updateNotification(radioPlayer.getPlayState())
     }
 
     private fun updateNotification(playState: PlayState) {
@@ -781,7 +781,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
                 setMediaPlaybackState(PlaybackStateCompat.STATE_BUFFERING)
             }
             PlayState.Playing -> {
-                val title = liveInfo.getTitle()
+                val title = liveInfo.title
                 if (!TextUtils.isEmpty(title)) {
                     if (BuildConfig.DEBUG) Log.d(TAG, "update message:$title")
                     sendMessage(currentStation!!.Name, title, title)
@@ -793,13 +793,13 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
                     val builder = MediaMetadataCompat.Builder()
                     builder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, -1)
                     builder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, currentStation!!.Name)
-                    builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, liveInfo.getArtist())
-                    builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.getTrack())
+                    builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, liveInfo.artist)
+                    builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.track)
                     if (liveInfo.hasArtistAndTrack()) {
-                        builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, liveInfo.getArtist())
-                        builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.getTrack())
+                        builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, liveInfo.artist)
+                        builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.track)
                     } else {
-                        builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.getTitle())
+                        builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.title)
                         builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, currentStation!!.Name)
                     }
                     builder.putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, radioIcon.bitmap)
@@ -971,10 +971,10 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
 
     override fun onBufferedTimeUpdate(bufferedMs: Long) {}
 
-    override fun foundShoutcastStream(info: ShoutcastInfo?, isHls: Boolean) {
+    override fun foundShoutcastStream(info: ShoutcastInfo, isHls: Boolean) {
         this.streamInfo = info
         this.isHls = isHls
-        if (info != null && BuildConfig.DEBUG) {
+        if (BuildConfig.DEBUG) {
             Log.d(TAG, "Metadata offset:${info.metadataOffset}")
             Log.d(TAG, "Bitrate:${info.bitrate}")
             Log.d(TAG, "Name:${info.audioName}")
@@ -990,20 +990,20 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         this.liveInfo = liveInfo
 
         if (BuildConfig.DEBUG) {
-            val rawMetadata = liveInfo.getRawMetadata()
+            val rawMetadata = liveInfo.rawMetadata ?: emptyMap()
             for (key in rawMetadata.keys) {
                 Log.i(TAG, "INFO:$key=${rawMetadata[key]}")
             }
         }
 
-        if (!oldLiveInfo.getTitle().equals(liveInfo.getTitle())) {
+        if (oldLiveInfo.title != liveInfo.title) {
             sendBroadCast(PLAYER_SERVICE_META_UPDATE)
             updateNotification()
 
             val currentTime = Calendar.getInstance().time
 
             trackHistoryRepository.getLastInsertedHistoryItem { trackHistoryEntry, dao ->
-                if (trackHistoryEntry != null && trackHistoryEntry.title == liveInfo.getTitle()) {
+                if (trackHistoryEntry != null && trackHistoryEntry.title == liveInfo.title) {
                     trackHistoryEntry.endTime = Date(0)
                     dao.update(trackHistoryEntry)
                 } else {
@@ -1011,9 +1011,9 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
 
                     val newTrackHistoryEntry = TrackHistoryEntry().apply {
                         stationUuid = currentStation!!.StationUuid
-                        artist = liveInfo.getArtist()
-                        title = liveInfo.getTitle()
-                        track = liveInfo.getTrack()
+                        artist = liveInfo.artist
+                        title = liveInfo.title
+                        track = liveInfo.track
                         stationIconUrl = currentStation!!.IconUrl
                         startTime = currentTime
                         endTime = Date(0)

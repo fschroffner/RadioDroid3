@@ -22,7 +22,7 @@ class FragmentAlarm : Fragment(), TimePickerDialog.OnTimeSetListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val radioDroidApp = requireActivity().application as RadioDroidApp
-        ram = radioDroidApp.getAlarmManager()
+        ram = radioDroidApp.alarmManager
 
         val view = inflater.inflate(R.layout.layout_alarms, container, false)
 

@@ -83,7 +83,7 @@ class TvChannelManager(val app: RadioDroidApp) : Observer {
             Pair(it.contentId, it)
         }.toMap().toMutableMap()
 
-        for (station in app.favouriteManager.list) {
+        for (station in app.favouriteManager.listStations) {
             val existingProgram = starredPrograms[station.StationUuid]
             val programBuilder = existingProgram?.let {
                 PreviewProgram.Builder(it)
@@ -122,7 +122,7 @@ class TvChannelManager(val app: RadioDroidApp) : Observer {
             Log.d(TAG, "Deleting programme $program")
             helper.deletePreviewProgram(program.id)
         }
-        if (app.favouriteManager.list.any()) {
+        if (app.favouriteManager.listStations.any()) {
             Log.d(TAG, "Requesting channel to be browseable")
             TvContractCompat.requestChannelBrowsable(app, channelId)
         }

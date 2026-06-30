@@ -45,7 +45,7 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
 
     private val bufferCheckRunnable = object : Runnable {
         override fun run() {
-            val bufferTimeMs = currentPlayer.bufferedMs
+            val bufferTimeMs = currentPlayer.getBufferedMs()
             playerListener.onBufferedTimeUpdate(bufferTimeMs)
             if (BuildConfig.DEBUG) Log.d(TAG, "buffered $bufferTimeMs ms.")
             playerThreadHandler.postDelayed(this, 2000)
@@ -131,7 +131,7 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
 
     fun isPlaying() = playState == PlayState.PrePlaying || playState == PlayState.Playing
 
-    fun getAudioSessionId() = currentPlayer.audioSessionId
+    fun getAudioSessionId() = currentPlayer.getAudioSessionId()
 
     fun setVolume(volume: Float) = currentPlayer.setVolume(volume)
 
@@ -141,7 +141,7 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
 
     override fun stopRecording() = currentPlayer.stopRecording()
 
-    override fun isRecording() = currentPlayer.isRecording
+    override fun isRecording() = currentPlayer.isRecording()
 
     override fun getRecordNameFormattingArgs(): Map<String, String> {
         return buildMap {
@@ -157,7 +157,7 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
         }
     }
 
-    override fun getExtension() = currentPlayer.extension
+    override fun getExtension() = currentPlayer.getExtension()
 
     fun runInPlayerThread(runnable: Runnable) = playerThreadHandler.post(runnable)
 
@@ -176,13 +176,13 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
         playerListener.onStateChanged(state, audioSessionId)
     }
 
-    fun getTotalTransferredBytes() = currentPlayer.totalTransferredBytes
+    fun getTotalTransferredBytes() = currentPlayer.getTotalTransferredBytes()
 
-    fun getCurrentPlaybackTransferredBytes() = currentPlayer.currentPlaybackTransferredBytes
+    fun getCurrentPlaybackTransferredBytes() = currentPlayer.getCurrentPlaybackTransferredBytes()
 
-    fun getBufferedSeconds() = currentPlayer.bufferedMs / 1000
+    fun getBufferedSeconds() = currentPlayer.getBufferedMs() / 1000
 
-    fun isLocal() = currentPlayer.isLocal
+    fun isLocal() = currentPlayer.isLocal()
 
     override fun onStateChanged(state: PlayState) = setState(state, getAudioSessionId())
 
@@ -195,8 +195,8 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
         playerThreadHandler.post { playerListener.onPlayerError(messageId) }
     }
 
-    override fun onDataSourceShoutcastInfo(shoutcastInfo: ShoutcastInfo, isHls: Boolean) {
-        playerListener.foundShoutcastStream(shoutcastInfo, isHls)
+    override fun onDataSourceShoutcastInfo(shoutcastInfo: ShoutcastInfo?, isHls: Boolean) {
+        shoutcastInfo?.let { playerListener.foundShoutcastStream(it, isHls) }
     }
 
     override fun onDataSourceStreamLiveInfo(liveInfo: StreamLiveInfo) {

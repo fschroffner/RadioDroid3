@@ -42,7 +42,7 @@ class PlayerSelectorDialog : BottomSheetDialogFragment {
         this.stationToPlay = null
     }
 
-    constructor(mpdClient: MPDClient, stationToPlay: DataRadioStation) {
+    constructor(mpdClient: MPDClient, stationToPlay: DataRadioStation?) {
         this.mpdClient = mpdClient
         this.stationToPlay = stationToPlay
     }
@@ -68,7 +68,7 @@ class PlayerSelectorDialog : BottomSheetDialogFragment {
         btnAddMPDServer = view.findViewById(R.id.btnAddMPDServer)
 
         btnEnableMPD.setOnClickListener {
-            val mpdEnabled = !mpdClient.isMpdEnabled()
+            val mpdEnabled = !mpdClient.isMpdEnabled
             mpdClient.setMPDEnabled(mpdEnabled)
             if (mpdEnabled) mpdClient.enableAutoUpdate() else mpdClient.disableAutoUpdate()
             updateEnableMpdButton()
@@ -91,7 +91,7 @@ class PlayerSelectorDialog : BottomSheetDialogFragment {
 
     override fun onResume() {
         super.onResume()
-        if (mpdClient.isMpdEnabled()) mpdClient.enableAutoUpdate()
+        if (mpdClient.isMpdEnabled) mpdClient.enableAutoUpdate()
         val filter = IntentFilter(PlayerService.PLAYER_SERVICE_STATE_CHANGE)
         LocalBroadcastManager.getInstance(requireContext()).registerReceiver(updateUIReceiver, filter)
         updateEnableMpdButton()
@@ -104,7 +104,7 @@ class PlayerSelectorDialog : BottomSheetDialogFragment {
     }
 
     private fun updateEnableMpdButton() {
-        btnEnableMPD.setText(if (mpdClient.isMpdEnabled()) R.string.action_disable_mpd else R.string.action_enable_mpd)
+        btnEnableMPD.setText(if (mpdClient.isMpdEnabled) R.string.action_disable_mpd else R.string.action_enable_mpd)
     }
 
     private fun editOrAddServer(server: MPDServerData?) {

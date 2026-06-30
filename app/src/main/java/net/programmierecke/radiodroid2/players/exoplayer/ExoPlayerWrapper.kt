@@ -25,6 +25,7 @@ import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
+import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy.LoadErrorInfo
 import androidx.media3.extractor.metadata.icy.IcyHeaders
 import androidx.media3.extractor.metadata.icy.IcyInfo
 import androidx.media3.extractor.metadata.id3.Id3Frame
@@ -219,7 +220,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
 
     fun resumeWhenNetworkConnected() {
         playerThreadHandler!!.post {
-            val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
+            val sharedPref = PreferenceManager.getDefaultSharedPreferences(context!!)
             val resumeWithin = sharedPref.getInt("settings_resume_within", 60)
             if (resumeWithin > 0) {
                 Log.d(TAG, "Trying to resume playback within ${resumeWithin}s.")
@@ -265,7 +266,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
 
     override fun isRecording() = recordableListener != null
 
-    override fun getRecordNameFormattingArgs(): Map<String, String>? = null
+    override fun getRecordNameFormattingArgs(): Map<String, String> = emptyMap()
 
     override fun getExtension() = if (isHls) "ts" else "mp3"
 
@@ -297,7 +298,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
 
     inner class CustomLoadErrorHandlingPolicy : DefaultLoadErrorHandlingPolicy() {
         private val MIN_RETRY_DELAY_MS = 10
-        private val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context)
+        private val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context!!)
 
         private fun getSanitizedRetryDelaySettingsMs() =
             maxOf(sharedPrefs.getInt("settings_retry_delay", 100), MIN_RETRY_DELAY_MS)

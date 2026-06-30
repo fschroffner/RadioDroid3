@@ -153,7 +153,7 @@ class MediaPlayerWrapper(private val playerThreadHandler: Handler) : PlayerWrapp
 
     override fun isRecording() = proxy?.isRecording() ?: false
 
-    override fun getRecordNameFormattingArgs(): Map<String, String>? = null
+    override fun getRecordNameFormattingArgs(): Map<String, String> = emptyMap()
 
     override fun getExtension() = proxy!!.getExtension()
 

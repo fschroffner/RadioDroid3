@@ -80,8 +80,8 @@ class RadioDroidApp : MultiDexApplication() {
             .build()
         Picasso.setSingletonInstance(picassoInstance)
 
-        CountryCodeDictionary.getInstance().load(this)
-        CountryFlagsLoader.getInstance()
+        CountryCodeDictionary.instance.load(this)
+        CountryFlagsLoader.instance
 
         historyManager = HistoryManager(this)
         favouriteManager = FavouriteManager(this)
