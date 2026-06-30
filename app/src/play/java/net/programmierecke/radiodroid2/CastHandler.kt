@@ -85,7 +85,8 @@ private class CastAvailable(val castContext: CastContext,
             PlayerServiceUtil.pause(PauseReason.USER)
 
             val station = PlayerServiceUtil.getCurrentStation()!!
-            play(station.Name, station.playableUrl, station.IconUrl)
+            val url = station.playableUrl ?: return
+            play(station.Name, url, station.IconUrl)
         }
     }
 
