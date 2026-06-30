@@ -3,7 +3,7 @@ package net.programmierecke.radiodroid2
 import android.content.Context
 import net.programmierecke.radiodroid2.station.DataRadioStation
 
-class FallbackStationsManager(ctx: Context?) : StationSaveManager(ctx) {
+class FallbackStationsManager(ctx: Context) : StationSaveManager(ctx) {
     override fun Load() {
         listStations.clear()
         val str = context.resources

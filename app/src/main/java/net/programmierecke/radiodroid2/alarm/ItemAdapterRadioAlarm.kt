@@ -21,7 +21,7 @@ class ItemAdapterRadioAlarm(private val context: Context) : ArrayAdapter<DataRad
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val radioDroidApp = context.applicationContext as RadioDroidApp
-        ram = radioDroidApp.getAlarmManager()
+        ram = radioDroidApp.alarmManager
 
         val aData = getItem(position)!!
         val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater

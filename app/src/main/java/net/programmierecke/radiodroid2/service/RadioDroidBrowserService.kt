@@ -28,8 +28,9 @@ class RadioDroidBrowserService : MediaBrowserServiceCompat() {
             if (MediaSessionCallback.BROADCAST_PLAY_STATION_BY_ID == intent.action) {
                 val stationId = intent.getStringExtra(MediaSessionCallback.EXTRA_STATION_ID) ?: return
                 val station = radioDroidBrowser.getStationById(stationId) ?: return
+                val ps = playerService ?: return
                 playTask?.cancel(false)
-                playTask = GetRealLinkAndPlayTask(context, station, playerService).also { it.execute() }
+                playTask = GetRealLinkAndPlayTask(context, station, ps).also { it.execute() }
             }
         }
     }

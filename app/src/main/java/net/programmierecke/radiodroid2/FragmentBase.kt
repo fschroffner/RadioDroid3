@@ -48,7 +48,7 @@ open class FragmentBase : Fragment() {
         if (BuildConfig.DEBUG) Log.d(TAG, "Download relativeUrl:$relativeUrl")
 
         if (TextUtils.isGraphic(relativeUrl)) {
-            val cache = Utils.getCacheFile(requireActivity(), relativeUrl)
+            val cache = Utils.getCacheFile(requireActivity(), relativeUrl!!)
             if (cache == null || forceUpdate) {
                 if (context != null && displayProgress) {
                     LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
@@ -59,7 +59,7 @@ open class FragmentBase : Fragment() {
                 task = object : AsyncTask<Void, Void, String?>() {
                     override fun doInBackground(vararg params: Void?): String? {
                         val p = hashMapOf("hidebroken" to "${!showBroken}")
-                        return Utils.downloadFeedRelative(httpClient, requireActivity(), relativeUrl, forceUpdate, p)
+                        return Utils.downloadFeedRelative(httpClient, requireActivity(), relativeUrl!!, forceUpdate, p)
                     }
                     override fun onPostExecute(result: String?) {
                         DownloadFinished()

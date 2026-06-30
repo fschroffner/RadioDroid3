@@ -44,8 +44,8 @@ class FragmentCategories : FragmentBase() {
         val data = DataCategory.DecodeJson(urlResult)
 
         if (BuildConfig.DEBUG) Log.d(TAG, "categories count:${data.size}")
-        val countryDict = CountryCodeDictionary.getInstance()
-        val flagsDict = CountryFlagsLoader.getInstance()
+        val countryDict = CountryCodeDictionary.instance
+        val flagsDict = CountryFlagsLoader.instance
 
         for (aData in data) {
             if (!singleUseFilter || showSingleUseTags || aData.UsedCount > 1) {
@@ -65,11 +65,11 @@ class FragmentCategories : FragmentBase() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val adapterCategory = ItemAdapterCategory(R.layout.list_item_category)
-        adapterCategory.setCategoryClickListener(object : ItemAdapterCategory.CategoryClickListener {
+        adapterCategory.categoryClickListener = object : ItemAdapterCategory.CategoryClickListener {
             override fun onCategoryClick(category: DataCategory) {
                 ClickOnItem(category)
             }
-        })
+        }
 
         val view = inflater.inflate(R.layout.fragment_stations_remote, container, false)
 

@@ -6,7 +6,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import net.programmierecke.radiodroid2.R
 
 object ItemListDialog {
-    interface Callback { fun onItemSelected(resourceId: Int) }
+    fun interface Callback { fun onItemSelected(resourceId: Int) }
 
     @JvmStatic
     fun create(activity: Activity, resourceIds: IntArray, callback: Callback): BottomSheetDialog {

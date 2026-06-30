@@ -66,6 +66,7 @@ class MediaSessionCallback(
         val station = app.favouriteManager.getBestNameMatch(cleanQuery)
             ?: app.historyManager.getBestNameMatch(cleanQuery)
             ?: app.fallbackStationsManager.getBestNameMatch(cleanQuery)
+            ?: return
         GetRealLinkAndPlayTask(context, station, playerService).execute()
     }
 

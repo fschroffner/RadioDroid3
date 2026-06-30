@@ -10,7 +10,7 @@ import java.util.Date
 import java.util.concurrent.Executor
 
 class TrackHistoryRepository(application: Application) {
-    interface GetItemCallback {
+    fun interface GetItemCallback {
         /** Runs in the DB thread */
         fun onItemFetched(trackHistoryEntry: TrackHistoryEntry?, dao: TrackHistoryDao)
     }
@@ -24,7 +24,7 @@ class TrackHistoryRepository(application: Application) {
     init {
         val db = RadioDroidDatabase.getDatabase(application)
         dao = db.songHistoryDao()
-        queryExecutor = db.queryExecutor
+        queryExecutor = db.historyQueryExecutor
         allHistoryPaged = LivePagedListBuilder(
             dao.getAllHistoryPositional(),
             PagedList.Config.Builder()

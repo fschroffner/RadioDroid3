@@ -121,8 +121,8 @@ class PlayerSelectorAdapter(
                         if (PlayerServiceUtil.isRecording()) PlayerServiceUtil.stopRecording()
                         PlayerServiceUtil.pause(PauseReason.USER)
                     } else {
-                        Utils.playAndWarnIfMetered(context.applicationContext as RadioDroidApp, stationToPlay, PlayerType.RADIODROID) {
-                            Utils.play(context.applicationContext as RadioDroidApp, stationToPlay)
+                        Utils.playAndWarnIfMetered(context.applicationContext as RadioDroidApp, stationToPlay!!, PlayerType.RADIODROID) {
+                            Utils.play(context.applicationContext as RadioDroidApp, stationToPlay!!)
                         }
                     }
                 }
@@ -130,14 +130,14 @@ class PlayerSelectorAdapter(
             PlayerType.EXTERNAL.value -> {
                 holder.textViewDescription.setText(R.string.action_play_in_external)
                 holder.btnPlay.setOnClickListener {
-                    Utils.playAndWarnIfMetered(context.applicationContext as RadioDroidApp, stationToPlay, PlayerType.EXTERNAL) {
-                        PlayStationTask.playExternal(stationToPlay, context).execute()
+                    Utils.playAndWarnIfMetered(context.applicationContext as RadioDroidApp, stationToPlay!!, PlayerType.EXTERNAL) {
+                        PlayStationTask.playExternal(stationToPlay!!, context).execute()
                     }
                 }
             }
             PlayerType.CAST.value -> {
                 holder.textViewDescription.setText(R.string.media_route_menu_title)
-                holder.btnPlay.setOnClickListener { PlayStationTask.playCAST(stationToPlay, context).execute() }
+                holder.btnPlay.setOnClickListener { PlayStationTask.playCAST(stationToPlay!!, context).execute() }
             }
         }
     }
@@ -195,7 +195,7 @@ class PlayerSelectorAdapter(
                 when (item.itemId) {
                     R.id.action_edit -> actionListener?.editServer(mpdServerData)
                     R.id.action_remove -> actionListener?.removeServer(mpdServerData)
-                    R.id.action_play -> PlayStationTask.playMPD(mpdClient, mpdServerData, stationToPlay, context).execute()
+                    R.id.action_play -> PlayStationTask.playMPD(mpdClient, mpdServerData, stationToPlay!!, context).execute()
                     R.id.action_pause -> mpdClient.enqueueTask(mpdServerData, MPDPauseTask(null))
                 }
                 true

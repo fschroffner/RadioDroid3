@@ -35,19 +35,19 @@ class RecordingsManager {
 
         override fun onBytesAvailable(buffer: ByteArray, offset: Int, length: Int) {
             try {
-                runningRecordingInfo.outputStream.write(buffer, offset, length)
+                runningRecordingInfo.outputStream!!.write(buffer, offset, length)
                 runningRecordingInfo.bytesWritten += length
             } catch (e: IOException) {
                 e.printStackTrace()
-                runningRecordingInfo.recordable.stopRecording()
+                runningRecordingInfo.recordable?.stopRecording()
             }
         }
 
         override fun onRecordingEnded() {
             if (ended) return
             ended = true
-            try { runningRecordingInfo.outputStream.close() } catch (_: IOException) {}
-            this@RecordingsManager.stopRecording(runningRecordingInfo.recordable)
+            try { runningRecordingInfo.outputStream?.close() } catch (_: IOException) {}
+            runningRecordingInfo.recordable?.let { this@RecordingsManager.stopRecording(it) }
         }
     }
 
@@ -58,12 +58,12 @@ class RecordingsManager {
         if (!recordable.canRecord() || runningRecordings.containsKey(recordable)) return
 
         val info = RunningRecordingInfo()
-        info.setRecordable(recordable)
+        info.recordable = recordable
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
         val fileNameFormat = prefs.getString("record_name_formatting", context.getString(R.string.settings_record_name_formatting_default)) ?: ""
 
-        val formattingArgs = recordable.recordNameFormattingArgs.toMutableMap()
+        val formattingArgs = recordable.getRecordNameFormattingArgs().toMutableMap()
         val currentTime = Calendar.getInstance().time
         formattingArgs["date"] = dateFormatter.format(currentTime)
         formattingArgs["time"] = timeFormatter.format(currentTime)
@@ -71,12 +71,12 @@ class RecordingsManager {
         formattingArgs["index"] = recordNum.toString()
 
         val recordTitle = Utils.formatStringWithNamedArgs(fileNameFormat, formattingArgs)
-        info.setTitle(recordTitle)
-        info.setFileName("$recordTitle.${recordable.extension}")
+        info.title = recordTitle
+        info.fileName = "$recordTitle.${recordable.getExtension()}"
 
-        val filePath = getRecordDir() + "/" + info.getFileName()
+        val filePath = getRecordDir() + "/" + info.fileName
         try {
-            info.setOutputStream(FileOutputStream(filePath))
+            info.outputStream = FileOutputStream(filePath)
         } catch (e: FileNotFoundException) {
             e.printStackTrace()
             return
@@ -109,7 +109,7 @@ class RecordingsManager {
             files.mapTo(savedRecordings) { f ->
                 DataRecording().apply { Name = f.name; Time = Date(f.lastModified()) }
             }
-            savedRecordings.sortByDescending { it.Time.time }
+            savedRecordings.sortByDescending { it.Time?.time ?: 0L }
         } else {
             Log.e(TAG, "Could not enumerate files in recordings directory")
         }

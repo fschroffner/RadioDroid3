@@ -26,7 +26,7 @@ class TimePickerFragment : DialogFragment, TimePickerDialog.OnTimeSetListener {
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
-        TimePickerDialog(activity, Utils.getTimePickerThemeResId(activity), this, initialHour, initialMinute, DateFormat.is24HourFormat(activity))
+        TimePickerDialog(requireActivity(), Utils.getTimePickerThemeResId(requireActivity()), this, initialHour, initialMinute, DateFormat.is24HourFormat(requireActivity()))
 
     fun setCallback(callback: TimePickerDialog.OnTimeSetListener) { this.callback = callback }
 

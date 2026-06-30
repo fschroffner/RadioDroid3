@@ -50,20 +50,20 @@ class FragmentSettings : PreferenceFragmentCompat(),
 
     private fun refreshToplevelIcons() {
         findPreference<Preference>("shareapp_package")?.summary = preferenceManager.sharedPreferences?.getString("shareapp_package", "")
-        findPreference<Preference>("pref_category_ui")?.icon = Utils.IconicsIcon(context, CommunityMaterial.Icon2.cmd_monitor)
-        findPreference<Preference>("pref_category_startup")?.icon = Utils.IconicsIcon(context, GoogleMaterial.Icon.gmd_flight_takeoff)
-        findPreference<Preference>("pref_category_interaction")?.icon = Utils.IconicsIcon(context, CommunityMaterial.Icon.cmd_gesture_tap)
-        findPreference<Preference>("pref_category_player")?.icon = Utils.IconicsIcon(context, CommunityMaterial.Icon2.cmd_play)
-        findPreference<Preference>("pref_category_alarm")?.icon = Utils.IconicsIcon(context, CommunityMaterial.Icon.cmd_clock_outline)
-        findPreference<Preference>("pref_category_connectivity")?.icon = Utils.IconicsIcon(context, GoogleMaterial.Icon.gmd_import_export)
-        findPreference<Preference>("pref_category_recordings")?.icon = Utils.IconicsIcon(context, CommunityMaterial.Icon2.cmd_record_rec)
-        findPreference<Preference>("pref_category_mpd")?.icon = Utils.IconicsIcon(context, CommunityMaterial.Icon2.cmd_speaker_wireless)
-        findPreference<Preference>("pref_category_other")?.icon = Utils.IconicsIcon(context, CommunityMaterial.Icon2.cmd_information_outline)
+        findPreference<Preference>("pref_category_ui")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_monitor)
+        findPreference<Preference>("pref_category_startup")?.icon = Utils.IconicsIcon(requireContext(),GoogleMaterial.Icon.gmd_flight_takeoff)
+        findPreference<Preference>("pref_category_interaction")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon.cmd_gesture_tap)
+        findPreference<Preference>("pref_category_player")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_play)
+        findPreference<Preference>("pref_category_alarm")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon.cmd_clock_outline)
+        findPreference<Preference>("pref_category_connectivity")?.icon = Utils.IconicsIcon(requireContext(),GoogleMaterial.Icon.gmd_import_export)
+        findPreference<Preference>("pref_category_recordings")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_record_rec)
+        findPreference<Preference>("pref_category_mpd")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_speaker_wireless)
+        findPreference<Preference>("pref_category_other")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_information_outline)
     }
 
     private fun refreshToolbar() {
         val activity = activity as? ActivityMain ?: return
-        val toolbar = activity.toolbar ?: return
+        val toolbar = activity.getToolbar() ?: return
         val screen = preferenceScreen ?: return
 
         toolbar.title = screen.title
@@ -124,7 +124,7 @@ class FragmentSettings : PreferenceFragmentCompat(),
             }
             "pref_category_other" -> {
                 findPreference<Preference>("show_statistics")?.setOnPreferenceClickListener {
-                    (requireActivity() as ActivityMain).toolbar?.setTitle(R.string.settings_statistics)
+                    (requireActivity() as ActivityMain).getToolbar().setTitle(R.string.settings_statistics)
                     requireActivity().supportFragmentManager.beginTransaction()
                         .replace(R.id.containerView, FragmentServerInfo())
                         .addToBackStack(ActivityMain.FRAGMENT_FROM_BACKSTACK.toString())
