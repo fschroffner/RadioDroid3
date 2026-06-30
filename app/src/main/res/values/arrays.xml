@@ -41,10 +41,16 @@
     <string-array name="theme_entries">
         <item>@string/theme_light</item>
         <item>@string/theme_dark</item>
+        <item>@string/theme_oled</item>
+        <item>@string/theme_pink</item>
+        <item>@string/theme_system</item>
     </string-array>
     <string-array name="theme_values">
         <item>@string/theme_light</item>
         <item>@string/theme_dark</item>
+        <item>@string/theme_oled</item>
+        <item>@string/theme_pink</item>
+        <item>@string/theme_system</item>
     </string-array>
 
     <string-array name="settings_record_name_formatting_list">
