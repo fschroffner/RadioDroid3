@@ -99,8 +99,8 @@ class StationsFilter(
         lastRemoteQuery = ""
     }
 
-    override fun performFiltering(constraint: CharSequence): FilterResults {
-        val query = constraint.toString().lowercase()
+    override fun performFiltering(constraint: CharSequence?): FilterResults {
+        val query = constraint?.toString()?.lowercase() ?: ""
         Log.d("FILTER", "performFiltering() $query")
 
         if (searchStyle == SearchStyle.ByName && (query.isEmpty() || (query.length < 2 && filterType == FilterType.GLOBAL))) {
@@ -150,7 +150,8 @@ class StationsFilter(
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun publishResults(constraint: CharSequence, results: FilterResults) {
-        dataProvider.notifyFilteredStationsChanged(lastRemoteSearchStatus, results.values as List<DataRadioStation>)
+    override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+        val values = results?.values as? List<DataRadioStation> ?: emptyList()
+        dataProvider.notifyFilteredStationsChanged(lastRemoteSearchStatus, values)
     }
 }

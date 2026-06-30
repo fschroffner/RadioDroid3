@@ -265,7 +265,10 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
     override fun onNavigationItemSelected(menuItem: MenuItem): Boolean {
         selectedMenuItem = menuItem.itemId
+        return navigateToSelectedMenuItem()
+    }
 
+    private fun navigateToSelectedMenuItem(): Boolean {
         if (playerBottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
             playerBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
         }
@@ -782,7 +785,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             onNavigationItemSelected(item)
         } else {
             selectedMenuItem = R.id.nav_item_stations
-            onNavigationItemSelected(null)
+            navigateToSelectedMenuItem()
         }
     }
 
