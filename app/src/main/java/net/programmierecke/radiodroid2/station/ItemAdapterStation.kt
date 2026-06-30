@@ -67,7 +67,7 @@ open class ItemAdapterStation(
     var stationsList: List<DataRadioStation> = emptyList()
     var filteredStationsList: List<DataRadioStation> = mutableListOf()
 
-    var stationActionsListener: StationActionsListener? = null
+    private var stationActionsListener: StationActionsListener? = null
     private var filterListener: FilterListener? = null
     private var supportsStationRemoval = false
 

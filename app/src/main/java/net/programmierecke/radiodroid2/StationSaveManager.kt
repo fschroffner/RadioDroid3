@@ -32,7 +32,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
     }
 
     var listStations: MutableList<DataRadioStation> = mutableListOf()
-    protected var stationStatusListener: StationStatusListener? = null
+    private var stationStatusListener: StationStatusListener? = null
 
     init {
         Load()

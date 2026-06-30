@@ -14,7 +14,7 @@ import net.programmierecke.radiodroid2.interfaces.IApplicationSelected
 
 class ApplicationSelectorDialog : DialogFragment() {
     private val listInfos = mutableListOf<ActivityInfo>()
-    var callback: IApplicationSelected? = null
+    private var callback: IApplicationSelected? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val arrayAdapter = ArrayAdapter<String>(requireActivity(), android.R.layout.select_dialog_singlechoice)
