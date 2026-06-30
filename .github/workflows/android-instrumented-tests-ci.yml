@@ -13,7 +13,11 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        api-level: [27, 33]
+        # macos-latest runners are Apple Silicon (arm64), so emulators need
+        # arm64-v8a system images. Google does not publish arm64-v8a images for
+        # API 25-29, so the previous low target (27) could never boot. API 24
+        # (default) and API 33 (google_apis) both have arm64-v8a images.
+        api-level: [24, 33]
     steps:
       - name: checkout
         uses: actions/checkout@v4
