@@ -1,5 +1,6 @@
 package net.programmierecke.radiodroid2
 
+import android.Manifest
 import android.app.TimePickerDialog
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,6 +10,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.AsyncTask
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -25,6 +27,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -83,6 +87,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         private const val TAG = "RadioDroid"
         const val PERM_REQ_STORAGE_FAV_SAVE = 1
         const val PERM_REQ_STORAGE_FAV_LOAD = 2
+        const val PERM_REQ_NOTIFICATIONS = 3
         private const val ACTION_SAVE_FILE = 1
         private const val ACTION_LOAD_FILE = 2
     }
@@ -260,6 +265,17 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         })
 
         (application as RadioDroidApp).castHandler.onCreate(this)
+
+        // Android 13+ (API 33) requires a runtime grant for notifications; request it on
+        // first launch so playback/alarm notifications are not silently dropped.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                PERM_REQ_NOTIFICATIONS)
+        }
+
         setupStartUpFragment()
     }
 
