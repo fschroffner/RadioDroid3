@@ -1,11 +1,9 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
+apply plugin: 'com.google.devtools.ksp'
 
-kapt {
-    arguments {
-        arg("room.schemaLocation", "$projectDir/schemas")
-    }
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 def getAvailableLocales() {
@@ -165,7 +163,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1") {
         exclude group: 'org.checkerframework', module: 'checker'
     }
-    kapt 'androidx.room:room-compiler:2.7.1'
+    ksp 'androidx.room:room-compiler:2.7.1'
 
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.9.0"
     implementation "androidx.lifecycle:lifecycle-common-java8:2.9.0"
