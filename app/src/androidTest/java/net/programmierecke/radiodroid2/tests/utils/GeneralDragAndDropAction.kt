@@ -10,7 +10,6 @@ import androidx.test.espresso.action.CoordinatesProvider
 import androidx.test.espresso.action.MotionEvents
 import androidx.test.espresso.action.PrecisionDescriber
 import androidx.test.espresso.action.Swiper
-import androidx.test.espresso.core.internal.deps.guava.base.Preconditions.checkElementIndex
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayingAtLeast
 import androidx.test.espresso.util.HumanReadables
 import org.hamcrest.Matcher
@@ -96,8 +95,8 @@ open class GeneralDragAndDropAction(
         private const val DRAG_DURATION = 300
 
         private fun interpolate(start: FloatArray, end: FloatArray, steps: Int): Array<FloatArray> {
-            checkElementIndex(1, start.size)
-            checkElementIndex(1, end.size)
+            require(start.size > 1)
+            require(end.size > 1)
 
             val res = Array(steps) { FloatArray(2) }
 
