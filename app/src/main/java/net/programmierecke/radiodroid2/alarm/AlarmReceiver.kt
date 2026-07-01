@@ -1,5 +1,6 @@
 package net.programmierecke.radiodroid2.alarm
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,17 +9,20 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.AsyncTask
+import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.RemoteException
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import net.programmierecke.radiodroid2.BuildConfig
 import net.programmierecke.radiodroid2.IPlayerService
@@ -154,6 +158,15 @@ class AlarmReceiver : BroadcastReceiver() {
             setSound(soundUri, AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).setUsage(AudioAttributes.USAGE_ALARM).build())
         }
         nm.createNotificationChannel(channel)
+        // On Android 13+ (API 33) POST_NOTIFICATIONS is a runtime permission. A
+        // BroadcastReceiver cannot request it, so guard notify() to avoid a crash
+        // when the user has not granted it.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "POST_NOTIFICATIONS not granted, skipping backup-alarm notification")
+            return
+        }
         nm.notify(BACKUP_NOTIFICATION_ID, NotificationCompat.Builder(context, BACKUP_NOTIFICATION_NAME)
             .setSmallIcon(R.drawable.ic_access_alarms_black_24dp)
             .setContentTitle(context.getString(R.string.action_alarm))
