@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+
+kapt {
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+}
 
 def getAvailableLocales() {
     def tree = fileTree(dir: 'src/main/res', include: '**/strings.xml')
@@ -55,12 +62,6 @@ android {
 
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
-
-        javaCompileOptions {
-            annotationProcessorOptions {
-                arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
-            }
-        }
 
         // Define your application name here.
         // It must neither be present in /res/values/strings.xml
@@ -164,7 +165,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1") {
         exclude group: 'org.checkerframework', module: 'checker'
     }
-    annotationProcessor 'androidx.room:room-compiler:2.7.1'
+    kapt 'androidx.room:room-compiler:2.7.1'
 
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.9.0"
     implementation "androidx.lifecycle:lifecycle-common-java8:2.9.0"
