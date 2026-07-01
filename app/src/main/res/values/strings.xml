@@ -96,7 +96,6 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="theme_oled">OLED Black</string>
-    <string name="theme_pink">Pastell Rosa</string>
     <string name="theme_system">System (Hell/Dunkel)</string>
     <string name="settings_circular_icons">Use circular icons</string>
     <string name="settings_compact_style">Compact mode</string>

@@ -373,7 +373,6 @@ object Utils {
         return when (getTheme(context)) {
             context.resources.getString(R.string.theme_dark) -> R.style.MyMaterialTheme_Dark
             context.resources.getString(R.string.theme_oled) -> R.style.MyMaterialTheme_Oled
-            context.resources.getString(R.string.theme_pink) -> R.style.MyMaterialTheme_Pink
             context.resources.getString(R.string.theme_system) ->
                 if (isSystemDarkMode(context)) R.style.MyMaterialTheme_Dark else R.style.MyMaterialTheme
             else -> R.style.MyMaterialTheme

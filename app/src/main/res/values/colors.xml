@@ -64,22 +64,4 @@
     <color name="iconsInItemBackgroundColorOled">#FFFFFF</color>
     <color name="swipeDeleteIconColorOled">#000000</color>
     <color name="snackBarButtonColorOled">#BB86FC</color>
-
-    <!-- Pink Pastel Theme -->
-    <color name="windowBackgroundPink">#FFF0F5</color>
-    <color name="colorPrimaryPink">#E91E63</color>
-    <color name="colorPrimaryDarkPink">#C2185B</color>
-    <color name="colorAccentPink">#FF4081</color>
-    <color name="colorTabUnderlinePink">#E91E63</color>
-    <color name="colorPlayerBackgroundPink">#FFF0F5</color>
-    <color name="colorPlayerShadowPink">#F8BBD0</color>
-    <color name="tagBackgroundColorPink">#FCE4EC</color>
-    <color name="menuTextColorSelectedPink">#C2185B</color>
-    <color name="menuTextColorDefaultPink">#757575</color>
-    <color name="menuBottomTextColorSelectedPink">#FFFFFF</color>
-    <color name="menuBottomTextColorDefaultPink">#FCE4EC</color>
-    <color name="menuBottomBackgroundColorPink">#E91E63</color>
-    <color name="iconsInItemBackgroundColorPink">#C2185B</color>
-    <color name="swipeDeleteIconColorPink">#FFF0F5</color>
-    <color name="snackBarButtonColorPink">#C2185B</color>
 </resources>
