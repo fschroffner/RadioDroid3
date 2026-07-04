@@ -164,10 +164,10 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         override fun getTimerSeconds(): Long = this@PlayerService.getTimerSeconds()
 
         @Throws(RemoteException::class)
-        override fun getCurrentStationID(): String? = currentStation?.StationUuid
+        override fun getCurrentStationID(): String? = this@PlayerService.currentStation?.StationUuid
 
         @Throws(RemoteException::class)
-        override fun getCurrentStation(): DataRadioStation? = currentStation
+        override fun getCurrentStation(): DataRadioStation? = this@PlayerService.currentStation
 
         @Throws(RemoteException::class)
         override fun getMetadataLive(): StreamLiveInfo = this@PlayerService.liveInfo
@@ -179,7 +179,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         override fun getMediaSessionToken(): MediaSessionCompat.Token = this@PlayerService.mediaSession.sessionToken
 
         @Throws(RemoteException::class)
-        override fun getIsHls(): Boolean = isHls
+        override fun getIsHls(): Boolean = this@PlayerService.isHls
 
         @Throws(RemoteException::class)
         override fun isPlaying(): Boolean = radioPlayer.isPlaying()
@@ -230,7 +230,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             if (::radioPlayer.isInitialized) radioPlayer.getBufferedSeconds() else 0
 
         @Throws(RemoteException::class)
-        override fun getLastPlayStartTime(): Long = lastPlayStartTime
+        override fun getLastPlayStartTime(): Long = this@PlayerService.lastPlayStartTime
 
         @Throws(RemoteException::class)
         override fun getPauseReason(): PauseReason = this@PlayerService.pauseReason
