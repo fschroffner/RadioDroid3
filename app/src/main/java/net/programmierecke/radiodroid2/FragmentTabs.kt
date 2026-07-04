@@ -17,6 +17,7 @@ import net.programmierecke.radiodroid2.interfaces.IFragmentSearchable
 import net.programmierecke.radiodroid2.station.FragmentStations
 import net.programmierecke.radiodroid2.station.StationsFilter
 
+@dagger.hilt.android.AndroidEntryPoint
 class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
     private val itsAdressWWWLocal = "json/stations/bycountryexact/internet?order=clickcount&reverse=true"
     private val itsAdressWWWTopClick = "json/stations/topclick/100"
@@ -146,8 +147,10 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
     }
 
     override fun Refresh() {
-        val fragment = fragments[viewPager!!.currentItem]
-        if (fragment is FragmentBase) fragment.DownloadUrl(true)
+        when (val fragment = fragments[viewPager!!.currentItem]) {
+            is IFragmentRefreshable -> fragment.Refresh()
+            is FragmentBase -> fragment.DownloadUrl(true)
+        }
     }
 
     @Suppress("DEPRECATION")

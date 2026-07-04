@@ -24,7 +24,7 @@ interface TrackHistoryDao {
     fun getAllHistoryPositional(): DataSource.Factory<Int, TrackHistoryEntry>
 
     @Query("SELECT * FROM track_history ORDER BY uid DESC LIMIT 1")
-    fun getLastInsertedHistoryItem(): TrackHistoryEntry
+    fun getLastInsertedHistoryItem(): TrackHistoryEntry?
 
     @Query("UPDATE track_history SET end_time = :time WHERE end_time = 0")
     fun setCurrentPlayingTrackEndTime(time: Date)
