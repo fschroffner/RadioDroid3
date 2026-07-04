@@ -1,6 +1,5 @@
 package net.programmierecke.radiodroid2.station
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
@@ -8,6 +7,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -15,28 +19,42 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.button.MaterialButton
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import net.programmierecke.radiodroid2.ActivityMain
 import net.programmierecke.radiodroid2.BuildConfig
-import net.programmierecke.radiodroid2.FragmentBase
 import net.programmierecke.radiodroid2.R
 import net.programmierecke.radiodroid2.RadioDroidApp
 import net.programmierecke.radiodroid2.StationSaveManager
 import net.programmierecke.radiodroid2.Utils
+import net.programmierecke.radiodroid2.interfaces.IFragmentRefreshable
 import net.programmierecke.radiodroid2.interfaces.IFragmentSearchable
 import net.programmierecke.radiodroid2.utils.CustomFilter
 
-class FragmentStations : FragmentBase(), IFragmentSearchable {
+/**
+ * Browse/search list of remote stations.
+ *
+ * The browse path (a radio-browser endpoint passed via the "url" argument) is driven
+ * by [StationsViewModel] + [StationRepository] instead of a per-fragment AsyncTask, so
+ * loading survives configuration changes and the fragment only renders state. The
+ * search path (used by the search tab) still delegates to the adapter's [StationsFilter].
+ */
+@AndroidEntryPoint
+class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
 
     companion object {
         private const val TAG = "FragmentStations"
         const val KEY_SEARCH_ENABLED = "SEARCH_ENABLED"
     }
 
+    private val stationsViewModel: StationsViewModel by viewModels()
+
     private lateinit var rvStations: RecyclerView
     private lateinit var layoutError: ViewGroup
     private lateinit var btnRetry: MaterialButton
     private var swipeRefreshLayout: SwipeRefreshLayout? = null
 
+    private var relativeUrl: String = ""
     private var searchEnabled = false
     private var stationsFilter: StationsFilter? = null
     private var lastSearchStyle = StationsFilter.SearchStyle.ByName
@@ -48,29 +66,72 @@ class FragmentStations : FragmentBase(), IFragmentSearchable {
         Utils.showPlaySelection(app, theStation, requireActivity().supportFragmentManager)
     }
 
-    override fun RefreshListGui() {
-        if (!::rvStations.isInitialized || !hasUrl()) return
-        if (BuildConfig.DEBUG) Log.d(TAG, "refreshing the stations list.")
+    /** hidebroken API parameter: the inverse of the "show_broken" preference. */
+    private fun hideBroken() =
+        !PreferenceManager.getDefaultSharedPreferences(requireContext()).getBoolean("show_broken", false)
 
-        val ctx = context ?: return
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(ctx)
-        val showBroken = sharedPref.getBoolean("show_broken", false)
+    private fun renderStations(stations: List<DataRadioStation>) {
+        if (!::rvStations.isInitialized) return
+        if (BuildConfig.DEBUG) Log.d(TAG, "rendering ${stations.size} stations.")
 
-        val radioStations = DataRadioStation.DecodeJson(urlResult)
+        val showBroken = !hideBroken()
         queue.clear()
-        queue.addAll(radioStations)
+        queue.addAll(stations)
 
-        if (BuildConfig.DEBUG) Log.d(TAG, "station count:${radioStations.size}")
-
-        val filtered = radioStations.filter { showBroken || it.Working }
+        val filtered = stations.filter { showBroken || it.Working }
         val adapter = rvStations.adapter as? ItemAdapterStation ?: return
         adapter.updateList(null, filtered)
         if (searchEnabled) stationsFilter?.filter("")
     }
 
+    private fun loadBrowse(forceUpdate: Boolean) {
+        if (relativeUrl.isEmpty()) return
+        if (context != null) {
+            LocalBroadcastManager.getInstance(requireContext())
+                .sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
+        }
+        stationsViewModel.load(relativeUrl, hideBroken(), forceUpdate)
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                stationsViewModel.uiState.collect { state ->
+                    when (state) {
+                        is StationsUiState.Success -> {
+                            renderStations(state.stations)
+                            onLoadFinished()
+                        }
+                        is StationsUiState.Error -> {
+                            try {
+                                android.widget.Toast.makeText(
+                                    context, resources.getText(R.string.error_list_update),
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            } catch (e: Exception) {
+                                Log.e(TAG, "$e")
+                            }
+                            onLoadFinished()
+                        }
+                        StationsUiState.Loading, StationsUiState.Idle -> {}
+                    }
+                }
+            }
+        }
+    }
+
+    private fun onLoadFinished() {
+        swipeRefreshLayout?.isRefreshing = false
+        if (context != null) {
+            LocalBroadcastManager.getInstance(requireContext())
+                .sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         Log.d("STATIONS", "onCreateView()")
         queue = StationSaveManager(requireContext())
+        relativeUrl = arguments?.getString("url") ?: ""
         searchEnabled = arguments?.getBoolean(KEY_SEARCH_ENABLED, false) ?: false
 
         val view = inflater.inflate(R.layout.fragment_stations_remote, container, false)
@@ -114,15 +175,19 @@ class FragmentStations : FragmentBase(), IFragmentSearchable {
 
         swipeRefreshLayout = view.findViewById(R.id.swiperefresh)
         swipeRefreshLayout!!.setOnRefreshListener {
-            if (hasUrl()) {
-                DownloadUrl(true, false)
+            if (relativeUrl.isNotEmpty()) {
+                loadBrowse(true)
             } else if (searchEnabled) {
                 stationsFilter?.clearList()
                 Search(lastSearchStyle, lastQuery)
             }
         }
 
-        RefreshListGui()
+        observeViewModel()
+
+        if (relativeUrl.isNotEmpty()) {
+            loadBrowse(false)
+        }
 
         if (lastQuery.isNotEmpty() && stationsFilter != null) {
             Log.d("STATIONS", "do queued search for: $lastQuery style=$lastSearchStyle")
@@ -155,7 +220,12 @@ class FragmentStations : FragmentBase(), IFragmentSearchable {
         }
     }
 
-    override fun DownloadFinished() {
-        swipeRefreshLayout?.isRefreshing = false
+    override fun Refresh() {
+        if (relativeUrl.isNotEmpty()) {
+            loadBrowse(true)
+        } else if (searchEnabled) {
+            stationsFilter?.clearList()
+            Search(lastSearchStyle, lastQuery)
+        }
     }
 }
