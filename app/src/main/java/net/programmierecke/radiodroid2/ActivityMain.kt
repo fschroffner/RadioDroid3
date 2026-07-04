@@ -69,6 +69,7 @@ import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.util.Date
 
+@dagger.hilt.android.AndroidEntryPoint
 class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     NavigationView.OnNavigationItemSelectedListener,
     BottomNavigationView.OnNavigationItemSelectedListener,

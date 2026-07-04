@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.multidex.MultiDexApplication
 import androidx.preference.PreferenceManager
+import dagger.hilt.android.HiltAndroidApp
 import com.squareup.picasso.OkHttp3Downloader
 import com.squareup.picasso.Picasso
 import net.programmierecke.radiodroid2.alarm.RadioAlarmManager
@@ -25,6 +26,7 @@ import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
+@HiltAndroidApp
 class RadioDroidApp : MultiDexApplication() {
 
     lateinit var historyManager: HistoryManager
