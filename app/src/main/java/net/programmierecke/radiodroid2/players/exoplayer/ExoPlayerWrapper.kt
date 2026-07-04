@@ -161,6 +161,13 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
         stopRecording()
     }
 
+    /**
+     * Exposes the internal ExoPlayer as a Media3 [Player] so it can be attached to a
+     * androidx.media3.session.MediaSession. Returns null while no playback is active
+     * (the player is created lazily on [playRemote] and released on [pause]/[stop]).
+     */
+    fun getMedia3Player(): Player? = player
+
     override fun isPlaying() = player != null && isPlayingFlag
 
     override fun getBufferedMs(): Long {
