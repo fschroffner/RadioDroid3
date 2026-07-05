@@ -287,17 +287,6 @@ object PlayerServiceUtil {
             ?: PauseReason.NONE
 
     @JvmStatic
-    fun enableMPD(hostname: String, port: Int) {
-        val args = Bundle().apply {
-            putString(PlayerService.CMD_ARG_MPD_HOSTNAME, hostname)
-            putInt(PlayerService.CMD_ARG_MPD_PORT, port)
-        }
-        sendCommand(PlayerService.CUSTOM_COMMAND_ENABLE_MPD, args)
-    }
-
-    fun disableMPD() = sendCommand(PlayerService.CUSTOM_COMMAND_DISABLE_MPD)
-
-    @JvmStatic
     fun warnAboutMeteredConnection(playerType: PlayerType) {
         val args = Bundle().apply { putParcelable(PlayerService.CMD_ARG_PLAYER_TYPE, playerType) }
         sendCommand(PlayerService.CUSTOM_COMMAND_WARN_METERED, args)
