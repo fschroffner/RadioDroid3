@@ -335,7 +335,9 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         }
     }
 
-    private val sleepTimer = SleepTimer(object : SleepTimer.Callback {
+    // Explicit type: the callback references `sleepTimer` inside its own initializer, so without an
+    // explicit declared type K2 hits a recursive type-inference problem resolving `sleepTimer.seconds`.
+    private val sleepTimer: SleepTimer = SleepTimer(object : SleepTimer.Callback {
         override fun onTick() {
             if (BuildConfig.DEBUG) Log.d(TAG, "${sleepTimer.seconds}")
             sendBroadCast(PLAYER_SERVICE_TIMER_UPDATE)
