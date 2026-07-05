@@ -12,12 +12,9 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.media.AudioManager
-import android.media.ToneGenerator
 import android.media.audiofx.AudioEffect
-import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.os.Handler
 import android.os.IBinder
 import android.os.Parcelable
@@ -57,7 +54,6 @@ import net.programmierecke.radiodroid2.IPlayerService
 import net.programmierecke.radiodroid2.R
 import net.programmierecke.radiodroid2.RadioDroidApp
 import net.programmierecke.radiodroid2.Utils
-import net.programmierecke.radiodroid2.history.TrackHistoryEntry
 import net.programmierecke.radiodroid2.history.TrackHistoryRepository
 import net.programmierecke.radiodroid2.players.PlayState
 import net.programmierecke.radiodroid2.players.RadioPlayer
@@ -66,8 +62,6 @@ import net.programmierecke.radiodroid2.station.DataRadioStation
 import net.programmierecke.radiodroid2.station.live.ShoutcastInfo
 import net.programmierecke.radiodroid2.station.live.StreamLiveInfo
 import java.io.ByteArrayOutputStream
-import java.util.Calendar
-import java.util.Date
 
 class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
 
@@ -92,7 +86,11 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
 
         // Remaining radio-specific commands exposed to the in-app MediaController. They carry no
         // equivalent in Media3's standard transport controls (station selection, pause with a
-        // reason, sleep timer, recording, metered-connection warning, MPD control).
+        // reason, sleep timer, recording, metered-connection warning).
+        //
+        // MPD and Cast playback are intentionally NOT routed through here: they are handled outside
+        // the service by PlayStationTask.playMPD / playCAST (invoked from the player selector),
+        // which talk directly to MPDClient and CastHandler.
         const val CUSTOM_COMMAND_SET_STATION = "net.programmierecke.radiodroid2.SET_STATION"
         const val CUSTOM_COMMAND_PLAY_STATION = "net.programmierecke.radiodroid2.PLAY_STATION"
         const val CUSTOM_COMMAND_PAUSE = "net.programmierecke.radiodroid2.PAUSE"
@@ -102,8 +100,6 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         const val CUSTOM_COMMAND_START_RECORDING = "net.programmierecke.radiodroid2.START_RECORDING"
         const val CUSTOM_COMMAND_STOP_RECORDING = "net.programmierecke.radiodroid2.STOP_RECORDING"
         const val CUSTOM_COMMAND_WARN_METERED = "net.programmierecke.radiodroid2.WARN_METERED"
-        const val CUSTOM_COMMAND_ENABLE_MPD = "net.programmierecke.radiodroid2.ENABLE_MPD"
-        const val CUSTOM_COMMAND_DISABLE_MPD = "net.programmierecke.radiodroid2.DISABLE_MPD"
 
         // Argument keys for the custom commands above.
         const val CMD_ARG_STATION = "station"
@@ -111,8 +107,6 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         const val CMD_ARG_PAUSE_REASON = "pause_reason"
         const val CMD_ARG_TIMER_SECONDS = "timer_seconds"
         const val CMD_ARG_PLAYER_TYPE = "player_type"
-        const val CMD_ARG_MPD_HOSTNAME = "mpd_hostname"
-        const val CMD_ARG_MPD_PORT = "mpd_port"
 
         // Keys for the radio-specific state published through the Media3 session extras. Media3's
         // standard player state cannot express these, so they are mirrored into sessionExtras and
@@ -136,7 +130,6 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         private const val FULL_VOLUME = 100f
         private const val DUCK_VOLUME = 40f
         private const val METERED_CONNECTION_WARNING_COOLDOWN = 20 * 1000
-        private const val AUDIO_WARNING_DURATION = 2000
         private const val SESSION_STATE_UPDATE_INTERVAL = 1000L
     }
 
@@ -162,9 +155,13 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
     // the whole service lifetime, independent of the ExoPlayer which is released on pause/stop.
     private lateinit var media3Session: Media3Session
     private lateinit var radioMediaPlayer: RadioMediaPlayer
-    private lateinit var powerManager: android.os.PowerManager
-    private var wakeLock: android.os.PowerManager.WakeLock? = null
-    private var wifiLock: WifiManager.WifiLock? = null
+
+    // Extracted service components (see Step 4 of the PlayerService refactor): each owns one of the
+    // cross-cutting concerns that used to be inlined here.
+    private lateinit var playbackLocks: PlaybackLocks
+    private lateinit var audioWarning: AudioWarning
+    private lateinit var trackHistoryUpdater: TrackHistoryUpdater
+    private lateinit var recordingController: RecordingController
 
     private val becomingNoisyReceiver = BecomingNoisyReceiver()
     private val headsetConnectionReceiver = HeadsetConnectionReceiver()
@@ -173,10 +170,6 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
     private var pauseReason = PauseReason.NONE
     private var lastErrorFromPlayer = -1
     private var lastMeteredConnectionWarningTime = 0L
-    private var toneGenerator: ToneGenerator? = null
-    private var toneGeneratorStopRunnable: Runnable? = null
-    private var timer: CountDownTimer? = null
-    private var seconds = 0L
     private var liveInfo: StreamLiveInfo = StreamLiveInfo(null)
     private var streamInfo: ShoutcastInfo? = null
     private var isHls = false
@@ -273,12 +266,6 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         override fun getPauseReason(): PauseReason = this@PlayerService.pauseReason
 
         @Throws(RemoteException::class)
-        override fun enableMPD(hostname: String, port: Int) {}
-
-        @Throws(RemoteException::class)
-        override fun disableMPD() {}
-
-        @Throws(RemoteException::class)
         override fun warnAboutMeteredConnection(playerType: PlayerType) {
             this@PlayerService.warnAboutMeteredConnection(playerType)
         }
@@ -330,8 +317,6 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
                 .add(SessionCommand(CUSTOM_COMMAND_START_RECORDING, Bundle.EMPTY))
                 .add(SessionCommand(CUSTOM_COMMAND_STOP_RECORDING, Bundle.EMPTY))
                 .add(SessionCommand(CUSTOM_COMMAND_WARN_METERED, Bundle.EMPTY))
-                .add(SessionCommand(CUSTOM_COMMAND_ENABLE_MPD, Bundle.EMPTY))
-                .add(SessionCommand(CUSTOM_COMMAND_DISABLE_MPD, Bundle.EMPTY))
                 .build()
             return Media3Session.ConnectionResult.AcceptedResultBuilder(session)
                 .setAvailableSessionCommands(sessionCommands)
@@ -370,8 +355,6 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
                 CUSTOM_COMMAND_WARN_METERED ->
                     BundleCompat.getParcelable(args, CMD_ARG_PLAYER_TYPE, PlayerType::class.java)
                         ?.let { warnAboutMeteredConnection(it) }
-                CUSTOM_COMMAND_ENABLE_MPD -> {}
-                CUSTOM_COMMAND_DISABLE_MPD -> {}
             }
             return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
         }
@@ -412,36 +395,40 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         }
     }
 
-    private fun getTimerSeconds(): Long = seconds
+    private val sleepTimer = SleepTimer(object : SleepTimer.Callback {
+        override fun onTick() {
+            if (BuildConfig.DEBUG) Log.d(TAG, "${sleepTimer.seconds}")
+            sendBroadCast(PLAYER_SERVICE_TIMER_UPDATE)
+            publishSessionState()
+        }
+
+        override fun onFinish() {
+            stop()
+        }
+    })
+
+    // Turns the metered-connection warning tone starting/finishing into the matching media-session
+    // playback states, preserving the visual feedback the inlined logic produced.
+    private val audioWarningCallback = object : AudioWarning.Callback {
+        override fun onWarningStarted() {
+            setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING)
+        }
+
+        override fun onWarningFinished() {
+            setMediaPlaybackState(PlaybackStateCompat.STATE_ERROR)
+        }
+    }
+
+    private fun getTimerSeconds(): Long = sleepTimer.seconds
 
     private fun clearTimer() {
-        if (timer != null) {
-            timer!!.cancel()
-            timer = null
-            seconds = 0
+        if (sleepTimer.clear()) {
             sendBroadCast(PLAYER_SERVICE_TIMER_UPDATE)
             publishSessionState()
         }
     }
 
-    private fun addTimer(secondsAdd: Int) {
-        timer?.cancel()
-        timer = null
-        seconds += secondsAdd
-
-        timer = object : CountDownTimer(seconds * 1000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                seconds = millisUntilFinished / 1000
-                if (BuildConfig.DEBUG) Log.d(TAG, "$seconds")
-                sendBroadCast(PLAYER_SERVICE_TIMER_UPDATE)
-                publishSessionState()
-            }
-            override fun onFinish() {
-                stop()
-                timer = null
-            }
-        }.start()
-    }
+    private fun addTimer(secondsAdd: Int) = sleepTimer.add(secondsAdd)
 
     /**
      * The Media3 [MediaSessionService] returns null from [onBind] for anything other than a media
@@ -466,13 +453,15 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this)
         handler = Handler(mainLooper)
         itsContext = this
-        timer = null
-        powerManager = itsContext.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
         audioManager = itsContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         radioIcon = ResourcesCompat.getDrawable(resources, R.drawable.ic_launcher, null) as BitmapDrawable
 
+        playbackLocks = PlaybackLocks(this)
+        audioWarning = AudioWarning(handler, audioWarningCallback)
+
         radioPlayer = RadioPlayer(this)
         radioPlayer.setPlayerListener(this)
+        recordingController = RecordingController(this, (application as RadioDroidApp).recordingsManager, radioPlayer)
 
         mediaSessionCallback = MediaSessionCallback(this, playbackControls)
         mediaSession = MediaSessionCompat(baseContext, baseContext.packageName)
@@ -502,6 +491,7 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
 
         val radioDroidApp = application as RadioDroidApp
         trackHistoryRepository = radioDroidApp.trackHistoryRepository
+        trackHistoryUpdater = TrackHistoryUpdater(trackHistoryRepository)
 
         val headsetConnectionFilter = IntentFilter().apply {
             addAction(Intent.ACTION_HEADSET_PLUG)
@@ -616,7 +606,7 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
             enableMediaSession()
             liveInfo = StreamLiveInfo(null)
             streamInfo = null
-            acquireWakeLockAndWifiLock()
+            playbackLocks.acquire()
             currentStation?.let { radioPlayer.play(it, isAlarm) }
         }
     }
@@ -631,7 +621,7 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
             lastMeteredConnectionWarningTime = System.currentTimeMillis()
         }
 
-        releaseWakeLockAndWifiLock()
+        playbackLocks.release()
 
         if (pauseReason != PauseReason.FOCUS_LOSS_TRANSIENT) {
             releaseAudioFocus()
@@ -708,7 +698,7 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         releaseAudioFocus()
         disableMediaSession()
         radioPlayer.stop()
-        releaseWakeLockAndWifiLock()
+        playbackLocks.release()
         clearTimer()
         // Move the Media3 facade to idle so the service leaves the foreground and removes the
         // notification.
@@ -717,28 +707,23 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
     }
 
     private fun startRecording() {
-        if (!::radioPlayer.isInitialized) return
-        val recordingsManager = (application as RadioDroidApp).recordingsManager
-        recordingsManager.record(this, radioPlayer)
+        if (!::recordingController.isInitialized) return
+        recordingController.start()
         sendBroadCast(PLAYER_SERVICE_META_UPDATE)
         publishSessionState()
     }
 
     private fun stopRecording() {
-        if (!::radioPlayer.isInitialized) return
-        val recordingsManager = (application as RadioDroidApp).recordingsManager
-        recordingsManager.stopRecording(radioPlayer)
+        if (!::recordingController.isInitialized) return
+        recordingController.stop()
         sendBroadCast(PLAYER_SERVICE_META_UPDATE)
         publishSessionState()
     }
 
-    private fun isRecording(): Boolean = ::radioPlayer.isInitialized && radioPlayer.isRecording()
+    private fun isRecording(): Boolean = ::recordingController.isInitialized && recordingController.isRecording()
 
-    private fun currentRecordFileName(): String? {
-        if (!::radioPlayer.isInitialized) return null
-        val recordingsManager = (application as RadioDroidApp).recordingsManager
-        return recordingsManager.getRecordingInfo(radioPlayer)?.fileName
-    }
+    private fun currentRecordFileName(): String? =
+        if (::recordingController.isInitialized) recordingController.currentFileName() else null
 
     private fun setMediaPlaybackState(state: Int) {
         if (!::mediaSession.isInitialized) return
@@ -815,51 +800,6 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         audioManager.abandonAudioFocus(afChangeListener)
     }
 
-    fun acquireWakeLockAndWifiLock() {
-        if (BuildConfig.DEBUG) Log.d(TAG, "acquiring wake lock and wifi lock.")
-
-        if (wakeLock == null) {
-            wakeLock = powerManager.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "PlayerService:")
-        }
-        if (!wakeLock!!.isHeld) {
-            wakeLock!!.acquire()
-        } else {
-            if (BuildConfig.DEBUG) Log.d(TAG, "wake lock is already acquired.")
-        }
-
-        val wm = itsContext.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
-        if (wm != null) {
-            if (wifiLock == null) {
-                wifiLock = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1) {
-                    wm.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "PlayerService")
-                } else {
-                    @Suppress("DEPRECATION")
-                    wm.createWifiLock(WifiManager.WIFI_MODE_FULL, "PlayerService")
-                }
-            }
-            if (!wifiLock!!.isHeld) {
-                wifiLock!!.acquire()
-            } else {
-                if (BuildConfig.DEBUG) Log.d(TAG, "wifi lock is already acquired.")
-            }
-        } else {
-            Log.e(TAG, "could not acquire wifi lock, WifiManager does not exist!")
-        }
-    }
-
-    private fun releaseWakeLockAndWifiLock() {
-        if (BuildConfig.DEBUG) Log.d(TAG, "releasing wake lock and wifi lock.")
-
-        if (wakeLock != null) {
-            if (wakeLock!!.isHeld) wakeLock!!.release()
-            wakeLock = null
-        }
-        if (wifiLock != null) {
-            if (wifiLock!!.isHeld) wifiLock!!.release()
-            wifiLock = null
-        }
-    }
-
     private fun toastOnUi(messageId: Int) {
         handler.post {
             Toast.makeText(itsContext, itsContext.resources.getString(messageId), Toast.LENGTH_SHORT).show()
@@ -906,7 +846,7 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         return Bundle().apply {
             putBoolean(STATE_IS_PLAYING, playerInitialized && radioPlayer.isPlaying())
             putParcelable(STATE_PLAYER_STATE, if (playerInitialized) radioPlayer.getPlayState() else PlayState.Idle)
-            putLong(STATE_TIMER_SECONDS, seconds)
+            putLong(STATE_TIMER_SECONDS, sleepTimer.seconds)
             putParcelable(STATE_METADATA_LIVE, liveInfo)
             putParcelable(STATE_CURRENT_STATION, station)
             putString(STATE_STATION_ID, station?.StationUuid)
@@ -1082,21 +1022,7 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
         stopMeteredConnectionListener()
         pause(PauseReason.METERED_CONNECTION)
 
-        handler.post {
-            setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING)
-            toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-            toneGenerator!!.startTone(ToneGenerator.TONE_SUP_RADIO_NOTAVAIL, AUDIO_WARNING_DURATION)
-        }
-
-        toneGeneratorStopRunnable = Runnable {
-            toneGenerator?.stopTone()
-            toneGenerator?.release()
-            toneGenerator = null
-            toneGeneratorStopRunnable = null
-            setMediaPlaybackState(PlaybackStateCompat.STATE_ERROR)
-        }
-
-        handler.postDelayed(toneGeneratorStopRunnable!!, AUDIO_WARNING_DURATION.toLong())
+        audioWarning.play()
 
         val broadcast = Intent().apply {
             action = PLAYER_SERVICE_METERED_CONNECTION
@@ -1108,16 +1034,7 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
     }
 
     private fun forceStopAudioWarning() {
-        if (toneGenerator != null) {
-            handler.removeCallbacks(toneGeneratorStopRunnable!!)
-            toneGeneratorStopRunnable = null
-
-            handler.post {
-                toneGenerator?.stopTone()
-                toneGenerator?.release()
-                toneGenerator = null
-            }
-        }
+        audioWarning.forceStop()
     }
 
     private fun startMeteredConnectionListener() {
@@ -1229,27 +1146,7 @@ class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
             sendBroadCast(PLAYER_SERVICE_META_UPDATE)
             updateNotification()
 
-            val currentTime = Calendar.getInstance().time
-
-            trackHistoryRepository.getLastInsertedHistoryItem { trackHistoryEntry, dao ->
-                if (trackHistoryEntry != null && trackHistoryEntry.title == liveInfo.title) {
-                    trackHistoryEntry.endTime = Date(0)
-                    dao.update(trackHistoryEntry)
-                } else {
-                    dao.setCurrentPlayingTrackEndTime(currentTime)
-
-                    val newTrackHistoryEntry = TrackHistoryEntry().apply {
-                        stationUuid = currentStation!!.StationUuid
-                        artist = liveInfo.artist
-                        title = liveInfo.title
-                        track = liveInfo.track
-                        stationIconUrl = currentStation!!.IconUrl
-                        startTime = currentTime
-                        endTime = Date(0)
-                    }
-                    trackHistoryRepository.insert(newTrackHistoryEntry)
-                }
-            }
+            currentStation?.let { trackHistoryUpdater.onTrackChanged(it, liveInfo) }
         }
     }
 }
