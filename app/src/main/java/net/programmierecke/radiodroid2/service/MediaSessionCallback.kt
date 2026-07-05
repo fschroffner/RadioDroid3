@@ -3,29 +3,23 @@ package net.programmierecke.radiodroid2.service
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.os.RemoteException
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import net.programmierecke.radiodroid2.IPlayerService
 import net.programmierecke.radiodroid2.RadioDroidApp
 import net.programmierecke.radiodroid2.utils.GetRealLinkAndPlayTask
 
 class MediaSessionCallback(
     private val context: Context,
-    private val playerService: IPlayerService
+    private val playbackControls: PlaybackControls
 ) : MediaSessionCompat.Callback() {
 
     override fun onMediaButtonEvent(mediaButtonEvent: Intent): Boolean {
         val event = mediaButtonEvent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)!!
         if (event.keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
             if (event.action == KeyEvent.ACTION_UP && !event.isLongPress) {
-                try {
-                    if (playerService.isPlaying) playerService.Pause(PauseReason.USER)
-                    else playerService.Resume()
-                } catch (e: RemoteException) {
-                    e.printStackTrace()
-                }
+                if (playbackControls.isPlaying()) playbackControls.pause(PauseReason.USER)
+                else playbackControls.resume()
             }
             return true
         }
@@ -33,23 +27,23 @@ class MediaSessionCallback(
     }
 
     override fun onPause() {
-        try { playerService.Pause(PauseReason.USER) } catch (e: RemoteException) { e.printStackTrace() }
+        playbackControls.pause(PauseReason.USER)
     }
 
     override fun onPlay() {
-        try { playerService.Resume() } catch (e: RemoteException) { e.printStackTrace() }
+        playbackControls.resume()
     }
 
     override fun onSkipToNext() {
-        try { playerService.SkipToNext() } catch (e: RemoteException) { e.printStackTrace() }
+        playbackControls.skipToNext()
     }
 
     override fun onSkipToPrevious() {
-        try { playerService.SkipToPrevious() } catch (e: RemoteException) { e.printStackTrace() }
+        playbackControls.skipToPrevious()
     }
 
     override fun onStop() {
-        try { playerService.Stop() } catch (e: RemoteException) { e.printStackTrace() }
+        playbackControls.stop()
     }
 
     override fun onPlayFromMediaId(mediaId: String, extras: Bundle?) {
@@ -67,7 +61,10 @@ class MediaSessionCallback(
             ?: app.historyManager.getBestNameMatch(cleanQuery)
             ?: app.fallbackStationsManager.getBestNameMatch(cleanQuery)
             ?: return
-        GetRealLinkAndPlayTask(context, station, playerService).execute()
+        GetRealLinkAndPlayTask(context, station) { readyStation ->
+            playbackControls.setStation(readyStation)
+            playbackControls.play(false)
+        }.execute()
     }
 
     companion object {

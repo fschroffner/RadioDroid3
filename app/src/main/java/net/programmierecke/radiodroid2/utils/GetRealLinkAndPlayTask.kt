@@ -2,8 +2,6 @@ package net.programmierecke.radiodroid2.utils
 
 import android.content.Context
 import android.os.AsyncTask
-import android.os.RemoteException
-import net.programmierecke.radiodroid2.IPlayerService
 import net.programmierecke.radiodroid2.RadioDroidApp
 import net.programmierecke.radiodroid2.Utils
 import net.programmierecke.radiodroid2.station.DataRadioStation
@@ -13,11 +11,19 @@ import java.lang.ref.WeakReference
 class GetRealLinkAndPlayTask(
     context: Context,
     private val station: DataRadioStation,
-    playerService: IPlayerService
+    private val stationReadyListener: StationReadyListener
 ) : AsyncTask<Void, Void, String?>() {
 
+    /**
+     * Invoked once the real (resolved) stream link is known so the caller can start playback. This
+     * decouples the task from any specific playback client (the removed AIDL binder or a Media3
+     * MediaController).
+     */
+    fun interface StationReadyListener {
+        fun onStationReady(station: DataRadioStation)
+    }
+
     private val contextRef = WeakReference(context)
-    private val playerServiceRef = WeakReference(playerService)
     private val httpClient = (context.applicationContext as RadioDroidApp).httpClient
 
     override fun doInBackground(vararg params: Void?): String? {
@@ -26,15 +32,9 @@ class GetRealLinkAndPlayTask(
     }
 
     override fun onPostExecute(result: String?) {
-        val playerService = playerServiceRef.get()
-        if (result != null && playerService != null && !isCancelled()) {
-            try {
-                station.playableUrl = result
-                playerService.SetStation(station)
-                playerService.Play(false)
-            } catch (e: RemoteException) {
-                e.printStackTrace()
-            }
+        if (result != null && !isCancelled) {
+            station.playableUrl = result
+            stationReadyListener.onStationReady(station)
         }
     }
 }

@@ -30,7 +30,14 @@ class RadioDroidBrowserService : MediaBrowserServiceCompat() {
                 val station = radioDroidBrowser.getStationById(stationId) ?: return
                 val ps = playerService ?: return
                 playTask?.cancel(false)
-                playTask = GetRealLinkAndPlayTask(context, station, ps).also { it.execute() }
+                playTask = GetRealLinkAndPlayTask(context, station) { readyStation ->
+                    try {
+                        ps.SetStation(readyStation)
+                        ps.Play(false)
+                    } catch (e: RemoteException) {
+                        e.printStackTrace()
+                    }
+                }.also { it.execute() }
             }
         }
     }
