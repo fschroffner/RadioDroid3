@@ -29,8 +29,8 @@ import net.programmierecke.radiodroid2.station.live.StreamLiveInfo
 /**
  * In-app entry point to the playback service.
  *
- * The service was previously reached through the AIDL [net.programmierecke.radiodroid2.IPlayerService]
- * binder. As part of the Media3 migration this now connects through a Media3 [MediaController]:
+ * The service was previously reached through an AIDL `IPlayerService` binder. As part of the Media3
+ * migration this now connects through a Media3 [MediaController]:
  *
  * - Transport and radio-specific actions are sent as custom [SessionCommand]s handled by
  *   [PlayerService].
@@ -196,6 +196,50 @@ object PlayerServiceUtil {
     fun setStation(station: DataRadioStation) {
         val args = Bundle().apply { putParcelable(PlayerService.CMD_ARG_STATION, station) }
         sendCommand(PlayerService.CUSTOM_COMMAND_SET_STATION, args)
+    }
+
+    /**
+     * Connects to the service if needed and, once the [MediaController] is ready, plays [station] as
+     * an alarm and arms the sleep timer for [timerSeconds]. [onStarted] runs on the main thread once
+     * the commands have been dispatched (or the connection failed). Used by
+     * net.programmierecke.radiodroid2.alarm.AlarmReceiver, which previously reached the service
+     * through the removed AIDL binder.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun playAlarm(
+        context: Context,
+        station: DataRadioStation,
+        timerSeconds: Int,
+        onStarted: Runnable? = null
+    ) {
+        val appCtx = context.applicationContext
+        connect(appCtx)
+        val future = controllerFuture
+        if (future == null) {
+            onStarted?.run()
+            return
+        }
+        future.addListener({
+            mediaController?.let { controller ->
+                val args = Bundle().apply {
+                    putParcelable(PlayerService.CMD_ARG_STATION, station)
+                    putBoolean(PlayerService.CMD_ARG_IS_ALARM, true)
+                }
+                controller.sendCustomCommand(
+                    SessionCommand(PlayerService.CUSTOM_COMMAND_PLAY_STATION, Bundle.EMPTY), args
+                )
+                if (timerSeconds > 0) {
+                    val timerArgs = Bundle().apply {
+                        putInt(PlayerService.CMD_ARG_TIMER_SECONDS, timerSeconds)
+                    }
+                    controller.sendCustomCommand(
+                        SessionCommand(PlayerService.CUSTOM_COMMAND_ADD_TIMER, Bundle.EMPTY), timerArgs
+                    )
+                }
+            }
+            onStarted?.run()
+        }, ContextCompat.getMainExecutor(appCtx))
     }
 
     @JvmStatic
