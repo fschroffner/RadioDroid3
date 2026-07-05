@@ -1,8 +1,5 @@
 package net.programmierecke.radiodroid2.service
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.bluetooth.BluetoothA2dp
 import android.bluetooth.BluetoothHeadset
@@ -10,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.content.pm.ServiceInfo
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
@@ -20,6 +16,7 @@ import android.media.ToneGenerator
 import android.media.audiofx.AudioEffect
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
 import android.os.IBinder
@@ -33,15 +30,22 @@ import android.util.Log
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.widget.Toast
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
+import androidx.media3.session.CommandButton
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession as Media3Session
+import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import androidx.preference.PreferenceManager
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 import com.squareup.picasso.Picasso
 import com.squareup.picasso.Target
 import net.programmierecke.radiodroid2.ActivityMain
@@ -62,15 +66,13 @@ import net.programmierecke.radiodroid2.recording.RunningRecordingInfo
 import net.programmierecke.radiodroid2.station.DataRadioStation
 import net.programmierecke.radiodroid2.station.live.ShoutcastInfo
 import net.programmierecke.radiodroid2.station.live.StreamLiveInfo
+import java.io.ByteArrayOutputStream
 import java.util.Calendar
 import java.util.Date
 
-class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerListener {
+class PlayerService : MediaSessionService(), RadioPlayer.PlayerListener {
 
     companion object {
-        protected const val NOTIFY_ID = 1
-        private const val NOTIFICATION_CHANNEL_ID = "default"
-
         const val METERED_CONNECTION_WARNING_KEY = "warn_no_wifi"
         const val PLAYER_SERVICE_NO_NOTIFICATION_EXTRA = "no_notification"
         const val PLAYER_SERVICE_TIMER_UPDATE = "net.programmierecke.radiodroid2.timerupdate"
@@ -80,6 +82,13 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         const val PLAYER_SERVICE_METERED_CONNECTION = "net.programmierecke.radiodroid2.metered_connection"
         const val PLAYER_SERVICE_METERED_CONNECTION_PLAYER_TYPE = "PLAYER_TYPE"
         const val PLAYER_SERVICE_BOUND = "net.programmierecke.radiodroid2.playerservicebound"
+
+        // Custom Media3 session commands backing the notification's radio-specific buttons.
+        // Station switching is not a timeline seek, so it is exposed as custom commands instead of
+        // the standard COMMAND_SEEK_TO_NEXT/PREVIOUS.
+        private const val CUSTOM_COMMAND_PREVIOUS = "net.programmierecke.radiodroid2.PREVIOUS"
+        private const val CUSTOM_COMMAND_NEXT = "net.programmierecke.radiodroid2.NEXT"
+        private const val CUSTOM_COMMAND_STOP = "net.programmierecke.radiodroid2.STOP"
 
         private const val FULL_VOLUME = 100f
         private const val DUCK_VOLUME = 40f
@@ -104,9 +113,11 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
     private lateinit var radioPlayer: RadioPlayer
     private lateinit var audioManager: AudioManager
     private lateinit var mediaSession: MediaSessionCompat
-    // Media3 session created in parallel to the legacy MediaSessionCompat during the
-    // step-by-step Media3 migration. Its lifecycle follows the underlying ExoPlayer.
-    private var media3Session: Media3Session? = null
+    // Persistent Media3 session that hosts the notification (via DefaultMediaNotificationProvider)
+    // and any external Media3 controllers. Its player is a RadioMediaPlayer facade that lives for
+    // the whole service lifetime, independent of the ExoPlayer which is released on pause/stop.
+    private lateinit var media3Session: Media3Session
+    private lateinit var radioMediaPlayer: RadioMediaPlayer
     private lateinit var powerManager: android.os.PowerManager
     private var wakeLock: android.os.PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
@@ -256,6 +267,46 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
 
     private var mediaSessionCallback: MediaSessionCompat.Callback? = null
 
+    // Routes commands coming from the Media3 session / notification (play/pause/stop) back into
+    // the existing radio playback logic.
+    private val radioMediaPlayerCallback = object : RadioMediaPlayer.Callback {
+        override fun onPlay() { resume() }
+        override fun onPause() { pause(PauseReason.USER) }
+        override fun onStop() { stop() }
+    }
+
+    // Grants the radio-specific custom commands and handles previous/next/stop presses from the
+    // Media3 notification buttons.
+    private val media3SessionCallback = object : Media3Session.Callback {
+        override fun onConnect(
+            session: Media3Session,
+            controller: Media3Session.ControllerInfo
+        ): Media3Session.ConnectionResult {
+            val sessionCommands = Media3Session.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                .add(SessionCommand(CUSTOM_COMMAND_PREVIOUS, Bundle.EMPTY))
+                .add(SessionCommand(CUSTOM_COMMAND_NEXT, Bundle.EMPTY))
+                .add(SessionCommand(CUSTOM_COMMAND_STOP, Bundle.EMPTY))
+                .build()
+            return Media3Session.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(sessionCommands)
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: Media3Session,
+            controller: Media3Session.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle
+        ): ListenableFuture<SessionResult> {
+            when (customCommand.customAction) {
+                CUSTOM_COMMAND_PREVIOUS -> previous()
+                CUSTOM_COMMAND_NEXT -> next()
+                CUSTOM_COMMAND_STOP -> stop()
+            }
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+        }
+    }
+
     private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         if (!radioPlayer.isLocal()) return@OnAudioFocusChangeListener
 
@@ -320,7 +371,22 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         }.start()
     }
 
-    override fun onBind(arg0: Intent): IBinder = itsBinder
+    /**
+     * The Media3 [MediaSessionService] returns null from [onBind] for anything other than a media
+     * session/browser connection, which would break the app's own [IPlayerService] binding. Serve
+     * the legacy AIDL binder for those requests and defer to the framework for Media3 clients.
+     */
+    override fun onBind(intent: Intent?): IBinder? {
+        val action = intent?.action
+        if (action == MediaSessionService.SERVICE_INTERFACE ||
+            action == "android.media.browse.MediaBrowserService"
+        ) {
+            return super.onBind(intent)
+        }
+        return itsBinder
+    }
+
+    override fun onGetSession(controllerInfo: Media3Session.ControllerInfo): Media3Session = media3Session
 
     override fun onCreate() {
         super.onCreate()
@@ -341,9 +407,26 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         mediaSession.setCallback(mediaSessionCallback)
 
         val startActivityIntent = Intent(itsContext.applicationContext, ActivityMain::class.java)
-        mediaSession.setSessionActivity(PendingIntent.getActivity(itsContext.applicationContext, 0, startActivityIntent, PendingIntent.FLAG_UPDATE_CURRENT or pendingIntentFlag))
+        val sessionActivityPendingIntent = PendingIntent.getActivity(
+            itsContext.applicationContext, 0, startActivityIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or pendingIntentFlag
+        )
+        mediaSession.setSessionActivity(sessionActivityPendingIntent)
 
         setMediaPlaybackState(PlaybackStateCompat.STATE_NONE)
+
+        // Persistent Media3 player facade + session that drive the notification.
+        radioMediaPlayer = RadioMediaPlayer(mainLooper, radioMediaPlayerCallback)
+        media3Session = Media3Session.Builder(this, radioMediaPlayer)
+            .setId("RadioDroidPlayerService")
+            .setCallback(media3SessionCallback)
+            .setCustomLayout(buildCustomLayout())
+            .setSessionActivity(sessionActivityPendingIntent)
+            .build()
+
+        val notificationProvider = DefaultMediaNotificationProvider.Builder(this).build()
+        notificationProvider.setSmallIcon(R.drawable.ic_play_arrow_white_24dp)
+        setMediaNotificationProvider(notificationProvider)
 
         val radioDroidApp = application as RadioDroidApp
         trackHistoryRepository = radioDroidApp.trackHistoryRepository
@@ -354,25 +437,35 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
         }
         registerReceiver(headsetConnectionReceiver, headsetConnectionFilter)
-
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationChannel = NotificationChannel(NOTIFICATION_CHANNEL_ID, "RadioDroid2 Player", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Channel description"
-                enableLights(false)
-                enableVibration(false)
-            }
-            notificationManager.createNotificationChannel(notificationChannel)
-        }
     }
+
+    private fun buildCustomLayout(): List<CommandButton> = listOf(
+        CommandButton.Builder()
+            .setSessionCommand(SessionCommand(CUSTOM_COMMAND_PREVIOUS, Bundle.EMPTY))
+            .setIconResId(R.drawable.ic_skip_previous_24dp)
+            .setDisplayName(getString(R.string.action_skip_to_previous))
+            .build(),
+        CommandButton.Builder()
+            .setSessionCommand(SessionCommand(CUSTOM_COMMAND_NEXT, Bundle.EMPTY))
+            .setIconResId(R.drawable.ic_skip_next_24dp)
+            .setDisplayName(getString(R.string.action_skip_to_next))
+            .build(),
+        CommandButton.Builder()
+            .setSessionCommand(SessionCommand(CUSTOM_COMMAND_STOP, Bundle.EMPTY))
+            .setIconResId(R.drawable.ic_stop_white_24dp)
+            .setDisplayName(getString(R.string.action_stop))
+            .build()
+    )
 
     override fun onDestroy() {
         if (BuildConfig.DEBUG) Log.d(TAG, "PlayService should be destroyed.")
         stop()
-        releaseMedia3Session()
+        media3Session.release()
+        radioMediaPlayer.release()
         mediaSession.release()
         radioPlayer.destroy()
         unregisterReceiver(headsetConnectionReceiver)
+        super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -387,58 +480,34 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             currentStation = radioDroidApp.favouriteManager.getFirst()
         }
 
-        var showNotification = true
-
         if (intent != null) {
-            val action = intent.action
-            if (action != null) {
-                when (action) {
-                    ACTION_SKIP_TO_PREVIOUS -> previous()
-                    ACTION_SKIP_TO_NEXT -> next()
-                    ACTION_STOP -> { stop(); return START_NOT_STICKY }
-                    ACTION_PAUSE -> pause(PauseReason.USER)
-                    ACTION_RESUME -> resume()
-                    Intent.ACTION_MEDIA_BUTTON -> {
-                        @Suppress("DEPRECATION")
-                        val key = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
-                        if (key != null && key.action == KeyEvent.ACTION_UP) {
-                            when (key.keyCode) {
-                                KeyEvent.KEYCODE_MEDIA_PLAY -> resume()
-                                KeyEvent.KEYCODE_MEDIA_NEXT -> next()
-                                KeyEvent.KEYCODE_MEDIA_PREVIOUS -> previous()
-                            }
+            when (intent.action) {
+                ACTION_SKIP_TO_PREVIOUS -> previous()
+                ACTION_SKIP_TO_NEXT -> next()
+                ACTION_STOP -> { stop(); return START_NOT_STICKY }
+                ACTION_PAUSE -> pause(PauseReason.USER)
+                ACTION_RESUME -> resume()
+                Intent.ACTION_MEDIA_BUTTON -> {
+                    @Suppress("DEPRECATION")
+                    val key = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+                    if (key != null && key.action == KeyEvent.ACTION_UP) {
+                        when (key.keyCode) {
+                            KeyEvent.KEYCODE_MEDIA_PLAY -> resume()
+                            KeyEvent.KEYCODE_MEDIA_NEXT -> next()
+                            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> previous()
                         }
                     }
                 }
             }
 
             MediaButtonReceiver.handleIntent(mediaSession, intent)
-            showNotification = !intent.getBooleanExtra(PLAYER_SERVICE_NO_NOTIFICATION_EXTRA, false)
         }
 
-        if (showNotification && !notificationIsActive) {
-            if (currentStation == null) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val channel = NotificationChannel(NOTIFICATION_CHANNEL_ID, "Temporary", NotificationManager.IMPORTANCE_DEFAULT)
-                    (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
-                    val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                        .setContentTitle("").setContentText("").build()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        startForeground(NOTIFY_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-                    } else {
-                        startForeground(NOTIFY_ID, notification)
-                    }
-                    stopForeground(true)
-                } else {
-                    stopSelf()
-                    return START_NOT_STICKY
-                }
-            } else {
-                updateNotification(PlayState.Paused)
-            }
-        }
-
-        return super.onStartCommand(intent, flags, startId)
+        // Let MediaSessionService process its own media-button/session intents. The foreground
+        // notification is now managed by the service via DefaultMediaNotificationProvider, driven
+        // by the RadioMediaPlayer facade state.
+        super.onStartCommand(intent, flags, startId)
+        return START_STICKY
     }
 
     private fun playWithoutWarnings(station: DataRadioStation) {
@@ -564,7 +633,9 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         radioPlayer.stop()
         releaseWakeLockAndWifiLock()
         clearTimer()
-        stopForeground(true)
+        // Move the Media3 facade to idle so the service leaves the foreground and removes the
+        // notification.
+        updateNotification(PlayState.Idle)
         stopMeteredConnectionListener()
     }
 
@@ -624,34 +695,6 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             mediaSession.isActive = false
             unregisterReceiver(becomingNoisyReceiver)
         }
-    }
-
-    /**
-     * Keeps the parallel Media3 session in sync with the ExoPlayer lifecycle. The ExoPlayer is
-     * created lazily when playback starts and released on pause/stop, so the session is built
-     * once a player is available and released once it is gone. Must run on the main thread.
-     */
-    private fun syncMedia3Session(state: PlayState) {
-        val player = radioPlayer.getMedia3Player()
-        if (player != null && (state == PlayState.Playing || state == PlayState.PrePlaying)) {
-            val session = media3Session
-            if (session == null) {
-                media3Session = Media3Session.Builder(this, player).build()
-                if (BuildConfig.DEBUG) Log.d(TAG, "created parallel Media3 session.")
-            } else if (session.player !== player) {
-                session.player = player
-            }
-        } else {
-            releaseMedia3Session()
-        }
-    }
-
-    private fun releaseMedia3Session() {
-        media3Session?.let {
-            if (BuildConfig.DEBUG) Log.d(TAG, "releasing parallel Media3 session.")
-            it.release()
-        }
-        media3Session = null
     }
 
     private fun acquireAudioFocus(): Int {
@@ -716,81 +759,6 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         }
     }
 
-    private fun sendMessage(theTitle: String, theMessage: String, theTicker: String) {
-        val notificationIntent = Intent(itsContext, ActivityMain::class.java).apply {
-            putExtra("stationid", currentStation!!.StationUuid)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        val stopIntent = Intent(itsContext, PlayerService::class.java).apply { action = ACTION_STOP }
-        val pendingIntentStop = PendingIntent.getService(itsContext, 0, stopIntent, pendingIntentFlag)
-
-        val nextIntent = Intent(itsContext, PlayerService::class.java).apply { action = ACTION_SKIP_TO_NEXT }
-        val pendingIntentNext = PendingIntent.getService(itsContext, 0, nextIntent, pendingIntentFlag)
-
-        val previousIntent = Intent(itsContext, PlayerService::class.java).apply { action = ACTION_SKIP_TO_PREVIOUS }
-        val pendingIntentPrevious = PendingIntent.getService(itsContext, 0, previousIntent, pendingIntentFlag)
-
-        val currentPlayerState = radioPlayer.getPlayState()
-
-        var message = theMessage
-        if ((currentPlayerState == PlayState.Paused || currentPlayerState == PlayState.Idle)
-                && pauseReason == PauseReason.METERED_CONNECTION) {
-            message = itsContext.resources.getString(R.string.notify_metered_connection)
-        } else if (lastErrorFromPlayer != -1) {
-            try {
-                message = itsContext.resources.getString(lastErrorFromPlayer)
-            } catch (ex: Resources.NotFoundException) {
-                Log.e(TAG, "Unknown play error: $lastErrorFromPlayer", ex)
-            }
-        }
-
-        val contentIntent = PendingIntent.getActivity(itsContext, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT or pendingIntentFlag)
-        val notificationBuilder = NotificationCompat.Builder(itsContext, NOTIFICATION_CHANNEL_ID)
-            .setContentIntent(contentIntent)
-            .setContentTitle(theTitle)
-            .setContentText(message)
-            .setWhen(System.currentTimeMillis())
-            .setTicker(theTicker)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setSmallIcon(R.drawable.ic_play_arrow_white_24dp)
-            .setLargeIcon(radioIcon.bitmap)
-            .addAction(R.drawable.ic_stop_white_24dp, getString(R.string.action_stop), pendingIntentStop)
-            .addAction(R.drawable.ic_skip_previous_24dp, getString(R.string.action_skip_to_previous), pendingIntentPrevious)
-
-        if (currentPlayerState == PlayState.Playing || currentPlayerState == PlayState.PrePlaying) {
-            val pauseIntent = Intent(itsContext, PlayerService::class.java).apply { action = ACTION_PAUSE }
-            val pendingIntentPause = PendingIntent.getService(itsContext, 0, pauseIntent, pendingIntentFlag)
-            notificationBuilder.addAction(R.drawable.ic_pause_white_24dp, getString(R.string.action_pause), pendingIntentPause)
-            notificationBuilder.setUsesChronometer(true).setOngoing(true)
-        } else if (currentPlayerState == PlayState.Paused || currentPlayerState == PlayState.Idle) {
-            val resumeIntent = Intent(itsContext, PlayerService::class.java).apply { action = ACTION_RESUME }
-            val pendingIntentResume = PendingIntent.getService(itsContext, 0, resumeIntent, pendingIntentFlag)
-            notificationBuilder.addAction(R.drawable.ic_play_arrow_white_24dp, getString(R.string.action_resume), pendingIntentResume)
-            notificationBuilder.setUsesChronometer(false).setDeleteIntent(pendingIntentStop).setOngoing(false)
-        }
-
-        notificationBuilder.addAction(R.drawable.ic_skip_next_24dp, getString(R.string.action_skip_to_next), pendingIntentNext)
-            .setStyle(MediaStyle()
-                .setMediaSession(mediaSession.sessionToken)
-                .setShowActionsInCompactView(1, 2, 3)
-                .setCancelButtonIntent(pendingIntentStop)
-                .setShowCancelButton(true))
-
-        val notification: Notification = notificationBuilder.build()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFY_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-        } else {
-            startForeground(NOTIFY_ID, notification)
-        }
-        notificationIsActive = true
-
-        if (currentPlayerState == PlayState.Paused || currentPlayerState == PlayState.Idle) {
-            stopForeground(false)
-        }
-    }
-
     private fun toastOnUi(messageId: Int) {
         handler.post {
             Toast.makeText(itsContext, itsContext.resources.getString(messageId), Toast.LENGTH_SHORT).show()
@@ -801,51 +769,20 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
         updateNotification(radioPlayer.getPlayState())
     }
 
+    /**
+     * Reflects the current radio [playState] onto both the legacy [MediaSessionCompat] (kept during
+     * the Media3 migration) and the Media3 [RadioMediaPlayer] facade. The facade in turn drives the
+     * foreground notification rendered by [DefaultMediaNotificationProvider].
+     */
     private fun updateNotification(playState: PlayState) {
         when (playState) {
-            PlayState.Idle -> {
-                NotificationManagerCompat.from(this).cancel(NOTIFY_ID)
-                setMediaPlaybackState(PlaybackStateCompat.STATE_NONE)
-            }
-            PlayState.PrePlaying -> {
-                sendMessage(currentStation!!.Name,
-                    itsContext.resources.getString(R.string.notify_pre_play),
-                    itsContext.resources.getString(R.string.notify_pre_play))
-                setMediaPlaybackState(PlaybackStateCompat.STATE_BUFFERING)
-            }
+            PlayState.Idle -> setMediaPlaybackState(PlaybackStateCompat.STATE_NONE)
+            PlayState.PrePlaying -> setMediaPlaybackState(PlaybackStateCompat.STATE_BUFFERING)
             PlayState.Playing -> {
-                val title = liveInfo.title
-                if (!TextUtils.isEmpty(title)) {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "update message:$title")
-                    sendMessage(currentStation!!.Name, title, title)
-                } else {
-                    sendMessage(currentStation!!.Name, itsContext.resources.getString(R.string.notify_play), currentStation!!.Name)
-                }
-
-                if (::mediaSession.isInitialized) {
-                    val builder = MediaMetadataCompat.Builder()
-                    builder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, -1)
-                    builder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, currentStation!!.Name)
-                    builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, liveInfo.artist)
-                    builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.track)
-                    if (liveInfo.hasArtistAndTrack()) {
-                        builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, liveInfo.artist)
-                        builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.track)
-                    } else {
-                        builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.title)
-                        builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, currentStation!!.Name)
-                    }
-                    builder.putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, radioIcon.bitmap)
-                    builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, radioIcon.bitmap)
-                    mediaSession.setMetadata(builder.build())
-                }
-
+                updateLegacyMetadata()
                 setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING)
             }
             PlayState.Paused -> {
-                sendMessage(currentStation!!.Name,
-                    itsContext.resources.getString(R.string.notify_paused),
-                    currentStation!!.Name)
                 if (lastErrorFromPlayer != -1) {
                     setMediaPlaybackState(PlaybackStateCompat.STATE_ERROR)
                 } else {
@@ -853,6 +790,106 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
                 }
             }
         }
+
+        updateMedia3PlayerState(playState)
+    }
+
+    private fun updateLegacyMetadata() {
+        if (!::mediaSession.isInitialized) return
+        val station = currentStation ?: return
+
+        val builder = MediaMetadataCompat.Builder()
+        builder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, -1)
+        builder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, station.Name)
+        if (liveInfo.hasArtistAndTrack()) {
+            builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, liveInfo.artist)
+            builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.track)
+        } else {
+            builder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, liveInfo.title)
+            builder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, station.Name)
+        }
+        builder.putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, radioIcon.bitmap)
+        builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, radioIcon.bitmap)
+        mediaSession.setMetadata(builder.build())
+    }
+
+    private fun updateMedia3PlayerState(playState: PlayState) {
+        if (!::radioMediaPlayer.isInitialized) return
+
+        val station = currentStation
+        if (playState == PlayState.Idle || station == null) {
+            notificationIsActive = false
+            radioMediaPlayer.update(Player.STATE_IDLE, false, null, MediaMetadata.EMPTY)
+            return
+        }
+
+        // A non-idle state means the MediaSessionService keeps a foreground notification up. This
+        // flag lets ActivityMain decide whether tearing down its UI should also stop the service.
+        notificationIsActive = true
+
+        val statusText = notificationStatusText(playState)
+        val metadataBuilder = MediaMetadata.Builder()
+            .setTitle(station.Name)
+            .setStation(station.Name)
+            .setArtist(statusText)
+        bitmapToPng(radioIcon.bitmap)?.let {
+            metadataBuilder.setArtworkData(it, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+        }
+        val metadata = metadataBuilder.build()
+
+        val mediaItem = MediaItem.Builder()
+            .setMediaId(station.StationUuid)
+            .setMediaMetadata(metadata)
+            .build()
+
+        val (state, playWhenReady) = when (playState) {
+            PlayState.PrePlaying -> Player.STATE_BUFFERING to true
+            PlayState.Playing -> Player.STATE_READY to true
+            PlayState.Paused -> Player.STATE_READY to false
+            PlayState.Idle -> Player.STATE_IDLE to false
+        }
+
+        radioMediaPlayer.update(state, playWhenReady, mediaItem, metadata)
+    }
+
+    /**
+     * Text shown as the second line of the notification, mirroring the messages the old custom
+     * notification used to display (live track, metered-connection warning or playback errors).
+     */
+    private fun notificationStatusText(playState: PlayState): String {
+        val res = itsContext.resources
+        val currentPlayerState = radioPlayer.getPlayState()
+
+        if ((currentPlayerState == PlayState.Paused || currentPlayerState == PlayState.Idle)
+                && pauseReason == PauseReason.METERED_CONNECTION) {
+            return res.getString(R.string.notify_metered_connection)
+        }
+
+        if (lastErrorFromPlayer != -1) {
+            try {
+                return res.getString(lastErrorFromPlayer)
+            } catch (ex: Resources.NotFoundException) {
+                Log.e(TAG, "Unknown play error: $lastErrorFromPlayer", ex)
+            }
+        }
+
+        return when (playState) {
+            PlayState.PrePlaying -> res.getString(R.string.notify_pre_play)
+            PlayState.Playing ->
+                if (!TextUtils.isEmpty(liveInfo.title)) liveInfo.title else res.getString(R.string.notify_play)
+            PlayState.Paused -> res.getString(R.string.notify_paused)
+            PlayState.Idle -> ""
+        }
+    }
+
+    private fun bitmapToPng(bitmap: Bitmap): ByteArray? = try {
+        ByteArrayOutputStream().use { stream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            stream.toByteArray()
+        }
+    } catch (e: Exception) {
+        Log.e(TAG, "Could not encode notification artwork", e)
+        null
     }
 
     private fun downloadRadioIcon() {
@@ -981,7 +1018,6 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             }
 
             updateNotification(state)
-            syncMedia3Session(state)
 
             val intent = Intent().apply {
                 action = PLAYER_SERVICE_STATE_CHANGE
@@ -1056,9 +1092,5 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
                 }
             }
         }
-    }
-
-    override fun onHandleWork(intent: Intent) {
-        Log.d(TAG, "onHandleWork called with intent: $intent")
     }
 }
