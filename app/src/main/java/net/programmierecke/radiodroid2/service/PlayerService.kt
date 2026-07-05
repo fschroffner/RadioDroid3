@@ -40,6 +40,7 @@ import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
+import androidx.media3.session.MediaSession as Media3Session
 import androidx.preference.PreferenceManager
 import com.squareup.picasso.Picasso
 import com.squareup.picasso.Target
@@ -103,6 +104,9 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
     private lateinit var radioPlayer: RadioPlayer
     private lateinit var audioManager: AudioManager
     private lateinit var mediaSession: MediaSessionCompat
+    // Media3 session created in parallel to the legacy MediaSessionCompat during the
+    // step-by-step Media3 migration. Its lifecycle follows the underlying ExoPlayer.
+    private var media3Session: Media3Session? = null
     private lateinit var powerManager: android.os.PowerManager
     private var wakeLock: android.os.PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
@@ -365,6 +369,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
     override fun onDestroy() {
         if (BuildConfig.DEBUG) Log.d(TAG, "PlayService should be destroyed.")
         stop()
+        releaseMedia3Session()
         mediaSession.release()
         radioPlayer.destroy()
         unregisterReceiver(headsetConnectionReceiver)
@@ -619,6 +624,34 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             mediaSession.isActive = false
             unregisterReceiver(becomingNoisyReceiver)
         }
+    }
+
+    /**
+     * Keeps the parallel Media3 session in sync with the ExoPlayer lifecycle. The ExoPlayer is
+     * created lazily when playback starts and released on pause/stop, so the session is built
+     * once a player is available and released once it is gone. Must run on the main thread.
+     */
+    private fun syncMedia3Session(state: PlayState) {
+        val player = radioPlayer.getMedia3Player()
+        if (player != null && (state == PlayState.Playing || state == PlayState.PrePlaying)) {
+            val session = media3Session
+            if (session == null) {
+                media3Session = Media3Session.Builder(this, player).build()
+                if (BuildConfig.DEBUG) Log.d(TAG, "created parallel Media3 session.")
+            } else if (session.player !== player) {
+                session.player = player
+            }
+        } else {
+            releaseMedia3Session()
+        }
+    }
+
+    private fun releaseMedia3Session() {
+        media3Session?.let {
+            if (BuildConfig.DEBUG) Log.d(TAG, "releasing parallel Media3 session.")
+            it.release()
+        }
+        media3Session = null
     }
 
     private fun acquireAudioFocus(): Int {
@@ -948,6 +981,7 @@ class PlayerService : androidx.core.app.JobIntentService(), RadioPlayer.PlayerLi
             }
 
             updateNotification(state)
+            syncMedia3Session(state)
 
             val intent = Intent().apply {
                 action = PLAYER_SERVICE_STATE_CHANGE

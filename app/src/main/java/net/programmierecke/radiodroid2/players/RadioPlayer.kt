@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
+import androidx.media3.common.Player
 import androidx.preference.PreferenceManager
 import net.programmierecke.radiodroid2.BuildConfig
 import net.programmierecke.radiodroid2.R
@@ -132,6 +133,12 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
     fun isPlaying() = playState == PlayState.PrePlaying || playState == PlayState.Playing
 
     fun getAudioSessionId() = currentPlayer.getAudioSessionId()
+
+    /**
+     * Returns the underlying Media3 [Player] when the active backend is the ExoPlayer and
+     * playback resources are allocated, otherwise null. Used to back a Media3 MediaSession.
+     */
+    fun getMedia3Player(): Player? = (currentPlayer as? ExoPlayerWrapper)?.getMedia3Player()
 
     fun setVolume(volume: Float) = currentPlayer.setVolume(volume)
 

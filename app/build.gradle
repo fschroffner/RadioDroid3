@@ -151,6 +151,7 @@ dependencies {
     implementation 'jp.wasabeef:picasso-transformations:2.4.0'
     implementation "androidx.media3:media3-exoplayer:$media3Version"
     implementation "androidx.media3:media3-exoplayer-hls:$media3Version"
+    implementation "androidx.media3:media3-session:$media3Version"
     implementation "com.mikepenz:iconics-core:$iconicsVersion"
     implementation "com.mikepenz:iconics-views:$iconicsVersion"
     implementation 'com.mikepenz:google-material-typeface:3.0.1.4.original-kotlin@aar'
