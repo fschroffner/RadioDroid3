@@ -89,7 +89,19 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
     fun getFirst() = if (listStations.isNotEmpty()) listStations.first() else null
 
-    fun getById(id: String) = listStations.firstOrNull { it.StationUuid == id }
+    fun getById(id: String): DataRadioStation? {
+        // Index-based lookup (like getNextById/getPreviousById) instead of an
+        // iterator, so a concurrent modification of listStations - e.g. the list
+        // being updated while a RecyclerView binds and calls has() - cannot throw
+        // ConcurrentModificationException.
+        var i = 0
+        while (i < listStations.size) {
+            val station = listStations.getOrNull(i) ?: break
+            if (station.StationUuid == id) return station
+            i++
+        }
+        return null
+    }
 
     fun getNextById(id: String): DataRadioStation? {
         if (listStations.isEmpty()) return null

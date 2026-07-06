@@ -2,6 +2,7 @@ package com.github.fschroffner.radiodroid3.tests
 
 import android.app.Application
 import android.content.Intent
+import android.os.Build
 import android.os.StrictMode
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnitRunner
@@ -14,6 +15,7 @@ import com.github.fschroffner.radiodroid3.tests.utils.http.HttpToMockInterceptor
 import com.github.fschroffner.radiodroid3.tests.utils.http.MockHttpDispatcher
 import okhttp3.mockwebserver.MockWebServer
 import java.io.IOException
+import java.net.InetAddress
 
 class CustomTestRunner : AndroidJUnitRunner() {
 
@@ -32,9 +34,26 @@ class CustomTestRunner : AndroidJUnitRunner() {
     }
 
     override fun onStart() {
+        // Must run before super.onStart(), which is where the tests are actually
+        // executed. Granting the notification permission here prevents the runtime
+        // permission dialog from pausing the activity during the tests.
+        grantRuntimePermissions()
+
         super.onStart()
 
         clearUnintendedDialogs()
+    }
+
+    private fun grantRuntimePermissions() {
+        // ActivityMain requests POST_NOTIFICATIONS at runtime on Android 13+. The
+        // resulting system dialog pauses the activity, so Espresso interactions fail
+        // with NoActivityResumedException. Pre-grant it so no dialog is shown.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            uiAutomation.grantRuntimePermission(
+                targetContext.packageName,
+                "android.permission.POST_NOTIFICATIONS"
+            )
+        }
     }
 
     fun setCustomRequestDispatcher(customRequestDispatcher: MockHttpDispatcher.CustomRequestDispatcher?) {
@@ -60,7 +79,11 @@ class CustomTestRunner : AndroidJUnitRunner() {
         mockWebServer.dispatcher = mockHttpDispatcher
 
         try {
-            mockWebServer.start()
+            // Bind to the numeric loopback address instead of relying on
+            // MockWebServer's default, which resolves "localhost" via DNS.
+            // Some emulator images fail that lookup (EAI_NODATA), crashing the
+            // whole instrumentation process before any test runs.
+            mockWebServer.start(InetAddress.getByName("127.0.0.1"), 0)
         } catch (e: IOException) {
             e.printStackTrace()
             throw RuntimeException(e)
