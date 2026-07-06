@@ -10,7 +10,7 @@ import org.junit.Assert.assertThat
 
 class RecyclerViewItemCountAssertion private constructor(private val matcher: Matcher<Int>) : ViewAssertion {
 
-    override fun check(view: View, noViewFoundException: NoMatchingViewException?) {
+    override fun check(view: View?, noViewFoundException: NoMatchingViewException?) {
         if (noViewFoundException != null) {
             throw noViewFoundException
         }

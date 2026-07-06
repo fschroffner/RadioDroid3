@@ -34,11 +34,12 @@ class RecyclerViewMatcher(private val recyclerViewId: Int) {
 
                 if (childView == null) {
                     val recyclerView = view.rootView.findViewById<RecyclerView>(recyclerViewId)
-                    if (recyclerView != null) {
-                        childView = recyclerView.findViewHolderForAdapterPosition(position)!!.itemView
-                    } else {
-                        return false
-                    }
+                    // The view holder may not be laid out yet when this matcher first
+                    // runs. Return false instead of throwing so Espresso keeps retrying
+                    // until the item at the requested position becomes available.
+                    val viewHolder = recyclerView?.findViewHolderForAdapterPosition(position)
+                        ?: return false
+                    childView = viewHolder.itemView
                 }
 
                 return if (targetViewId == -1) {
