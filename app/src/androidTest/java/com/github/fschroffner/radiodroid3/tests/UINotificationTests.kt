@@ -35,8 +35,9 @@ import org.junit.runner.RunWith
 @LargeTest
 @RunWith(AndroidJUnit4::class)
 // UI notifications currently only work with API 23+
-// On API 33+ notification depend on user choice permissions
-@SdkSuppress(minSdkVersion = 23, maxSdkVersion = 32)
+// On API 33+ POST_NOTIFICATIONS is a runtime permission; CustomTestRunner
+// pre-grants it before the tests run, so no user-choice dialog appears.
+@SdkSuppress(minSdkVersion = 23)
 class UINotificationTests {
 
     @get:Rule
@@ -77,6 +78,16 @@ class UINotificationTests {
         )
     }
 
+    // The play/pause button is the standard Media3 transport control rendered by
+    // DefaultMediaNotificationProvider, so its content description comes from Media3's
+    // own resources ("Play" when paused, "Pause" when playing) rather than the app's
+    // action_resume/action_pause strings. The custom stop button keeps the app string.
+    private fun playButtonDesc(): String =
+        appString(androidx.media3.session.R.string.media3_controls_play_description)
+
+    private fun pauseButtonDesc(): String =
+        appString(androidx.media3.session.R.string.media3_controls_pause_description)
+
     @Ignore
     @Test
     fun playback_ShouldStart_OnResumeFromNotification() {
@@ -86,14 +97,14 @@ class UINotificationTests {
         uiDevice.openNotification()
 
         expectRunningNotification(uiDevice)
-        uiDevice.wait(Until.hasObject(By.desc(appString(R.string.action_resume))), 2000)
+        uiDevice.wait(Until.hasObject(By.desc(playButtonDesc())), 2000)
 
-        val resumeBtn: UiObject2? = uiDevice.findObject(By.desc(appString(R.string.action_resume)))
+        val resumeBtn: UiObject2? = uiDevice.findObject(By.desc(playButtonDesc()))
         assertNotNull(resumeBtn)
 
         resumeBtn!!.click()
 
-        waitForObject(uiDevice, By.desc(appString(R.string.action_pause)))
+        waitForObject(uiDevice, By.desc(pauseButtonDesc()))
 
         ConditionWatcher.waitForCondition(IsMusicPlayingCondition(true), ConditionWatcher.SHORT_WAIT_POLICY)
     }
@@ -106,14 +117,14 @@ class UINotificationTests {
         uiDevice.openNotification()
 
         expectRunningNotification(uiDevice)
-        uiDevice.wait(Until.hasObject(By.desc(appString(R.string.action_pause))), 250)
+        uiDevice.wait(Until.hasObject(By.desc(pauseButtonDesc())), 250)
 
-        val pauseBtn: UiObject2? = uiDevice.findObject(By.desc(appString(R.string.action_pause)))
+        val pauseBtn: UiObject2? = uiDevice.findObject(By.desc(pauseButtonDesc()))
         assertNotNull(pauseBtn)
 
         pauseBtn!!.click()
 
-        waitForObject(uiDevice, By.desc(appString(R.string.action_resume)))
+        waitForObject(uiDevice, By.desc(playButtonDesc()))
 
         ConditionWatcher.waitForCondition(IsMusicPlayingCondition(false), ConditionWatcher.SHORT_WAIT_POLICY)
     }
