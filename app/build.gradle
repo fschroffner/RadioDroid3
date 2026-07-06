@@ -128,7 +128,7 @@ android {
 ext {
     media3Version = '1.5.1'
     iconicsVersion = '4.0.2'
-    hiltVersion = '2.56.2'
+    hiltVersion = '2.57.2'
 }
 
 dependencies {
