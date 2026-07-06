@@ -66,4 +66,4 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: adb uninstall net.programmierecke.radiodroid2.test || true; ./gradlew ${{ matrix.api-level > 29 && 'installPlayDebugAndroidTest' || 'connectedCheck' }}
+          script: adb uninstall com.github.fschroffner.radiodroid3.test || true; ./gradlew ${{ matrix.api-level > 29 && 'installPlayDebugAndroidTest' || 'connectedCheck' }}

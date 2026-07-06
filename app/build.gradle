@@ -71,7 +71,7 @@ android {
         def escapedLocales = getAvailableLocales().collect { "\"" + it + "\"" }
         buildConfigField "String[]", "AVAILABLE_LOCALES", String.format("{ %s }", escapedLocales.join(","))
 
-        testInstrumentationRunner "net.programmierecke.radiodroid2.tests.CustomTestRunner"
+        testInstrumentationRunner "com.github.fschroffner.radiodroid3.tests.CustomTestRunner"
 
         // The following argument makes the Android Test Orchestrator run its
         // "pm clear" command after each test invocation. This command ensures
@@ -113,7 +113,7 @@ android {
         abortOnError true
         disable 'MissingTranslation'
     }
-    namespace 'net.programmierecke.radiodroid2'
+    namespace 'com.github.fschroffner.radiodroid3'
 
     testOptions {
         execution 'ANDROIDX_TEST_ORCHESTRATOR'
