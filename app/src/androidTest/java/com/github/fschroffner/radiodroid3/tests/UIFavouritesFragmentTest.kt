@@ -163,8 +163,8 @@ class UIFavouritesFragmentTest {
         @JvmStatic
         @Parameterized.Parameters(name = "orientation={0}")
         fun initParameters(): Iterable<Array<Any>> = listOf(
-            arrayOf<Any>(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT),
-            arrayOf<Any>(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
+            arrayOf(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT),
+            arrayOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE)
         )
     }
 }
