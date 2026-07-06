@@ -13,7 +13,6 @@ import androidx.tvprovider.media.tv.*
 import net.programmierecke.radiodroid2.ActivityMain
 import net.programmierecke.radiodroid2.R
 import net.programmierecke.radiodroid2.RadioDroidApp
-import net.programmierecke.radiodroid2.service.MediaSessionCallback
 import java.io.IOException
 import java.util.*
 
@@ -90,11 +89,11 @@ class TvChannelManager(val app: RadioDroidApp) : Observer {
             } ?: PreviewProgram.Builder()
 
             val intent = Intent(
-                    MediaSessionCallback.ACTION_PLAY_STATION_BY_UUID,
+                    ActivityMain.ACTION_PLAY_STATION_BY_UUID,
                     null,
                     app,
                     ActivityMain::class.java
-            ).putExtra(MediaSessionCallback.EXTRA_STATION_UUID, station.StationUuid)
+            ).putExtra(ActivityMain.EXTRA_STATION_UUID, station.StationUuid)
 
             val program = with(programBuilder) {
                 setChannelId(channelId)

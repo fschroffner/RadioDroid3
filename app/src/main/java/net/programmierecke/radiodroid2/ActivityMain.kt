@@ -57,7 +57,6 @@ import net.programmierecke.radiodroid2.players.PlayStationTask
 import net.programmierecke.radiodroid2.players.mpd.MPDClient
 import net.programmierecke.radiodroid2.players.mpd.MPDServersRepository
 import net.programmierecke.radiodroid2.players.selector.PlayerType
-import net.programmierecke.radiodroid2.service.MediaSessionCallback
 import net.programmierecke.radiodroid2.service.PlayerService
 import net.programmierecke.radiodroid2.service.PlayerServiceUtil
 import net.programmierecke.radiodroid2.station.DataRadioStation
@@ -85,6 +84,10 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         const val FRAGMENT_FROM_BACKSTACK = 777
         const val ACTION_SHOW_LOADING = "net.programmierecke.radiodroid2.show_loading"
         const val ACTION_HIDE_LOADING = "net.programmierecke.radiodroid2.hide_loading"
+        // Intent action/extra used by launcher shortcuts and TV channel tiles to open the app and
+        // play a station by UUID. Previously lived on the now-removed MediaSessionCallback.
+        const val ACTION_PLAY_STATION_BY_UUID = "PLAY_STATION_BY_UUID"
+        const val EXTRA_STATION_UUID = "STATION_UUID"
         private const val TAG = "RadioDroid"
         const val PERM_REQ_STORAGE_FAV_SAVE = 1
         const val PERM_REQ_STORAGE_FAV_LOAD = 2
@@ -426,11 +429,11 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         val action = intent.action
         val extras = intent.extras ?: return
 
-        if (MediaSessionCallback.ACTION_PLAY_STATION_BY_UUID == action) {
+        if (ACTION_PLAY_STATION_BY_UUID == action) {
             val context = applicationContext
-            val stationUUID = extras.getString(MediaSessionCallback.EXTRA_STATION_UUID)
+            val stationUUID = extras.getString(EXTRA_STATION_UUID)
             if (TextUtils.isEmpty(stationUUID)) return
-            intent.removeExtra(MediaSessionCallback.EXTRA_STATION_UUID)
+            intent.removeExtra(EXTRA_STATION_UUID)
             val radioDroidApp = application as RadioDroidApp
             val httpClient = radioDroidApp.httpClient
 

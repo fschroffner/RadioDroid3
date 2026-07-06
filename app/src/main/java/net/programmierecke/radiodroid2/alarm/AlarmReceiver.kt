@@ -5,10 +5,8 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
@@ -16,21 +14,18 @@ import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.AsyncTask
 import android.os.Build
-import android.os.IBinder
 import android.os.PowerManager
-import android.os.RemoteException
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import net.programmierecke.radiodroid2.BuildConfig
-import net.programmierecke.radiodroid2.IPlayerService
 import net.programmierecke.radiodroid2.R
 import net.programmierecke.radiodroid2.RadioDroidApp
 import net.programmierecke.radiodroid2.Utils
 import net.programmierecke.radiodroid2.service.ConnectivityChecker
-import net.programmierecke.radiodroid2.service.PlayerService
+import net.programmierecke.radiodroid2.service.PlayerServiceUtil
 import net.programmierecke.radiodroid2.station.DataRadioStation
 
 class AlarmReceiver : BroadcastReceiver() {
@@ -40,27 +35,6 @@ class AlarmReceiver : BroadcastReceiver() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
     private var timeout = 10
-    private var itsPlayerService: IPlayerService? = null
-    private var playContext: Context? = null
-
-    private val svcConn = object : ServiceConnection {
-        override fun onServiceConnected(className: ComponentName, binder: IBinder) {
-            if (BuildConfig.DEBUG) Log.d(TAG, "Service came online")
-            itsPlayerService = IPlayerService.Stub.asInterface(binder)
-            try {
-                station!!.playableUrl = url
-                itsPlayerService!!.SetStation(station)
-                itsPlayerService!!.Play(true)
-                itsPlayerService!!.addTimer(timeout * 60)
-                (playContext!!.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(BACKUP_NOTIFICATION_ID)
-            } catch (e: RemoteException) { Log.e(TAG, "play error:$e") }
-            releaseLocks()
-        }
-        override fun onServiceDisconnected(className: ComponentName) {
-            if (BuildConfig.DEBUG) Log.d(TAG, "Service offline")
-            itsPlayerService = null
-        }
-    }
 
     override fun onReceive(context: Context, intent: Intent) {
         if (BuildConfig.DEBUG) Log.d(TAG, "received broadcast")
@@ -133,10 +107,12 @@ class AlarmReceiver : BroadcastReceiver() {
                             })
                             releaseLocks()
                         } else {
-                            playContext = context
-                            val anIntent = Intent(context, PlayerService::class.java)
-                            context.applicationContext.bindService(anIntent, svcConn, Context.BIND_AUTO_CREATE)
-                            context.applicationContext.startService(anIntent)
+                            val alarmStation = station!!.apply { playableUrl = url }
+                            PlayerServiceUtil.playAlarm(context, alarmStation, timeout * 60, Runnable {
+                                (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                                    .cancel(BACKUP_NOTIFICATION_ID)
+                                releaseLocks()
+                            })
                         }
                     } catch (e: Exception) { Log.e(TAG, "Error starting alarm intent $e"); playSystemAlarm(context) }
                 } else {

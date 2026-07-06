@@ -51,6 +51,10 @@ class RadioMediaPlayer(
             Player.COMMAND_GET_METADATA,
             Player.COMMAND_GET_CURRENT_MEDIA_ITEM,
             Player.COMMAND_GET_TIMELINE,
+            // Lets a browsing controller (e.g. Android Auto) "set" a station's media item to play it.
+            // The item is resolved and playback is started by PlayerService's session callback
+            // (onAddMediaItems); handleSetMediaItems below is therefore a no-op.
+            Player.COMMAND_SET_MEDIA_ITEM,
             Player.COMMAND_RELEASE
         )
         .build()
@@ -109,6 +113,19 @@ class RadioMediaPlayer(
 
     override fun handleStop(): ListenableFuture<*> {
         callback.onStop()
+        return Futures.immediateVoidFuture()
+    }
+
+    /**
+     * Browse-initiated playback is resolved and started by PlayerService's session callback
+     * (onAddMediaItems), which returns an empty list. The radio engine drives the timeline exposed
+     * through [getState], so there is nothing to apply here.
+     */
+    override fun handleSetMediaItems(
+        mediaItems: MutableList<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long
+    ): ListenableFuture<*> {
         return Futures.immediateVoidFuture()
     }
 

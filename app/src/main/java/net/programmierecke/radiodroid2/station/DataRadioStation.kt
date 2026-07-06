@@ -21,7 +21,6 @@ import net.programmierecke.radiodroid2.ActivityMain
 import net.programmierecke.radiodroid2.R
 import net.programmierecke.radiodroid2.StationSaveManager
 import net.programmierecke.radiodroid2.Utils
-import net.programmierecke.radiodroid2.service.MediaSessionCallback
 import okhttp3.OkHttpClient
 import org.json.JSONArray
 import org.json.JSONException
@@ -169,8 +168,8 @@ class DataRadioStation() : Parcelable {
     ) : Target {
         override fun onBitmapLoaded(bitmap: Bitmap, from: Picasso.LoadedFrom?) {
             if (Build.VERSION.SDK_INT >= 25) {
-                val intent = Intent(MediaSessionCallback.ACTION_PLAY_STATION_BY_UUID, null, ctx, ActivityMain::class.java)
-                    .putExtra(MediaSessionCallback.EXTRA_STATION_UUID, station.StationUuid)
+                val intent = Intent(ActivityMain.ACTION_PLAY_STATION_BY_UUID, null, ctx, ActivityMain::class.java)
+                    .putExtra(ActivityMain.EXTRA_STATION_UUID, station.StationUuid)
                 val shortcut = ShortcutInfo.Builder(ctx.applicationContext, "${ctx.packageName}/${station.StationUuid}")
                     .setShortLabel(station.Name)
                     .setIcon(Icon.createWithBitmap(bitmap))
