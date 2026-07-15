@@ -46,8 +46,8 @@ android {
     }
 
     buildFeatures {
-        viewBinding true
-        buildConfig true
+        viewBinding = true
+        buildConfig = true
     }
 
     defaultConfig {
@@ -58,7 +58,7 @@ android {
         versionCode 1
         versionName "1.0.0"
 
-        multiDexEnabled true
+        multiDexEnabled = true
         vectorDrawables.useSupportLibrary = true
 
         // Define your application name here.
@@ -80,7 +80,7 @@ android {
 
         buildConfigField "java.util.concurrent.atomic.AtomicBoolean", "IS_TESTING", "new java.util.concurrent.atomic.AtomicBoolean(false)"
 
-        multiDexKeepProguard file('multidex-config.pro')
+        multiDexKeepProguard = file('multidex-config.pro')
 
         vectorDrawables.useSupportLibrary = true
     }
@@ -110,13 +110,13 @@ android {
         }
     }
     lint {
-        abortOnError true
+        abortOnError = true
         disable 'MissingTranslation'
     }
-    namespace 'com.github.fschroffner.radiodroid3'
+    namespace = 'com.github.fschroffner.radiodroid3'
 
     testOptions {
-        execution 'ANDROIDX_TEST_ORCHESTRATOR'
+        execution = 'ANDROIDX_TEST_ORCHESTRATOR'
         unitTests.all {
             useJUnitPlatform()
         }

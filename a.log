@@ -1,0 +1,731 @@
+Run reactivecircus/android-emulator-runner@v2
+Configure emulator
+Install Android SDK
+Create AVD
+Launch Emulator
+/usr/bin/sh -c adb uninstall com.github.fschroffner.radiodroid3.test || true; ./gradlew connectedCheck
+Failure [DELETE_FAILED_INTERNAL_ERROR]
+Downloading https://services.gradle.org/distributions/gradle-9.2.1-bin.zip
+............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+
+Welcome to Gradle 9.2.1!
+
+Here are the highlights of this release:
+ - Windows ARM support
+ - Improved publishing APIs
+ - Better guidance for dependency verification failures
+
+For more details see https://docs.gradle.org/9.2.1/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Configure project :app
+WARNING: The option setting 'android.usesSdkInManifest.disallowed=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.sdk.defaultTargetSdkToCompileSdkIfUnset=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.enableAppCompileTimeRClass=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.builtInKotlin=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.newDsl=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.r8.optimizedResourceShrinking=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.defaults.buildfeatures.resvalues=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.nonFinalResIds=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.enableJetifier=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The property android.dependency.excludeLibraryComponentsFromConstraints improves project import performance for very large projects. It should be enabled to improve performance.
+To suppress this warning, add android.generateSyncIssueWhenLibraryConstraintsAreEnabled=false to gradle.properties
+WARNING: The multidex library is included as a dependency, but it is not needed for apps
+with minSdk >= 21. Please remove dependency 'androidx.multidex:multidex:2.0.1' from ':app'.
+See https://developer.android.com/build/multidex for more information.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preFreeDebugBuild UP-TO-DATE
+
+> Task :app:dataBindingMergeDependencyArtifactsFreeDebug
+WARNING: [Processor] Library '/home/runner/.gradle/caches/modules-2/files-2.1/androidx.media3/media3-session/1.5.1/d90b15df9a45d9306beedee6fb95eb7e7aef15cf/media3-session-1.5.1.aar' contains references to both AndroidX and old support library. This seems like the library is partially migrated. Jetifier will try to rewrite the library anyway.
+ Example of androidX reference: 'androidx/media3/session/MediaSession'
+ Example of support library reference: 'android/support/v4/media/session/MediaSessionCompat$Token'
+
+> Task :app:generateFreeDebugResValues
+
+> Task :app:generateFreeDebugResources
+Nested resources detected.
++ src/main/res
+-- src/main/res/drawable/flags
+
+Nested resources means you have layout like this:
+res.srcDirs = [
+    'src/main/res/',
+    'src/main/res/category1'
+]
+However, you should use following structure instead:
+res.srcDirs = [
+    'src/main/res/common',
+    'src/main/res/category1',
+    'src/main/res/category2'
+]
+This Warning will be transformed into Error in version VERSION_9_0
+
+> Task :app:generateFreeDebugBuildConfig
+> Task :app:checkFreeDebugAarMetadata
+> Task :app:processFreeDebugNavigationResources
+> Task :app:mergeFreeDebugResources
+> Task :app:compileFreeDebugNavigationResources
+> Task :app:dataBindingGenBaseClassesFreeDebug
+> Task :app:mapFreeDebugSourceSetPaths
+> Task :app:createFreeDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksFreeDebug
+> Task :app:processFreeDebugMainManifest
+> Task :app:processFreeDebugManifest
+> Task :app:generateFreeDebugAssets UP-TO-DATE
+> Task :app:javaPreCompileFreeDebug
+> Task :app:mergeFreeDebugAssets
+> Task :app:compressFreeDebugAssets
+> Task :app:checkFreeDebugDuplicateClasses
+> Task :app:desugarFreeDebugFileDependencies
+> Task :app:processFreeDebugManifestForPackage
+> Task :app:mergeExtDexFreeDebug
+> Task :app:mergeFreeDebugJniLibFolders
+> Task :app:mergeLibDexFreeDebug
+> Task :app:mergeFreeDebugNativeLibs NO-SOURCE
+> Task :app:stripFreeDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningFreeDebug
+> Task :app:writeFreeDebugAppMetadata
+> Task :app:writeFreeDebugSigningConfigVersions
+> Task :app:preFreeDebugAndroidTestBuild SKIPPED
+> Task :app:processFreeDebugResources
+> Task :app:dataBindingMergeDependencyArtifactsFreeDebugAndroidTest
+> Task :app:generateFreeDebugAndroidTestResValues
+> Task :app:generateFreeDebugAndroidTestResources
+> Task :app:processFreeDebugAndroidTestManifest
+> Task :app:generateFreeDebugAndroidTestBuildConfig
+> Task :app:checkFreeDebugAndroidTestAarMetadata
+> Task :app:processFreeDebugAndroidTestNavigationResources
+> Task :app:compileFreeDebugAndroidTestNavigationResources
+> Task :app:mapFreeDebugAndroidTestSourceSetPaths
+> Task :app:generateFreeDebugAndroidTestAssets UP-TO-DATE
+> Task :app:javaPreCompileFreeDebugAndroidTest
+> Task :app:mergeFreeDebugAndroidTestAssets
+> Task :app:compressFreeDebugAndroidTestAssets
+> Task :app:mergeFreeDebugAndroidTestResources
+> Task :app:checkFreeDebugAndroidTestDuplicateClasses
+> Task :app:desugarFreeDebugAndroidTestFileDependencies
+> Task :app:dataBindingGenBaseClassesFreeDebugAndroidTest
+> Task :app:kspFreeDebugKotlin
+> Task :app:processFreeDebugAndroidTestResources
+> Task :app:mergeLibDexFreeDebugAndroidTest
+> Task :app:mergeFreeDebugAndroidTestJniLibFolders
+> Task :app:mergeExtDexFreeDebugAndroidTest
+> Task :app:mergeFreeDebugAndroidTestNativeLibs NO-SOURCE
+> Task :app:stripFreeDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :app:validateSigningFreeDebugAndroidTest
+> Task :app:writeFreeDebugAndroidTestSigningConfigVersions
+> Task :app:prePlayDebugBuild UP-TO-DATE
+
+> Task :app:dataBindingMergeDependencyArtifactsPlayDebug
+WARNING: [Processor] Library '/home/runner/.gradle/caches/modules-2/files-2.1/com.google.android.gms/play-services-cast-framework/21.5.0/b54e012f75c1af1a7a50f79398dec65df2a80398/play-services-cast-framework-21.5.0.aar' contains references to both AndroidX and old support library. This seems like the library is partially migrated. Jetifier will try to rewrite the library anyway.
+ Example of androidX reference: 'androidx/core/app/TaskStackBuilder'
+ Example of support library reference: 'android/support/v4/media/session/MediaSessionCompat$Token'
+
+> Task :app:generatePlayDebugResValues
+
+> Task :app:generatePlayDebugResources
+Nested resources detected.
++ src/main/res
+-- src/main/res/drawable/flags
+
+Nested resources means you have layout like this:
+res.srcDirs = [
+    'src/main/res/',
+    'src/main/res/category1'
+]
+However, you should use following structure instead:
+res.srcDirs = [
+    'src/main/res/common',
+    'src/main/res/category1',
+    'src/main/res/category2'
+]
+This Warning will be transformed into Error in version VERSION_9_0
+
+> Task :app:generatePlayDebugBuildConfig
+> Task :app:checkPlayDebugAarMetadata
+> Task :app:processPlayDebugNavigationResources
+> Task :app:mapPlayDebugSourceSetPaths
+> Task :app:createPlayDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksPlayDebug
+> Task :app:compilePlayDebugNavigationResources
+> Task :app:processPlayDebugMainManifest
+> Task :app:processPlayDebugManifest
+> Task :app:processPlayDebugManifestForPackage
+> Task :app:generatePlayDebugAssets UP-TO-DATE
+> Task :app:javaPreCompilePlayDebug
+> Task :app:mergePlayDebugResources
+> Task :app:mergePlayDebugAssets
+> Task :app:dataBindingGenBaseClassesPlayDebug
+> Task :app:compressPlayDebugAssets
+> Task :app:checkPlayDebugDuplicateClasses
+> Task :app:desugarPlayDebugFileDependencies
+> Task :app:processPlayDebugResources
+> Task :app:compileFreeDebugKotlin
+> Task :app:mergeLibDexPlayDebug
+> Task :app:mergePlayDebugJniLibFolders
+> Task :app:mergeExtDexPlayDebug
+> Task :app:mergePlayDebugNativeLibs NO-SOURCE
+> Task :app:stripPlayDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningPlayDebug
+> Task :app:writePlayDebugAppMetadata
+> Task :app:writePlayDebugSigningConfigVersions
+> Task :app:prePlayDebugAndroidTestBuild SKIPPED
+> Task :app:dataBindingMergeDependencyArtifactsPlayDebugAndroidTest
+> Task :app:generatePlayDebugAndroidTestResValues
+> Task :app:generatePlayDebugAndroidTestResources
+> Task :app:processPlayDebugAndroidTestManifest
+> Task :app:generatePlayDebugAndroidTestBuildConfig
+> Task :app:checkPlayDebugAndroidTestAarMetadata
+> Task :app:processPlayDebugAndroidTestNavigationResources
+> Task :app:compilePlayDebugAndroidTestNavigationResources
+> Task :app:mapPlayDebugAndroidTestSourceSetPaths
+> Task :app:javaPreCompilePlayDebugAndroidTest
+> Task :app:generatePlayDebugAndroidTestAssets UP-TO-DATE
+> Task :app:mergePlayDebugAndroidTestAssets
+> Task :app:compressPlayDebugAndroidTestAssets
+> Task :app:checkPlayDebugAndroidTestDuplicateClasses
+> Task :app:desugarPlayDebugAndroidTestFileDependencies
+> Task :app:mergePlayDebugAndroidTestResources
+> Task :app:dataBindingGenBaseClassesPlayDebugAndroidTest
+> Task :app:mergeExtDexPlayDebugAndroidTest
+> Task :app:mergeLibDexPlayDebugAndroidTest
+> Task :app:mergePlayDebugAndroidTestJniLibFolders
+> Task :app:mergePlayDebugAndroidTestNativeLibs NO-SOURCE
+> Task :app:stripPlayDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :app:validateSigningPlayDebugAndroidTest
+> Task :app:writePlayDebugAndroidTestSigningConfigVersions
+> Task :app:processPlayDebugAndroidTestResources
+> Task :app:kspPlayDebugKotlin
+
+> Task :app:compileFreeDebugKotlin
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:12:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:74:26 'interface OnNavigationItemSelectedListener : Any, NavigationBarView.OnItemSelectedListener' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:148:35 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'Array<(out) String!>?'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:171:35 'fun setOnNavigationItemSelectedListener(p0: BottomNavigationView.OnNavigationItemSelectedListener?): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:222:27 'fun setBottomSheetCallback(p0: BottomSheetBehavior.BottomSheetCallback!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:505:38 'static fun getActionView(p0: MenuItem!): View!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:637:46 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:639:44 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:642:42 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:884:49 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/CountryFlagsLoader.kt:10:55 'fun getDrawable(p0: Int): Drawable!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentBase.kt:5:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentBase.kt:20:23 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentBase.kt:32:15 'fun cancel(p0: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentHistory.kt:4:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentHistory.kt:28:23 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:28:8 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:58:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:59:8 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:83:52 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:200:91 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:302:53 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:303:26 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:311:53 'fun deleteObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:312:26 'fun deleteObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:461:46 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:462:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:462:32 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:572:26 The corresponding parameter in the supertype 'ObjectBoundRunnable' is named 'obj'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentServerInfo.kt:4:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentSettings.kt:102:25 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:5:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:27:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:28:8 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:30:58 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:35:23 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:53:26 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:91:38 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:153:26 'fun deleteObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:156:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:156:28 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentTabs.kt:12:8 'class FragmentPagerAdapter : PagerAdapter' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentTabs.kt:87:51 'field locale: Locale!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/RadioDroidApp.kt:97:30 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:8:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:11:8 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:27:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:29:65 'constructor(): Observable' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:29:65 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:51:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:58:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:71:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:78:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:128:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:153:17 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:165:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:173:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:177:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:219:40 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:219:58 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:234:40 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:234:58 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:143:47 'fun create(contentType: MediaType?, content: String): RequestBody' is deprecated. Moved to extension function. Put the 'content' argument first to fix Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:213:21 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:233:21 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:255:21 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:298:23 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/adapters/ItemAdapterCategory.kt:30:67 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/AlarmReceiver.kt:15:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/AlarmReceiver.kt:68:72 'static field WIFI_MODE_FULL_HIGH_PERF: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/FragmentAlarm.kt:14:8 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/FragmentAlarm.kt:20:42 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/FragmentAlarm.kt:46:35 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/FragmentAlarm.kt:51:35 'fun deleteObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:8:8 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:16:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:23:44 'constructor(): Observable' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:23:44 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:24:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:27:32 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:59:21 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:59:39 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:74:31 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:80:21 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:80:39 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/data/StationRepository.kt:23:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/database/RadioDroidDatabase.kt:30:22 'fun fallbackToDestructiveMigration(): RoomDatabase.Builder<RadioDroidDatabase>' is deprecated. Replace by overloaded version with parameter to indicate if all tables should be dropped or not.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryAdapter.kt:13:8 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryAdapter.kt:14:8 'class PagedListAdapter<T : Any, VH : RecyclerView.ViewHolder> : RecyclerView.Adapter<VH>' is deprecated. PagedListAdapter is deprecated and has been replaced by PagingDataAdapter.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryAdapter.kt:22:5 'class PagedListAdapter<T : Any, VH : RecyclerView.ViewHolder> : RecyclerView.Adapter<VH>' is deprecated. PagedListAdapter is deprecated and has been replaced by PagingDataAdapter.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryAdapter.kt:60:40 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryInfoDialog.kt:32:9 'var retainInstance: Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:5:8 'class LivePagedListBuilder<Key : Any, Value : Any> : Any' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:6:8 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:20:35 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:28:27 'constructor<Key : Any, Value : Any>(dataSourceFactory: DataSource.Factory<Key, Value>, config: PagedList.Config): LivePagedListBuilder<Key, Value>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:30:13 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryViewModel.kt:6:8 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryViewModel.kt:12:40 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/PlayStationTask.kt:6:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/PlayStationTask.kt:62:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/PlayStationTask.kt:79:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/PlayStationTask.kt:92:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/RadioPlayer.kt:96:27 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/RadioPlayer.kt:100:26 'fun cancel(p0: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/exoplayer/ExoPlayerWrapper.kt:130:59 'static field CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/exoplayer/IcyDataSource.kt:68:19 'constructor(p0: String, p1: IOException, p2: DataSpec, p3: Int): HttpDataSource.HttpDataSourceException' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/exoplayer/IcyDataSource.kt:157:42 'constructor(p0: DataSpec, p1: Int): HttpDataSource.HttpDataSourceException' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/exoplayer/IcyDataSource.kt:161:19 'constructor(p0: IOException, p1: DataSpec, p2: Int): HttpDataSource.HttpDataSourceException' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/mediaplayer/MediaPlayerWrapper.kt:160:41 The corresponding parameter in the supertype 'StreamProxyListener' is named 'bitrate'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorAdapter.kt:134:80 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorAdapter.kt:140:104 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorAdapter.kt:198:117 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorAdapter.kt:211:131 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorDialog.kt:51:9 'var retainInstance: Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:5:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:79:24 'fun cancel(p0: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:124:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:129:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:139:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsAdapter.kt:3:8 'class ProgressDialog : AlertDialog' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:19:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:25:48 'constructor(): Observable' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:25:48 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:26:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:29:36 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:116:35 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/service/PlaybackLocks.kt:39:51 'static field WIFI_MODE_FULL_HIGH_PERF: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/service/PlayerService.kt:507:35 The corresponding parameter in the supertype 'MeteredWarningCallback' is named 'station'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/service/PlayerService.kt:893:33 The corresponding parameter in the supertype 'PlayerListener' is named 'status'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/service/PlayerService.kt:962:39 The corresponding parameter in the supertype 'PlayerListener' is named 'bitrate'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/DataRadioStation.kt:87:9 Wrapping the left-hand side of assignments in parentheses, labels or annotations is not allowed. This will become an error in language version 2.3.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/DataRadioStation.kt:87:9 Annotations on block-level expressions are parsed differently depending on the presence of a new line. Add a new line after the annotations to annotate the entire expression.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/DataRadioStation.kt:234:9 Wrapping the left-hand side of assignments in parentheses, labels or annotations is not allowed. This will become an error in language version 2.3.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/DataRadioStation.kt:234:9 Annotations on block-level expressions are parsed differently depending on the presence of a new line. Add a new line after the annotations to annotate the entire expression.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterIconOnlyStation.kt:49:23 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:128:27 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:232:46 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:243:30 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:320:46 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:342:68 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:355:46 The corresponding parameter in the supertype 'ShortcutReadyListener' is named 'shortcutInfo'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:366:82 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/StationActions.kt:8:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/StationPopupMenu.kt:45:107 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/live/StreamLiveInfo.kt:36:30 'fun readHashMap(p0: ClassLoader?): (HashMap<Any!, Any!>?..HashMap<*, *>?)' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/CustomFilter.kt:74:42 'constructor(): Handler' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/TvChannelManager.kt:36:50 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/TvChannelManager.kt:130:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/TvChannelManager.kt:130:29 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/views/RecyclerAwareNestedScrollView.kt:22:24 'static fun postInvalidateOnAnimation(p0: View): Unit' is deprecated. Deprecated in Java.
+
+> Task :app:compilePlayDebugKotlin
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:12:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:74:26 'interface OnNavigationItemSelectedListener : Any, NavigationBarView.OnItemSelectedListener' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:148:35 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'Array<(out) String!>?'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:171:35 'fun setOnNavigationItemSelectedListener(p0: BottomNavigationView.OnNavigationItemSelectedListener?): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:222:27 'fun setBottomSheetCallback(p0: BottomSheetBehavior.BottomSheetCallback!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:505:38 'static fun getActionView(p0: MenuItem!): View!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:637:46 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:639:44 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:642:42 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:884:49 'fun <T : Parcelable!> getParcelableExtra(p0: String!): T?' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/CountryFlagsLoader.kt:10:55 'fun getDrawable(p0: Int): Drawable!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentBase.kt:5:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentBase.kt:20:23 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentBase.kt:32:15 'fun cancel(p0: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentHistory.kt:4:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentHistory.kt:28:23 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:28:8 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:58:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:59:8 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:83:52 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:200:91 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:302:53 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:303:26 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:311:53 'fun deleteObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:312:26 'fun deleteObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:461:46 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:462:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:462:32 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentPlayerFull.kt:572:26 The corresponding parameter in the supertype 'ObjectBoundRunnable' is named 'obj'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentServerInfo.kt:4:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentSettings.kt:102:25 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:5:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:27:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:28:8 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:30:58 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:35:23 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:53:26 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:91:38 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:153:26 'fun deleteObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:156:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentStarred.kt:156:28 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentTabs.kt:12:8 'class FragmentPagerAdapter : PagerAdapter' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/FragmentTabs.kt:87:51 'field locale: Locale!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/RadioDroidApp.kt:97:30 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:8:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:11:8 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:27:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:29:65 'constructor(): Observable' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:29:65 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:51:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:58:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:71:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:78:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:128:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:153:17 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:165:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:173:9 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:177:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:219:40 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:219:58 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:234:40 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/StationSaveManager.kt:234:58 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:143:47 'fun create(contentType: MediaType?, content: String): RequestBody' is deprecated. Moved to extension function. Put the 'content' argument first to fix Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:213:21 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:233:21 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:255:21 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/Utils.kt:298:23 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/adapters/ItemAdapterCategory.kt:30:67 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/AlarmReceiver.kt:15:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/AlarmReceiver.kt:68:72 'static field WIFI_MODE_FULL_HIGH_PERF: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/FragmentAlarm.kt:14:8 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/FragmentAlarm.kt:20:42 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/FragmentAlarm.kt:46:35 'fun addObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/FragmentAlarm.kt:51:35 'fun deleteObserver(p0: Observer!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:8:8 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:16:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:23:44 'constructor(): Observable' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:23:44 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:24:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:27:32 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:59:21 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:59:39 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:74:31 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:80:21 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/alarm/RadioAlarmManager.kt:80:39 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/data/StationRepository.kt:23:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/database/RadioDroidDatabase.kt:30:22 'fun fallbackToDestructiveMigration(): RoomDatabase.Builder<RadioDroidDatabase>' is deprecated. Replace by overloaded version with parameter to indicate if all tables should be dropped or not.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryAdapter.kt:13:8 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryAdapter.kt:14:8 'class PagedListAdapter<T : Any, VH : RecyclerView.ViewHolder> : RecyclerView.Adapter<VH>' is deprecated. PagedListAdapter is deprecated and has been replaced by PagingDataAdapter.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryAdapter.kt:22:5 'class PagedListAdapter<T : Any, VH : RecyclerView.ViewHolder> : RecyclerView.Adapter<VH>' is deprecated. PagedListAdapter is deprecated and has been replaced by PagingDataAdapter.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryAdapter.kt:60:40 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryInfoDialog.kt:32:9 'var retainInstance: Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:5:8 'class LivePagedListBuilder<Key : Any, Value : Any> : Any' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:6:8 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:20:35 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:28:27 'constructor<Key : Any, Value : Any>(dataSourceFactory: DataSource.Factory<Key, Value>, config: PagedList.Config): LivePagedListBuilder<Key, Value>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryRepository.kt:30:13 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryViewModel.kt:6:8 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/history/TrackHistoryViewModel.kt:12:40 'class PagedList<T : Any> : AbstractList<T>' is deprecated. PagedList is deprecated and has been replaced by PagingData.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/PlayStationTask.kt:6:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/PlayStationTask.kt:62:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/PlayStationTask.kt:79:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/PlayStationTask.kt:92:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/RadioPlayer.kt:96:27 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/RadioPlayer.kt:100:26 'fun cancel(p0: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/exoplayer/ExoPlayerWrapper.kt:130:59 'static field CONNECTIVITY_ACTION: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/exoplayer/IcyDataSource.kt:68:19 'constructor(p0: String, p1: IOException, p2: DataSpec, p3: Int): HttpDataSource.HttpDataSourceException' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/exoplayer/IcyDataSource.kt:157:42 'constructor(p0: DataSpec, p1: Int): HttpDataSource.HttpDataSourceException' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/exoplayer/IcyDataSource.kt:161:19 'constructor(p0: IOException, p1: DataSpec, p2: Int): HttpDataSource.HttpDataSourceException' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/mediaplayer/MediaPlayerWrapper.kt:160:41 The corresponding parameter in the supertype 'StreamProxyListener' is named 'bitrate'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorAdapter.kt:134:80 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorAdapter.kt:140:104 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorAdapter.kt:198:117 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorAdapter.kt:211:131 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/players/selector/PlayerSelectorDialog.kt:51:9 'var retainInstance: Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:5:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:79:24 'fun cancel(p0: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:124:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:129:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/proxy/ProxySettingsDialog.kt:139:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsAdapter.kt:3:8 'class ProgressDialog : AlertDialog' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:19:8 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:25:48 'constructor(): Observable' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:25:48 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:26:22 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:29:36 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/recording/RecordingsManager.kt:116:35 'fun notifyObservers(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/service/PlaybackLocks.kt:39:51 'static field WIFI_MODE_FULL_HIGH_PERF: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/service/PlayerService.kt:507:35 The corresponding parameter in the supertype 'MeteredWarningCallback' is named 'station'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/service/PlayerService.kt:893:33 The corresponding parameter in the supertype 'PlayerListener' is named 'status'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/service/PlayerService.kt:962:39 The corresponding parameter in the supertype 'PlayerListener' is named 'bitrate'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/DataRadioStation.kt:87:9 Wrapping the left-hand side of assignments in parentheses, labels or annotations is not allowed. This will become an error in language version 2.3.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/DataRadioStation.kt:87:9 Annotations on block-level expressions are parsed differently depending on the presence of a new line. Add a new line after the annotations to annotate the entire expression.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/DataRadioStation.kt:234:9 Wrapping the left-hand side of assignments in parentheses, labels or annotations is not allowed. This will become an error in language version 2.3.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/DataRadioStation.kt:234:9 Annotations on block-level expressions are parsed differently depending on the presence of a new line. Add a new line after the annotations to annotate the entire expression.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterIconOnlyStation.kt:49:23 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:128:27 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:232:46 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:243:30 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:320:46 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:342:68 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:355:46 The corresponding parameter in the supertype 'ShortcutReadyListener' is named 'shortcutInfo'. This may cause problems when calling this function with named arguments.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/ItemAdapterStation.kt:366:82 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/StationActions.kt:8:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/StationPopupMenu.kt:45:107 'fun execute(vararg p0: Void!): AsyncTask<Void!, Void!, String?>!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/station/live/StreamLiveInfo.kt:36:30 'fun readHashMap(p0: ClassLoader?): (HashMap<Any!, Any!>?..HashMap<*, *>?)' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/CustomFilter.kt:74:42 'constructor(): Handler' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/TvChannelManager.kt:36:50 'interface Observer : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/TvChannelManager.kt:130:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/TvChannelManager.kt:130:29 'class Observable : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/views/RecyclerAwareNestedScrollView.kt:22:24 'static fun postInvalidateOnAnimation(p0: View): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/play/java/com/github/fschroffner/radiodroid3/CastHandler.kt:116:41 'fun load(p0: MediaInfo, p1: Boolean): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
+
+> Task :app:compileFreeDebugJavaWithJavac
+> Task :app:hiltAggregateDepsFreeDebug
+> Task :app:compilePlayDebugJavaWithJavac
+> Task :app:hiltJavaCompileFreeDebug
+> Task :app:processFreeDebugJavaRes
+> Task :app:transformFreeDebugClassesWithAsm
+> Task :app:mergeFreeDebugJavaResource
+> Task :app:dexBuilderFreeDebug
+> Task :app:bundleFreeDebugClassesToCompileJar
+> Task :app:mergeFreeDebugGlobalSynthetics
+> Task :app:hiltAggregateDepsPlayDebug
+> Task :app:mergeProjectDexFreeDebug
+> Task :app:kspFreeDebugAndroidTestKotlin
+> Task :app:hiltJavaCompilePlayDebug
+> Task :app:packageFreeDebug
+> Task :app:createFreeDebugApkListingFileRedirect
+> Task :app:processPlayDebugJavaRes
+> Task :app:bundlePlayDebugClassesToCompileJar
+> Task :app:transformPlayDebugClassesWithAsm
+> Task :app:kspPlayDebugAndroidTestKotlin
+> Task :app:mergePlayDebugJavaResource
+
+> Task :app:compileFreeDebugAndroidTestKotlin
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:65:41 'static field ACTION_CLOSE_SYSTEM_DIALOGS: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:105:17 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:43:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:64:13 'static fun <T : Any!> assertThat(p0: String!, p1: T!, p2: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:69:13 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:44:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:35:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:17:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:37:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:11:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:31:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/GeneralDragAndDropAction.kt:46:41 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerDragAndDropAction.kt:64:45 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerViewItemCountAssertion.kt:20:9 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+
+> Task :app:dexBuilderPlayDebug
+> Task :app:compileFreeDebugAndroidTestJavaWithJavac
+> Task :app:hiltAggregateDepsFreeDebugAndroidTest
+> Task :app:hiltJavaCompileFreeDebugAndroidTest NO-SOURCE
+> Task :app:mergePlayDebugGlobalSynthetics
+> Task :app:processFreeDebugAndroidTestJavaRes
+> Task :app:transformFreeDebugAndroidTestClassesWithAsm
+> Task :app:mergeFreeDebugAndroidTestJavaResource
+> Task :app:dexBuilderFreeDebugAndroidTest
+> Task :app:mergeFreeDebugAndroidTestGlobalSynthetics
+> Task :app:mergeProjectDexFreeDebugAndroidTest
+> Task :app:mergeProjectDexPlayDebug
+> Task :app:packageFreeDebugAndroidTest
+> Task :app:createFreeDebugAndroidTestApkListingFileRedirect
+
+> Task :app:compilePlayDebugAndroidTestKotlin
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:65:41 'static field ACTION_CLOSE_SYSTEM_DIALOGS: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:105:17 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:43:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:64:13 'static fun <T : Any!> assertThat(p0: String!, p1: T!, p2: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:69:13 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:44:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:35:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:17:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:37:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:11:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:31:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/GeneralDragAndDropAction.kt:46:41 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerDragAndDropAction.kt:64:45 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerViewItemCountAssertion.kt:20:9 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+[EmulatorConsole]: Failed to start Emulator console for 5554
+
+> Task :app:connectedFreeDebugAndroidTest
+additionalTestOutput is not supported on this device running API level 24 because the additional test output directory could not be found
+
+> Task :app:packagePlayDebug
+
+Starting 53 tests on emulator-5554 - 7.0
+
+com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeDeleted_WithSwipeRight[orientation=1][emulator-5554 - 7.0] FAILED 
+	androidx.test.espresso.NoMatchingViewException: No views in hierarchy found matching: view.getId() is <2131362410/com.github.fschroffner.radiodroid3:id/snackbar_action>
+	
+emulator-5554 - 7.0 Tests 1/53 completed. (0 skipped) (1 failed)
+
+com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeReordered_WithSimpleDragAndDrop[orientation=1][emulator-5554 - 7.0] SKIPPED 
+
+com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeReordered_WithDragAndDrop[orientation=1][emulator-5554 - 7.0] SKIPPED 
+emulator-5554 - 7.0 Tests 6/53 completed. (2 skipped) (1 failed)
+
+com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeReordered_WithSimpleDragAndDrop[orientation=0][emulator-5554 - 7.0] SKIPPED 
+
+com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeReordered_WithDragAndDrop[orientation=0][emulator-5554 - 7.0] SKIPPED 
+emulator-5554 - 7.0 Tests 12/53 completed. (4 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 14/53 completed. (4 skipped) (1 failed)
+
+com.github.fschroffner.radiodroid3.tests.UIHistoryFragmentTest > stationsInHistory_ShouldNotBeReordered_WithDragAndDrop[orientation=1][emulator-5554 - 7.0] SKIPPED 
+emulator-5554 - 7.0 Tests 17/53 completed. (5 skipped) (1 failed)
+
+com.github.fschroffner.radiodroid3.tests.UIHistoryFragmentTest > stationsInHistory_ShouldNotBeReordered_WithDragAndDrop[orientation=0][emulator-5554 - 7.0] SKIPPED 
+emulator-5554 - 7.0 Tests 21/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 22/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 24/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 26/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 28/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 30/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 32/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 33/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 35/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 37/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 39/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 41/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 43/53 completed. (6 skipped) (1 failed)
+
+com.github.fschroffner.radiodroid3.tests.UINotificationTests > playback_ShouldStart_OnResumeFromNotification[emulator-5554 - 7.0] SKIPPED 
+emulator-5554 - 7.0 Tests 47/53 completed. (7 skipped) (1 failed)
+
+com.github.fschroffner.radiodroid3.tests.UIPlaybackTest > error_ShouldAppear_OnStreamErrorCode[emulator-5554 - 7.0] SKIPPED 
+emulator-5554 - 7.0 Tests 51/53 completed. (8 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 53/53 completed. (8 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 55/53 completed. (8 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 57/53 completed. (8 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 59/53 completed. (8 skipped) (1 failed)
+
+com.github.fschroffner.radiodroid3.tests.UIStationListsTest > stationTabs_DoWork_WhenSwiped[orientation=0][emulator-5554 - 7.0] FAILED 
+	androidx.test.espresso.NoMatchingViewException: No views in hierarchy found matching: (view.getId() is <2131362359/com.github.fschroffner.radiodroid3:id/recyclerViewStations> and (view has effective visibility <VISIBLE> and view.getGlobalVisibleRect() covers at least <60> percent of the view's area))
+	
+Tests on emulator-5554 - 7.0 failed: There was 2 failure(s).
+Finished 61 tests on emulator-5554 - 7.0
+
+> Task :app:connectedFreeDebugAndroidTest FAILED
+> Task :app:createPlayDebugApkListingFileRedirect
+
+[Incubating] Problems report is available at: file:///home/runner/work/RadioDroid3/RadioDroid3/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:connectedFreeDebugAndroidTest'.
+> There were failing tests. See the report at: file:///home/runner/work/RadioDroid3/RadioDroid3/app/build/reports/androidTests/connected/debug/flavors/free/index.html
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 9m 2s
+141 actionable tasks: 141 executed
+Error: The process '/usr/bin/sh' failed with exit code 1
+Terminate Emulator
+USER_INFO    | Snapshots have been disabled by the user, save request is ignored.
+INFO         | Saving snapshot 'default_boot' using 0 ms
+ERROR        | stop: Not implemented
+WARNING      | Emulator client has not yet been configured.. Call configure me first!
+INFO         | removeAll

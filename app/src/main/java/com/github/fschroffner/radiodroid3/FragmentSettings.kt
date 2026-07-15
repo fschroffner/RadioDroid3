@@ -124,7 +124,7 @@ class FragmentSettings : PreferenceFragmentCompat(),
             }
             "pref_category_other" -> {
                 findPreference<Preference>("show_statistics")?.setOnPreferenceClickListener {
-                    (requireActivity() as ActivityMain).getToolbar().setTitle(R.string.settings_statistics)
+                    (requireActivity() as ActivityMain).getToolbar()?.setTitle(R.string.settings_statistics)
                     requireActivity().supportFragmentManager.beginTransaction()
                         .replace(R.id.containerView, FragmentServerInfo())
                         .addToBackStack(ActivityMain.FRAGMENT_FROM_BACKSTACK.toString())

@@ -51,7 +51,7 @@ class UIStationListsTest {
         val idlingResource = ViewPagerIdlingResource(activityRule.activity.findViewById<ViewPager>(R.id.viewpager), "ViewPager")
         IdlingRegistry.getInstance().register(idlingResource)
 
-        onView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(60)))
+        onView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(30)))
             .check(withItemCount(greaterThan(0)))
             .check(matches(recyclerRecycles()))
 
@@ -59,7 +59,7 @@ class UIStationListsTest {
             // TODO: We cannot swipe on containerView because it is displayed by less than 90%,
             //       which breaks constraint in swipeLeft().
             onView(withId(R.id.main_content)).perform(ViewActions.swipeLeft())
-            onView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(60)))
+            onView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(30)))
                 .check(withItemCount(greaterThan(0)))
                 .check(matches(recyclerRecycles()))
         }

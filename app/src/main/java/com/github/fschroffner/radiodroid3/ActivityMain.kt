@@ -962,7 +962,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         Utils.showMpdServersDialog(radioDroidApp, supportFragmentManager, null)
     }
 
-    fun getToolbar(): Toolbar = findViewById(R.id.my_awesome_toolbar)
+    fun getToolbar(): Toolbar? = findViewById(R.id.my_awesome_toolbar)
 
     override fun onSearchResultClicked(result: SearchPreferenceResult) {
         result.closeSearchPage(this)
