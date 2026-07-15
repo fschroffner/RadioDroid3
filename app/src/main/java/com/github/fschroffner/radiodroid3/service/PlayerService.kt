@@ -37,6 +37,7 @@ import androidx.media3.session.MediaLibraryService.LibraryParams
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import androidx.preference.PreferenceManager
 import com.google.common.collect.ImmutableList
@@ -260,7 +261,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         ): ListenableFuture<LibraryResult<MediaItem>> {
             val item = browseTree.itemForMediaId(mediaId)
             return if (item != null) Futures.immediateFuture(LibraryResult.ofItem(item, null))
-            else Futures.immediateFuture(LibraryResult.ofError(SessionResult.RESULT_ERROR_BAD_VALUE))
+            else Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_BAD_VALUE))
         }
 
         override fun onCustomCommand(

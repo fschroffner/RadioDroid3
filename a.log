@@ -110,27 +110,28 @@ This Warning will be transformed into Error in version VERSION_9_0
 > Task :app:generateFreeDebugAssets UP-TO-DATE
 > Task :app:javaPreCompileFreeDebug
 > Task :app:mergeFreeDebugAssets
+> Task :app:processFreeDebugManifestForPackage
 > Task :app:compressFreeDebugAssets
+> Task :app:processFreeDebugResources
 > Task :app:checkFreeDebugDuplicateClasses
 > Task :app:desugarFreeDebugFileDependencies
-> Task :app:processFreeDebugManifestForPackage
+> Task :app:kspFreeDebugKotlin
 > Task :app:mergeExtDexFreeDebug
-> Task :app:mergeFreeDebugJniLibFolders
 > Task :app:mergeLibDexFreeDebug
+> Task :app:mergeFreeDebugJniLibFolders
 > Task :app:mergeFreeDebugNativeLibs NO-SOURCE
 > Task :app:stripFreeDebugDebugSymbols NO-SOURCE
 > Task :app:validateSigningFreeDebug
 > Task :app:writeFreeDebugAppMetadata
 > Task :app:writeFreeDebugSigningConfigVersions
 > Task :app:preFreeDebugAndroidTestBuild SKIPPED
-> Task :app:processFreeDebugResources
 > Task :app:dataBindingMergeDependencyArtifactsFreeDebugAndroidTest
 > Task :app:generateFreeDebugAndroidTestResValues
 > Task :app:generateFreeDebugAndroidTestResources
 > Task :app:processFreeDebugAndroidTestManifest
 > Task :app:generateFreeDebugAndroidTestBuildConfig
-> Task :app:checkFreeDebugAndroidTestAarMetadata
 > Task :app:processFreeDebugAndroidTestNavigationResources
+> Task :app:checkFreeDebugAndroidTestAarMetadata
 > Task :app:compileFreeDebugAndroidTestNavigationResources
 > Task :app:mapFreeDebugAndroidTestSourceSetPaths
 > Task :app:generateFreeDebugAndroidTestAssets UP-TO-DATE
@@ -139,18 +140,18 @@ This Warning will be transformed into Error in version VERSION_9_0
 > Task :app:compressFreeDebugAndroidTestAssets
 > Task :app:mergeFreeDebugAndroidTestResources
 > Task :app:checkFreeDebugAndroidTestDuplicateClasses
-> Task :app:desugarFreeDebugAndroidTestFileDependencies
 > Task :app:dataBindingGenBaseClassesFreeDebugAndroidTest
-> Task :app:kspFreeDebugKotlin
+> Task :app:desugarFreeDebugAndroidTestFileDependencies
+> Task :app:compileFreeDebugKotlin
 > Task :app:processFreeDebugAndroidTestResources
-> Task :app:mergeLibDexFreeDebugAndroidTest
 > Task :app:mergeFreeDebugAndroidTestJniLibFolders
-> Task :app:mergeExtDexFreeDebugAndroidTest
+> Task :app:mergeLibDexFreeDebugAndroidTest
 > Task :app:mergeFreeDebugAndroidTestNativeLibs NO-SOURCE
 > Task :app:stripFreeDebugAndroidTestDebugSymbols NO-SOURCE
 > Task :app:validateSigningFreeDebugAndroidTest
 > Task :app:writeFreeDebugAndroidTestSigningConfigVersions
 > Task :app:prePlayDebugBuild UP-TO-DATE
+> Task :app:mergeExtDexFreeDebugAndroidTest
 
 > Task :app:dataBindingMergeDependencyArtifactsPlayDebug
 WARNING: [Processor] Library '/home/runner/.gradle/caches/modules-2/files-2.1/com.google.android.gms/play-services-cast-framework/21.5.0/b54e012f75c1af1a7a50f79398dec65df2a80398/play-services-cast-framework-21.5.0.aar' contains references to both AndroidX and old support library. This seems like the library is partially migrated. Jetifier will try to rewrite the library anyway.
@@ -188,15 +189,14 @@ This Warning will be transformed into Error in version VERSION_9_0
 > Task :app:processPlayDebugManifest
 > Task :app:processPlayDebugManifestForPackage
 > Task :app:generatePlayDebugAssets UP-TO-DATE
-> Task :app:javaPreCompilePlayDebug
 > Task :app:mergePlayDebugResources
+> Task :app:javaPreCompilePlayDebug
 > Task :app:mergePlayDebugAssets
 > Task :app:dataBindingGenBaseClassesPlayDebug
 > Task :app:compressPlayDebugAssets
 > Task :app:checkPlayDebugDuplicateClasses
 > Task :app:desugarPlayDebugFileDependencies
 > Task :app:processPlayDebugResources
-> Task :app:compileFreeDebugKotlin
 > Task :app:mergeLibDexPlayDebug
 > Task :app:mergePlayDebugJniLibFolders
 > Task :app:mergeExtDexPlayDebug
@@ -223,15 +223,6 @@ This Warning will be transformed into Error in version VERSION_9_0
 > Task :app:desugarPlayDebugAndroidTestFileDependencies
 > Task :app:mergePlayDebugAndroidTestResources
 > Task :app:dataBindingGenBaseClassesPlayDebugAndroidTest
-> Task :app:mergeExtDexPlayDebugAndroidTest
-> Task :app:mergeLibDexPlayDebugAndroidTest
-> Task :app:mergePlayDebugAndroidTestJniLibFolders
-> Task :app:mergePlayDebugAndroidTestNativeLibs NO-SOURCE
-> Task :app:stripPlayDebugAndroidTestDebugSymbols NO-SOURCE
-> Task :app:validateSigningPlayDebugAndroidTest
-> Task :app:writePlayDebugAndroidTestSigningConfigVersions
-> Task :app:processPlayDebugAndroidTestResources
-> Task :app:kspPlayDebugKotlin
 
 > Task :app:compileFreeDebugKotlin
 w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:12:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
@@ -389,6 +380,56 @@ w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github
 w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/TvChannelManager.kt:130:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
 w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/utils/TvChannelManager.kt:130:29 'class Observable : Any' is deprecated. Deprecated in Java.
 w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/views/RecyclerAwareNestedScrollView.kt:22:24 'static fun postInvalidateOnAnimation(p0: View): Unit' is deprecated. Deprecated in Java.
+
+> Task :app:processPlayDebugAndroidTestResources
+> Task :app:mergeExtDexPlayDebugAndroidTest
+> Task :app:kspPlayDebugKotlin
+> Task :app:compileFreeDebugJavaWithJavac
+> Task :app:hiltAggregateDepsFreeDebug
+> Task :app:hiltJavaCompileFreeDebug
+> Task :app:processFreeDebugJavaRes
+> Task :app:transformFreeDebugClassesWithAsm
+> Task :app:mergeFreeDebugJavaResource
+> Task :app:dexBuilderFreeDebug
+> Task :app:mergeFreeDebugGlobalSynthetics
+> Task :app:mergeLibDexPlayDebugAndroidTest
+> Task :app:bundleFreeDebugClassesToCompileJar
+> Task :app:mergePlayDebugAndroidTestJniLibFolders
+> Task :app:mergeProjectDexFreeDebug
+> Task :app:mergePlayDebugAndroidTestNativeLibs NO-SOURCE
+> Task :app:stripPlayDebugAndroidTestDebugSymbols NO-SOURCE
+> Task :app:validateSigningPlayDebugAndroidTest
+> Task :app:writePlayDebugAndroidTestSigningConfigVersions
+> Task :app:kspFreeDebugAndroidTestKotlin
+> Task :app:packageFreeDebug
+> Task :app:createFreeDebugApkListingFileRedirect
+
+> Task :app:compileFreeDebugAndroidTestKotlin
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:65:41 'static field ACTION_CLOSE_SYSTEM_DIALOGS: String' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:105:17 Condition is always 'true'.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:20:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:51:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:43:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:64:13 'static fun <T : Any!> assertThat(p0: String!, p1: T!, p2: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:69:13 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:44:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:35:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:17:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:37:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:11:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:31:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/GeneralDragAndDropAction.kt:46:41 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerDragAndDropAction.kt:64:45 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerViewItemCountAssertion.kt:20:9 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
 
 > Task :app:compilePlayDebugKotlin
 w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/ActivityMain.kt:12:8 'class AsyncTask<Params : Any!, Progress : Any!, Result : Any!> : Any' is deprecated. Deprecated in Java.
@@ -548,159 +589,80 @@ w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github
 w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/main/java/com/github/fschroffner/radiodroid3/views/RecyclerAwareNestedScrollView.kt:22:24 'static fun postInvalidateOnAnimation(p0: View): Unit' is deprecated. Deprecated in Java.
 w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/play/java/com/github/fschroffner/radiodroid3/CastHandler.kt:116:41 'fun load(p0: MediaInfo, p1: Boolean): PendingResult<RemoteMediaClient.MediaChannelResult!>' is deprecated. Deprecated in Java.
 
-> Task :app:compileFreeDebugJavaWithJavac
-> Task :app:hiltAggregateDepsFreeDebug
-> Task :app:compilePlayDebugJavaWithJavac
-> Task :app:hiltJavaCompileFreeDebug
-> Task :app:processFreeDebugJavaRes
-> Task :app:transformFreeDebugClassesWithAsm
-> Task :app:mergeFreeDebugJavaResource
-> Task :app:dexBuilderFreeDebug
-> Task :app:bundleFreeDebugClassesToCompileJar
-> Task :app:mergeFreeDebugGlobalSynthetics
-> Task :app:hiltAggregateDepsPlayDebug
-> Task :app:mergeProjectDexFreeDebug
-> Task :app:kspFreeDebugAndroidTestKotlin
-> Task :app:hiltJavaCompilePlayDebug
-> Task :app:packageFreeDebug
-> Task :app:createFreeDebugApkListingFileRedirect
-> Task :app:processPlayDebugJavaRes
-> Task :app:bundlePlayDebugClassesToCompileJar
-> Task :app:transformPlayDebugClassesWithAsm
-> Task :app:kspPlayDebugAndroidTestKotlin
-> Task :app:mergePlayDebugJavaResource
-
-> Task :app:compileFreeDebugAndroidTestKotlin
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:65:41 'static field ACTION_CLOSE_SYSTEM_DIALOGS: String' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:105:17 Condition is always 'true'.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:43:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:64:13 'static fun <T : Any!> assertThat(p0: String!, p1: T!, p2: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:69:13 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:44:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:35:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:17:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:37:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:11:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:31:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/GeneralDragAndDropAction.kt:46:41 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerDragAndDropAction.kt:64:45 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerViewItemCountAssertion.kt:20:9 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
-
-> Task :app:dexBuilderPlayDebug
 > Task :app:compileFreeDebugAndroidTestJavaWithJavac
 > Task :app:hiltAggregateDepsFreeDebugAndroidTest
+> Task :app:compilePlayDebugJavaWithJavac
 > Task :app:hiltJavaCompileFreeDebugAndroidTest NO-SOURCE
-> Task :app:mergePlayDebugGlobalSynthetics
 > Task :app:processFreeDebugAndroidTestJavaRes
 > Task :app:transformFreeDebugAndroidTestClassesWithAsm
 > Task :app:mergeFreeDebugAndroidTestJavaResource
 > Task :app:dexBuilderFreeDebugAndroidTest
 > Task :app:mergeFreeDebugAndroidTestGlobalSynthetics
 > Task :app:mergeProjectDexFreeDebugAndroidTest
-> Task :app:mergeProjectDexPlayDebug
+> Task :app:hiltAggregateDepsPlayDebug
+> Task :app:hiltJavaCompilePlayDebug
+> Task :app:processPlayDebugJavaRes
 > Task :app:packageFreeDebugAndroidTest
 > Task :app:createFreeDebugAndroidTestApkListingFileRedirect
-
-> Task :app:compilePlayDebugAndroidTestKotlin
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:65:41 'static field ACTION_CLOSE_SYSTEM_DIALOGS: String' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/CustomTestRunner.kt:105:17 Condition is always 'true'.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIFavouritesFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIHistoryFragmentTest.kt:47:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:43:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:64:13 'static fun <T : Any!> assertThat(p0: String!, p1: T!, p2: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UILangTest.kt:69:13 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UINotificationTests.kt:44:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:13:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIPlaybackTest.kt:35:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:16:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIRotationTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:17:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UISmallPlayerTest.kt:37:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:14:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationListsTest.kt:37:33 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:11:8 'class ActivityTestRule<T : Activity!> : Any, TestRule' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/UIStationTagsTest.kt:31:24 'constructor<T : Activity!>(activityClass: Class<T!>!): ActivityTestRule<T>' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/GeneralDragAndDropAction.kt:46:41 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerDragAndDropAction.kt:64:45 'static fun obtainMovement(downTime: Long, eventTime: Long, coordinates: FloatArray!): MotionEvent!' is deprecated. Deprecated in Java.
-w: file:///home/runner/work/RadioDroid3/RadioDroid3/app/src/androidTest/java/com/github/fschroffner/radiodroid3/tests/utils/RecyclerViewItemCountAssertion.kt:20:9 'static fun <T : Any!> assertThat(p0: T!, p1: Matcher<in T!>!): Unit' is deprecated. Deprecated in Java.
+> Task :app:transformPlayDebugClassesWithAsm
+> Task :app:mergePlayDebugJavaResource
 [EmulatorConsole]: Failed to start Emulator console for 5554
 
 > Task :app:connectedFreeDebugAndroidTest
 additionalTestOutput is not supported on this device running API level 24 because the additional test output directory could not be found
 
-> Task :app:packagePlayDebug
-
 Starting 53 tests on emulator-5554 - 7.0
 
 com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeDeleted_WithSwipeRight[orientation=1][emulator-5554 - 7.0] FAILED 
-	androidx.test.espresso.NoMatchingViewException: No views in hierarchy found matching: view.getId() is <2131362410/com.github.fschroffner.radiodroid3:id/snackbar_action>
-	
-emulator-5554 - 7.0 Tests 1/53 completed. (0 skipped) (1 failed)
+	java.lang.AssertionError: expected:<19> but was:<20>
+	at org.junit.Assert.fail(Assert.java:89)
 
 com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeReordered_WithSimpleDragAndDrop[orientation=1][emulator-5554 - 7.0] SKIPPED 
+emulator-5554 - 7.0 Tests 4/53 completed. (1 skipped) (1 failed)
 
 com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeReordered_WithDragAndDrop[orientation=1][emulator-5554 - 7.0] SKIPPED 
-emulator-5554 - 7.0 Tests 6/53 completed. (2 skipped) (1 failed)
+
+com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeDeleted_WithSwipeRight[orientation=0][emulator-5554 - 7.0] FAILED 
+	java.lang.AssertionError: expected:<19> but was:<20>
+	at org.junit.Assert.fail(Assert.java:89)
+emulator-5554 - 7.0 Tests 7/53 completed. (2 skipped) (2 failed)
 
 com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeReordered_WithSimpleDragAndDrop[orientation=0][emulator-5554 - 7.0] SKIPPED 
 
 com.github.fschroffner.radiodroid3.tests.UIFavouritesFragmentTest > stationInFavourites_ShouldBeReordered_WithDragAndDrop[orientation=0][emulator-5554 - 7.0] SKIPPED 
-emulator-5554 - 7.0 Tests 12/53 completed. (4 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 14/53 completed. (4 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 13/53 completed. (4 skipped) (2 failed)
 
 com.github.fschroffner.radiodroid3.tests.UIHistoryFragmentTest > stationsInHistory_ShouldNotBeReordered_WithDragAndDrop[orientation=1][emulator-5554 - 7.0] SKIPPED 
-emulator-5554 - 7.0 Tests 17/53 completed. (5 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 17/53 completed. (5 skipped) (2 failed)
 
 com.github.fschroffner.radiodroid3.tests.UIHistoryFragmentTest > stationsInHistory_ShouldNotBeReordered_WithDragAndDrop[orientation=0][emulator-5554 - 7.0] SKIPPED 
-emulator-5554 - 7.0 Tests 21/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 22/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 24/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 26/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 28/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 30/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 32/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 33/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 35/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 37/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 39/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 41/53 completed. (6 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 43/53 completed. (6 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 20/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 22/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 24/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 25/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 27/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 29/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 31/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 33/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 35/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 37/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 39/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 40/53 completed. (6 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 42/53 completed. (6 skipped) (2 failed)
 
 com.github.fschroffner.radiodroid3.tests.UINotificationTests > playback_ShouldStart_OnResumeFromNotification[emulator-5554 - 7.0] SKIPPED 
-emulator-5554 - 7.0 Tests 47/53 completed. (7 skipped) (1 failed)
+emulator-5554 - 7.0 Tests 46/53 completed. (7 skipped) (2 failed)
 
 com.github.fschroffner.radiodroid3.tests.UIPlaybackTest > error_ShouldAppear_OnStreamErrorCode[emulator-5554 - 7.0] SKIPPED 
-emulator-5554 - 7.0 Tests 51/53 completed. (8 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 53/53 completed. (8 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 55/53 completed. (8 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 57/53 completed. (8 skipped) (1 failed)
-emulator-5554 - 7.0 Tests 59/53 completed. (8 skipped) (1 failed)
-
-com.github.fschroffner.radiodroid3.tests.UIStationListsTest > stationTabs_DoWork_WhenSwiped[orientation=0][emulator-5554 - 7.0] FAILED 
-	androidx.test.espresso.NoMatchingViewException: No views in hierarchy found matching: (view.getId() is <2131362359/com.github.fschroffner.radiodroid3:id/recyclerViewStations> and (view has effective visibility <VISIBLE> and view.getGlobalVisibleRect() covers at least <60> percent of the view's area))
-	
+emulator-5554 - 7.0 Tests 51/53 completed. (8 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 53/53 completed. (8 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 55/53 completed. (8 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 57/53 completed. (8 skipped) (2 failed)
+emulator-5554 - 7.0 Tests 59/53 completed. (8 skipped) (2 failed)
 Tests on emulator-5554 - 7.0 failed: There was 2 failure(s).
 Finished 61 tests on emulator-5554 - 7.0
 
 > Task :app:connectedFreeDebugAndroidTest FAILED
-> Task :app:createPlayDebugApkListingFileRedirect
-
-[Incubating] Problems report is available at: file:///home/runner/work/RadioDroid3/RadioDroid3/build/reports/problems/problems-report.html
 
 FAILURE: Build failed with an exception.
 
@@ -714,14 +676,8 @@ Execution failed for task ':app:connectedFreeDebugAndroidTest'.
 > Run with --scan to generate a Build Scan (powered by Develocity).
 > Get more help at https://help.gradle.org.
 
-Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
-
-You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
-
-For more on this, please refer to https://docs.gradle.org/9.2.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
-
-BUILD FAILED in 9m 2s
-141 actionable tasks: 141 executed
+BUILD FAILED133 actionable tasks: 133 executed
+ in 8m 15s
 Error: The process '/usr/bin/sh' failed with exit code 1
 Terminate Emulator
 USER_INFO    | Snapshots have been disabled by the user, save request is ignored.

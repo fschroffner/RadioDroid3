@@ -128,12 +128,14 @@ class AlarmReceiver : BroadcastReceiver() {
     private fun playSystemAlarm(context: Context) {
         if (BuildConfig.DEBUG) Log.d(TAG, "Starting system alarm")
         val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-        val nm = context.getSystemService(NotificationManager::class.java)
-        val channel = NotificationChannel(BACKUP_NOTIFICATION_NAME, context.getString(R.string.alarm_backup), NotificationManager.IMPORTANCE_HIGH).apply {
-            description = context.getString(R.string.alarm_back_desc)
-            setSound(soundUri, AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).setUsage(AudioAttributes.USAGE_ALARM).build())
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(BACKUP_NOTIFICATION_NAME, context.getString(R.string.alarm_backup), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = context.getString(R.string.alarm_back_desc)
+                setSound(soundUri, AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).setUsage(AudioAttributes.USAGE_ALARM).build())
+            }
+            nm.createNotificationChannel(channel)
         }
-        nm.createNotificationChannel(channel)
         // On Android 13+ (API 33) POST_NOTIFICATIONS is a runtime permission. A
         // BroadcastReceiver cannot request it, so guard notify() to avoid a crash
         // when the user has not granted it.

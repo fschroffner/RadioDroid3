@@ -6,8 +6,13 @@ import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions
+import androidx.test.espresso.action.GeneralSwipeAction
+import androidx.test.espresso.action.Swipe
+import androidx.test.espresso.action.GeneralLocation
+import androidx.test.espresso.action.Press
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.hasDescendant
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
@@ -90,20 +95,41 @@ class UIHistoryFragmentTest {
         onView(withId(R.id.nav_item_history)).perform(ViewActions.click())
 
         onView(allOf(withId(R.id.recyclerViewStations), FirstViewMatcher.firstView())).perform(scrollToRecyclerItem(0))
-        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(0)).perform(ViewActions.swipeRight())
-        waitForView(withId(com.google.android.material.R.id.snackbar_action))
+        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(0)).perform(
+            GeneralSwipeAction(
+                Swipe.SLOW,
+                GeneralLocation.CENTER_LEFT,
+                GeneralLocation.CENTER_RIGHT,
+                Press.FINGER
+            )
+        )
+        waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 1, historyManager.getList().size)
 
         onView(allOf(withId(R.id.recyclerViewStations), FirstViewMatcher.firstView())).perform(scrollToRecyclerItem(1))
-        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(1)).perform(ViewActions.swipeRight())
-        waitForView(withId(com.google.android.material.R.id.snackbar_action))
+        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(1)).perform(
+            GeneralSwipeAction(
+                Swipe.SLOW,
+                GeneralLocation.CENTER_LEFT,
+                GeneralLocation.CENTER_RIGHT,
+                Press.FINGER
+            )
+        )
+        waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 2, historyManager.getList().size)
 
         onView(allOf(withId(R.id.recyclerViewStations), FirstViewMatcher.firstView())).perform(scrollToRecyclerItem(2))
-        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(2)).perform(ViewActions.swipeRight())
-        waitForView(withId(com.google.android.material.R.id.snackbar_action))
+        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(2)).perform(
+            GeneralSwipeAction(
+                Swipe.SLOW,
+                GeneralLocation.CENTER_LEFT,
+                GeneralLocation.CENTER_RIGHT,
+                Press.FINGER
+            )
+        )
+        waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 3, historyManager.getList().size)
 

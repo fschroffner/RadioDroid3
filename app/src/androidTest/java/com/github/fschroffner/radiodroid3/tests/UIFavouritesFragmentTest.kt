@@ -15,6 +15,7 @@ import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.espresso.matcher.ViewMatchers.hasDescendant
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.filters.LargeTest
 import androidx.test.filters.SdkSuppress
 import androidx.test.rule.ActivityTestRule
@@ -140,7 +141,7 @@ class UIFavouritesFragmentTest {
                 Press.FINGER
             )
         )
-        waitForView(withId(com.google.android.material.R.id.snackbar_action))
+        waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 1, favouriteManager.getList().size)
 
@@ -153,7 +154,7 @@ class UIFavouritesFragmentTest {
                 Press.FINGER
             )
         )
-        waitForView(withId(com.google.android.material.R.id.snackbar_action))
+        waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 2, favouriteManager.getList().size)
 
@@ -166,7 +167,7 @@ class UIFavouritesFragmentTest {
                 Press.FINGER
             )
         )
-        waitForView(withId(com.google.android.material.R.id.snackbar_action))
+        waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 3, favouriteManager.getList().size)
 
