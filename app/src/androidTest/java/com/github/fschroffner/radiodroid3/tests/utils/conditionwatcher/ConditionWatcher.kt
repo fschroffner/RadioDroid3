@@ -19,13 +19,13 @@ object ConditionWatcher {
     val SHORT_WAIT_POLICY: Policy = object : Policy {
         override fun getCheckInterval(): Long = 250
 
-        override fun getTimeoutInterval(): Long = 10000
+        override fun getTimeoutInterval(): Long = 20000
     }
 
     val LONG_WAIT_POLICY: Policy = object : Policy {
         override fun getCheckInterval(): Long = 250
 
-        override fun getTimeoutInterval(): Long = 20000
+        override fun getTimeoutInterval(): Long = 40000
     }
 
     interface Condition {
