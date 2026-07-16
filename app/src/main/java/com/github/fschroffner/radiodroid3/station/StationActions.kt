@@ -102,9 +102,12 @@ object StationActions {
         val favouriteManager: FavouriteManager = app.favouriteManager
         val removedIdx = favouriteManager.remove(station.StationUuid)
         if (view != null) {
-            val viewAttachTo = view.rootView.findViewById<View>(R.id.fragment_player_small)
-            val snackbar = Snackbar.make(viewAttachTo, R.string.notify_station_removed_from_list, 6000)
-            snackbar.anchorView = viewAttachTo
+            val anchorView = view.rootView.findViewById<View>(R.id.bottom_sheet)
+                ?: view.rootView.findViewById<View>(R.id.fragment_player_small)
+            val snackbar = Snackbar.make(view, R.string.notify_station_removed_from_list, 6000)
+            if (anchorView != null) {
+                snackbar.anchorView = anchorView
+            }
             snackbar.setAction(R.string.action_station_removed_from_list_undo) { favouriteManager.restore(station, removedIdx) }
             snackbar.show()
         }
