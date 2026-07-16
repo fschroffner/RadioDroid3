@@ -20,11 +20,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
-    - name: set up JDK 17
+    - name: set up JDK 21
       uses: actions/setup-java@v5
       with:
         distribution: 'zulu'
-        java-version: 17
+        java-version: 21
     - name: Build APK
       run: bash ./gradlew assembleFreeDebug --stacktrace
     - name: Create GitHub Release
