@@ -13,6 +13,12 @@ import com.github.fschroffner.radiodroid3.RadioDroidApp
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.tests.utils.conditionwatcher.ConditionWatcher
 
+import androidx.test.espresso.ViewAction
+import androidx.test.espresso.action.GeneralSwipeAction
+import androidx.test.espresso.action.Swipe
+import androidx.test.espresso.action.Press
+import androidx.test.espresso.action.CoordinatesProvider
+
 object TestUtils {
 
     init {
@@ -105,5 +111,22 @@ object TestUtils {
 
             override fun getDescription(): String = "Wait for notification to disappear"
         }, ConditionWatcher.SHORT_WAIT_POLICY)
+    }
+
+    fun swipeRightSlow(): ViewAction {
+        return GeneralSwipeAction(
+            Swipe.SLOW,
+            CoordinatesProvider { view ->
+                val location = IntArray(2)
+                view.getLocationOnScreen(location)
+                floatArrayOf(location[0] + view.width * 0.15f, location[1] + view.height * 0.5f)
+            },
+            CoordinatesProvider { view ->
+                val location = IntArray(2)
+                view.getLocationOnScreen(location)
+                floatArrayOf(location[0] + view.width * 0.85f, location[1] + view.height * 0.5f)
+            },
+            Press.FINGER
+        )
     }
 }
