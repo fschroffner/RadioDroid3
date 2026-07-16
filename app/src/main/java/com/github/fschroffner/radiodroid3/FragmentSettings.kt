@@ -87,7 +87,7 @@ class FragmentSettings : PreferenceFragmentCompat(),
         when (s) {
             null -> {
                 refreshToplevelIcons()
-                val searchPreference = findPreference<SearchPreference>("searchPreference")!!
+                val searchPreference = findPreference<Preference>("searchPreference") as SearchPreference
                 val config: SearchConfiguration = searchPreference.searchConfiguration
                 config.setActivity(requireActivity() as AppCompatActivity)
                 config.index(R.xml.preferences)

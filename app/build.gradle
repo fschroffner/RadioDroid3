@@ -159,7 +159,7 @@ dependencies {
     implementation 'info.debatty:java-string-similarity:2.0.0'
     implementation 'me.xdrop:fuzzywuzzy:1.4.0'
     implementation 'com.github.zawadz88:MaterialPopupMenu:3.4.0'
-    implementation 'com.github.ByteHamster:SearchPreference:v2.3.0'
+    implementation 'com.bytehamster:lib.preferencesearch:2.7.3'
 
     implementation 'androidx.room:room-runtime:2.7.1'
     androidTestImplementation("androidx.test.espresso:espresso-contrib:3.7.0") {
