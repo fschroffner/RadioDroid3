@@ -54,8 +54,12 @@ class FragmentHistory : Fragment(), IAdapterRefreshable {
             override fun onStationSwiped(station: DataRadioStation) {
                 val removedIdx = historyManager.remove(station.StationUuid)
                 RefreshListGui()
-                val snackbar = Snackbar.make(rvStations, R.string.notify_station_removed_from_list, 6000)
-                snackbar.anchorView = requireView().rootView.findViewById(R.id.bottom_sheet)
+                val snackbar = Snackbar.make(requireView(), R.string.notify_station_removed_from_list, 6000)
+                val anchorView = requireView().rootView.findViewById<View>(R.id.bottom_sheet)
+                    ?: requireView().rootView.findViewById<View>(R.id.fragment_player_small)
+                if (anchorView != null) {
+                    snackbar.anchorView = anchorView
+                }
                 snackbar.setAction(R.string.action_station_removed_from_list_undo) {
                     historyManager.restore(station, removedIdx)
                     RefreshListGui()

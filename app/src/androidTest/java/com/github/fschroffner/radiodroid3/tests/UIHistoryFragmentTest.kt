@@ -97,12 +97,14 @@ class UIHistoryFragmentTest {
         onView(allOf(withId(R.id.recyclerViewStations), FirstViewMatcher.firstView())).perform(scrollToRecyclerItem(0))
         onView(withRecyclerView(R.id.recyclerViewStations).atPosition(0)).perform(TestUtils.swipeRightSlow())
         waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
+        TestUtils.dismissSnackbar()
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 1, historyManager.getList().size)
 
         onView(allOf(withId(R.id.recyclerViewStations), FirstViewMatcher.firstView())).perform(scrollToRecyclerItem(1))
         onView(withRecyclerView(R.id.recyclerViewStations).atPosition(1)).perform(TestUtils.swipeRightSlow())
         waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
+        TestUtils.dismissSnackbar()
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 2, historyManager.getList().size)
 

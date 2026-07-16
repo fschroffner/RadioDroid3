@@ -129,4 +129,17 @@ object TestUtils {
             Press.FINGER
         )
     }
+
+    fun dismissSnackbar() {
+        try {
+            androidx.test.espresso.Espresso.onView(
+                androidx.test.espresso.matcher.ViewMatchers.withId(
+                    com.google.android.material.R.id.snackbar_text
+                )
+            ).perform(androidx.test.espresso.action.ViewActions.swipeRight())
+            android.os.SystemClock.sleep(500)
+        } catch (e: Exception) {
+            // Ignore if snackbar is not displayed or already gone
+        }
+    }
 }
