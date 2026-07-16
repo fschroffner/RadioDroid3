@@ -133,19 +133,40 @@ class UIFavouritesFragmentTest {
         onView(withId(R.id.nav_item_starred)).perform(ViewActions.click())
 
         onView(allOf(withId(R.id.recyclerViewStations), FirstViewMatcher.firstView())).perform(scrollToRecyclerItem(0))
-        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(0)).perform(ViewActions.swipeRight())
+        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(0)).perform(
+            GeneralSwipeAction(
+                Swipe.SLOW,
+                GeneralLocation.CENTER_LEFT,
+                GeneralLocation.CENTER_RIGHT,
+                Press.FINGER
+            )
+        )
         waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 1, favouriteManager.getList().size)
 
         onView(allOf(withId(R.id.recyclerViewStations), FirstViewMatcher.firstView())).perform(scrollToRecyclerItem(1))
-        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(1)).perform(ViewActions.swipeRight())
+        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(1)).perform(
+            GeneralSwipeAction(
+                Swipe.SLOW,
+                GeneralLocation.CENTER_LEFT,
+                GeneralLocation.CENTER_RIGHT,
+                Press.FINGER
+            )
+        )
         waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 2, favouriteManager.getList().size)
 
         onView(allOf(withId(R.id.recyclerViewStations), FirstViewMatcher.firstView())).perform(scrollToRecyclerItem(2))
-        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(2)).perform(ViewActions.swipeRight())
+        onView(withRecyclerView(R.id.recyclerViewStations).atPosition(2)).perform(
+            GeneralSwipeAction(
+                Swipe.SLOW,
+                GeneralLocation.CENTER_LEFT,
+                GeneralLocation.CENTER_RIGHT,
+                Press.FINGER
+            )
+        )
         waitForView(withId(com.google.android.material.R.id.snackbar_action)).toMatch(isDisplayed())
         SystemClock.sleep(1000)
         assertEquals(STATIONS_COUNT - 3, favouriteManager.getList().size)
