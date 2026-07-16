@@ -14,7 +14,6 @@ class RecyclerViewMatcher(private val recyclerViewId: Int) {
     fun atPositionOnView(position: Int, targetViewId: Int): Matcher<View> {
         return object : TypeSafeMatcher<View>() {
             private var resources: Resources? = null
-            private var childView: View? = null
 
             override fun describeTo(description: Description) {
                 val id = if (targetViewId == -1) recyclerViewId else targetViewId
@@ -32,20 +31,20 @@ class RecyclerViewMatcher(private val recyclerViewId: Int) {
             override fun matchesSafely(view: View): Boolean {
                 resources = view.resources
 
-                if (childView == null) {
-                    val recyclerView = view.rootView.findViewById<RecyclerView>(recyclerViewId)
-                    // The view holder may not be laid out yet when this matcher first
-                    // runs. Return false instead of throwing so Espresso keeps retrying
-                    // until the item at the requested position becomes available.
-                    val viewHolder = recyclerView?.findViewHolderForAdapterPosition(position)
-                        ?: return false
-                    childView = viewHolder.itemView
-                }
+                val recyclerView = view.parent as? RecyclerView ?: return false
+                if (recyclerView.id != recyclerViewId) return false
+                if (!recyclerView.isShown) return false
+
+                val rect = android.graphics.Rect()
+                if (!recyclerView.getGlobalVisibleRect(rect) || rect.isEmpty) return false
+
+                val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
+                    ?: return false
 
                 return if (targetViewId == -1) {
-                    view === childView
+                    view === viewHolder.itemView
                 } else {
-                    val targetView = childView!!.findViewById<View>(targetViewId)
+                    val targetView = viewHolder.itemView.findViewById<View>(targetViewId)
                     view === targetView
                 }
             }
