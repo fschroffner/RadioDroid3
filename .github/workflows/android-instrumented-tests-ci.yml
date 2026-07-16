@@ -53,6 +53,7 @@ jobs:
           arch: x86_64
           target: ${{ matrix.api-level >= 30 && 'google_apis' || 'default' }}
           force-avd-creation: false
+          ram-size: 2048M
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
@@ -64,6 +65,7 @@ jobs:
           arch: x86_64
           target: ${{ matrix.api-level >= 30 && 'google_apis' || 'default' }}
           force-avd-creation: false
+          ram-size: 2048M
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: adb uninstall com.github.fschroffner.radiodroid3.test || true; ./gradlew ${{ matrix.api-level > 29 && 'installPlayDebugAndroidTest' || 'connectedCheck' }}
+          script: adb uninstall com.github.fschroffner.radiodroid3.test || true; ./gradlew ${{ matrix.api-level > 29 && 'installPlayDebugAndroidTest' || 'connectedCheck' }} -Dorg.gradle.jvmargs="-Xmx2048m"
