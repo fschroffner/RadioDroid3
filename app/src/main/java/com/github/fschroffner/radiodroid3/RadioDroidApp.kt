@@ -56,7 +56,7 @@ class RadioDroidApp : MultiDexApplication() {
 
     var testsInterceptor: Interceptor? = null
 
-    inner class UserAgentInterceptor(private val userAgent: String) : Interceptor {
+    class UserAgentInterceptor(private val userAgent: String) : Interceptor {
         @Throws(IOException::class)
         override fun intercept(chain: Interceptor.Chain): Response {
             val requestWithUserAgent = chain.request().newBuilder().header("User-Agent", userAgent).build()

@@ -21,6 +21,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -29,6 +30,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.IntentCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -91,9 +93,51 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         private const val TAG = "RadioDroid"
         const val PERM_REQ_STORAGE_FAV_SAVE = 1
         const val PERM_REQ_STORAGE_FAV_LOAD = 2
-        const val PERM_REQ_NOTIFICATIONS = 3
         private const val ACTION_SAVE_FILE = 1
         private const val ACTION_LOAD_FILE = 2
+    }
+
+    private val requestNotificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (!isGranted) {
+            Log.w(TAG, "Notification permission denied.")
+        }
+    }
+
+    private val saveFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val uri = result.data?.data
+            Log.d(TAG, "Choosen save path: $uri")
+            val radioDroidApp = application as RadioDroidApp
+            val favouriteManager = radioDroidApp.favouriteManager
+            val historyManager = radioDroidApp.historyManager
+            try {
+                val os: OutputStream = contentResolver.openOutputStream(uri!!)!!
+                val writer = OutputStreamWriter(os)
+                if (selectedMenuItem == R.id.nav_item_starred) {
+                    favouriteManager.SaveM3UWriter(writer)
+                } else if (selectedMenuItem == R.id.nav_item_history) {
+                    historyManager.SaveM3UWriter(writer)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Unable to write to file $e")
+            }
+        }
+    }
+
+    private val loadFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val uri = result.data?.data
+            Log.d(TAG, "Choosen load path: $uri")
+            val radioDroidApp = application as RadioDroidApp
+            val favouriteManager = radioDroidApp.favouriteManager
+            try {
+                val `is`: InputStream = contentResolver.openInputStream(uri!!)!!
+                val reader = InputStreamReader(`is`)
+                favouriteManager.LoadM3USimple(reader)
+            } catch (e: Exception) {
+                Log.e(TAG, "Unable to load to file $e")
+            }
+        }
     }
 
     private val TAG_SEARCH_URL = "json/stations/bytagexact"
@@ -270,17 +314,62 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
         (application as RadioDroidApp).castHandler.onCreate(this)
 
-        // Android 13+ (API 33) requires a runtime grant for notifications; request it on
-        // first launch so playback/alarm notifications are not silently dropped.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-            != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                PERM_REQ_NOTIFICATIONS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
 
         setupStartUpFragment()
+
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (playerBottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
+                    playerBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
+                    return
+                }
+
+                val backStackCount = mFragmentManager.backStackEntryCount
+
+                if (backStackCount > 0) {
+                    val backStackEntry = mFragmentManager.getBackStackEntryAt(mFragmentManager.backStackEntryCount - 1)
+                    if (backStackEntry.name == "SearchPreferenceFragment") {
+                        mFragmentManager.popBackStack()
+                        return
+                    }
+                    val parsedId = backStackEntry.name!!.toInt()
+                    if (parsedId == FRAGMENT_FROM_BACKSTACK) {
+                        mFragmentManager.popBackStack()
+                        invalidateOptionsMenu()
+                        return
+                    }
+                }
+
+                if (Utils.bottomNavigationEnabled(this@ActivityMain)) {
+                    if (lastExitTry != null && Date().time < lastExitTry!!.time + 3 * 1000) {
+                        PlayerServiceUtil.shutdownService()
+                        finish()
+                    } else {
+                        Toast.makeText(this@ActivityMain, R.string.alert_press_back_to_exit, Toast.LENGTH_SHORT).show()
+                        lastExitTry = Date()
+                        return
+                    }
+                }
+
+                if (backStackCount > 1) {
+                    val backStackEntry = mFragmentManager.getBackStackEntryAt(mFragmentManager.backStackEntryCount - 2)
+                    selectedMenuItem = backStackEntry.name!!.toInt()
+
+                    if (!Utils.bottomNavigationEnabled(this@ActivityMain)) {
+                        mNavigationView.setCheckedItem(selectedMenuItem)
+                    }
+                    invalidateOptionsMenu()
+                    mFragmentManager.popBackStack()
+                } else {
+                    finish()
+                }
+            }
+        })
     }
 
     override fun onNavigationItemSelected(menuItem: MenuItem): Boolean {
@@ -319,55 +408,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         appBarLayout.setExpanded(true)
 
         return false
-    }
-
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onBackPressed() {
-        if (playerBottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
-            playerBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
-            return
-        }
-
-        val backStackCount = mFragmentManager.backStackEntryCount
-
-        if (backStackCount > 0) {
-            val backStackEntry = mFragmentManager.getBackStackEntryAt(mFragmentManager.backStackEntryCount - 1)
-            if (backStackEntry.name == "SearchPreferenceFragment") {
-                super.onBackPressed()
-                return
-            }
-            val parsedId = backStackEntry.name!!.toInt()
-            if (parsedId == FRAGMENT_FROM_BACKSTACK) {
-                super.onBackPressed()
-                invalidateOptionsMenu()
-                return
-            }
-        }
-
-        if (Utils.bottomNavigationEnabled(this)) {
-            if (lastExitTry != null && Date().time < lastExitTry!!.time + 3 * 1000) {
-                PlayerServiceUtil.shutdownService()
-                finish()
-            } else {
-                Toast.makeText(this, R.string.alert_press_back_to_exit, Toast.LENGTH_SHORT).show()
-                lastExitTry = Date()
-                return
-            }
-        }
-
-        if (backStackCount > 1) {
-            val backStackEntry = mFragmentManager.getBackStackEntryAt(mFragmentManager.backStackEntryCount - 2)
-            selectedMenuItem = backStackEntry.name!!.toInt()
-
-            if (!Utils.bottomNavigationEnabled(this)) {
-                mNavigationView.setCheckedItem(selectedMenuItem)
-            }
-            invalidateOptionsMenu()
-        } else {
-            finish()
-            return
-        }
-        super.onBackPressed()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -584,47 +624,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         return true
     }
 
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
-        super.onActivityResult(requestCode, resultCode, resultData)
-
-        if (requestCode == ACTION_SAVE_FILE && resultCode == RESULT_OK) {
-            if (resultData != null) {
-                val uri = resultData.data
-                Log.d(TAG, "Choosen save path: $uri")
-                val radioDroidApp = application as RadioDroidApp
-                val favouriteManager = radioDroidApp.favouriteManager
-                val historyManager = radioDroidApp.historyManager
-                try {
-                    val os: OutputStream = contentResolver.openOutputStream(uri!!)!!
-                    val writer = OutputStreamWriter(os)
-                    if (selectedMenuItem == R.id.nav_item_starred) {
-                        favouriteManager.SaveM3UWriter(writer)
-                    } else if (selectedMenuItem == R.id.nav_item_history) {
-                        historyManager.SaveM3UWriter(writer)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Unable to write to file $e")
-                }
-            }
-        }
-        if (requestCode == ACTION_LOAD_FILE && resultCode == RESULT_OK) {
-            if (resultData != null) {
-                val uri = resultData.data
-                Log.d(TAG, "Choosen load path: $uri")
-                val radioDroidApp = application as RadioDroidApp
-                val favouriteManager = radioDroidApp.favouriteManager
-                try {
-                    val `is`: InputStream = contentResolver.openInputStream(uri!!)!!
-                    val reader = InputStreamReader(`is`)
-                    favouriteManager.LoadM3USimple(reader)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Unable to load to file $e")
-                }
-            }
-        }
-    }
-
     override fun onFileSelected(dialog: FileDialog, file: File) {
         try {
             Log.i("MAIN", "save to ${file.parent}/${file.name}")
@@ -661,8 +660,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             type = "audio/x-mpegurl"
             putExtra(Intent.EXTRA_TITLE, "playlist.m3u")
         }
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, ACTION_SAVE_FILE)
+        saveFileLauncher.launch(intent)
     }
 
     fun LoadFavourites() {
@@ -680,8 +678,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             type = "audio/x-mpegurl"
             putExtra(Intent.EXTRA_TITLE, "playlist.m3u")
         }
-        @Suppress("DEPRECATION")
-        startActivityForResult(intent, ACTION_LOAD_FILE)
+        loadFileLauncher.launch(intent)
     }
 
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
@@ -881,7 +878,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                         meteredConnectionAlertDialog?.cancel()
                         meteredConnectionAlertDialog = null
 
-                        val playerType = intent.getParcelableExtra<PlayerType>(PlayerService.PLAYER_SERVICE_METERED_CONNECTION_PLAYER_TYPE)!!
+                        val playerType = IntentCompat.getParcelableExtra(intent, PlayerService.PLAYER_SERVICE_METERED_CONNECTION_PLAYER_TYPE, PlayerType::class.java)!!
                         when (playerType) {
                             PlayerType.RADIODROID -> showMeteredConnectionDialog(Runnable {
                                 Utils.play(application as RadioDroidApp, PlayerServiceUtil.getCurrentStation()!!)

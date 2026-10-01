@@ -230,13 +230,8 @@ class FragmentPlayerFull : Fragment() {
         return view
     }
 
-    fun init() {
-        if (!initialized) fullUpdate()
-    }
-
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         btnPlay.setOnClickListener {
             if (PlayerServiceUtil.isPlaying()) {
@@ -276,6 +271,10 @@ class FragmentPlayerFull : Fragment() {
                 StationActions.markAsFavourite(requireContext(), station)
             }
         }
+    }
+
+    fun init() {
+        if (!initialized) fullUpdate()
     }
 
     override fun onHiddenChanged(hidden: Boolean) {

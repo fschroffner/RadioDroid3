@@ -77,9 +77,8 @@ class FragmentPlayerSmall : Fragment() {
         return view
     }
 
-    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         requireActivity().application.registerActivityLifecycleCallbacks(LifecycleCallbacks())
 
@@ -92,7 +91,7 @@ class FragmentPlayerSmall : Fragment() {
             }
         }
 
-        buttonMore.setOnClickListener { view ->
+        buttonMore.setOnClickListener {
             val station = Utils.getCurrentOrLastStation(requireContext()) ?: return@setOnClickListener
             val favouriteManager = (requireActivity().application as RadioDroidApp).favouriteManager
             showPlayerMenu(station, favouriteManager.has(station.StationUuid))

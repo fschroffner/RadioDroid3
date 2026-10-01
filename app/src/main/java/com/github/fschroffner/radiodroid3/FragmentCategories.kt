@@ -1,6 +1,5 @@
 package com.github.fschroffner.radiodroid3
 
-import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -12,7 +11,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.github.fschroffner.radiodroid3.adapters.ItemAdapterCategory
 import com.github.fschroffner.radiodroid3.data.DataCategory
 import com.github.fschroffner.radiodroid3.station.StationsFilter
-import java.util.Collections
+import java.util.*
 
 class FragmentCategories : FragmentBase() {
     companion object {

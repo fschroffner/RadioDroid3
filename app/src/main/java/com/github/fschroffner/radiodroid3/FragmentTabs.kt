@@ -8,10 +8,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentPagerAdapter
-import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentRefreshable
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentSearchable
 import com.github.fschroffner.radiodroid3.station.FragmentStations
@@ -59,7 +59,12 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
         }
 
         tabLayout.post {
-            if (context != null) tabLayout.setupWithViewPager(viewPager)
+            if (context != null && viewPager != null) {
+                val adapter = viewPager!!.adapter as ViewPagerAdapter
+                TabLayoutMediator(tabLayout, viewPager!!) { tab, position ->
+                    tab.text = resources.getString(adapter.getPageTitle(position))
+                }.attach()
+            }
         }
 
         return x
@@ -73,6 +78,12 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
     override fun onPause() {
         super.onPause()
         requireActivity().findViewById<TabLayout>(R.id.tabs).visibility = View.GONE
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        viewPager?.adapter = null
+        viewPager = null
     }
 
     private fun getCountryCode(): String? {
@@ -91,7 +102,7 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
         return null
     }
 
-    private fun setupViewPager(viewPager: ViewPager) {
+    private fun setupViewPager(viewPager: ViewPager2) {
         val countryCode = getCountryCode()
         if (countryCode != null) {
             addresses[IDX_LOCAL] = "json/stations/bycountrycodeexact/$countryCode?order=clickcount&reverse=true"
@@ -120,7 +131,7 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
         (fragments[IDX_COUNTRIES] as FragmentCategories).SetBaseSearchLink(StationsFilter.SearchStyle.ByCountryCodeExact)
         (fragments[IDX_LANGUAGES] as FragmentCategories).SetBaseSearchLink(StationsFilter.SearchStyle.ByLanguageExact)
 
-        val adapter = ViewPagerAdapter(childFragmentManager)
+        val adapter = ViewPagerAdapter(this)
         if (countryCode != null) adapter.addFragment(fragments[IDX_LOCAL]!!, R.string.action_local)
         adapter.addFragment(fragments[IDX_TOP_CLICK]!!, R.string.action_top_click)
         adapter.addFragment(fragments[IDX_TOP_VOTE]!!, R.string.action_top_vote)
@@ -147,26 +158,27 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
     }
 
     override fun Refresh() {
-        when (val fragment = fragments[viewPager!!.currentItem]) {
-            is IFragmentRefreshable -> fragment.Refresh()
-            is FragmentBase -> fragment.DownloadUrl(true)
+        if (viewPager != null) {
+            when (val fragment = fragments[viewPager!!.currentItem]) {
+                is IFragmentRefreshable -> fragment.Refresh()
+                is FragmentBase -> fragment.DownloadUrl(true)
+            }
         }
     }
 
-    @Suppress("DEPRECATION")
-    inner class ViewPagerAdapter(manager: FragmentManager) : FragmentPagerAdapter(manager) {
+    inner class ViewPagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
         private val mFragmentList = mutableListOf<Fragment>()
         private val mFragmentTitleList = mutableListOf<Int>()
 
-        override fun getItem(position: Int) = mFragmentList[position]
-        override fun getCount() = mFragmentList.size
+        override fun createFragment(position: Int) = mFragmentList[position]
+        override fun getItemCount() = mFragmentList.size
 
         fun addFragment(fragment: Fragment, title: Int) {
             mFragmentList.add(fragment)
             mFragmentTitleList.add(title)
         }
 
-        override fun getPageTitle(position: Int): CharSequence = resources.getString(mFragmentTitleList[position])
+        fun getPageTitle(position: Int): Int = mFragmentTitleList[position]
     }
 
     companion object {
@@ -181,6 +193,6 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
         private const val IDX_SEARCH = 8
 
         @JvmField
-        var viewPager: ViewPager? = null
+        var viewPager: ViewPager2? = null
     }
 }

@@ -1,24 +1,30 @@
 package com.github.fschroffner.radiodroid3.service
 
 import android.content.Context
+import android.media.AudioManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.PowerManager
 import android.util.Log
+import androidx.media.AudioAttributesCompat
+import androidx.media.AudioFocusRequestCompat
+import androidx.media.AudioManagerCompat
 import com.github.fschroffner.radiodroid3.BuildConfig
 
 /**
  * Owns the [PowerManager.WakeLock] and [WifiManager.WifiLock] that keep the CPU and Wi-Fi radio
- * alive while a stream is playing. Extracted from [PlayerService] so the lock lifecycle lives in one
- * place instead of being interleaved with playback control.
+ * alive while a stream is playing, as well as the audio focus requests. 
+ * Extracted from [PlayerService] so the lock lifecycle lives in one place.
  */
-class PlaybackLocks(private val context: Context) {
+class PlaybackLocks(private val context: Context, private val audioManager: AudioManager, private val afChangeListener: AudioManager.OnAudioFocusChangeListener) {
 
     private val TAG = "PlaybackLocks"
 
     private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
+    
+    private var audioFocusRequest: AudioFocusRequestCompat? = null
 
     fun acquire() {
         if (BuildConfig.DEBUG) Log.d(TAG, "acquiring wake lock and wifi lock.")
@@ -62,6 +68,35 @@ class PlaybackLocks(private val context: Context) {
         if (wifiLock != null) {
             if (wifiLock!!.isHeld) wifiLock!!.release()
             wifiLock = null
+        }
+    }
+
+    fun acquireAudioFocus(): Int {
+        if (BuildConfig.DEBUG) Log.d(TAG, "acquiring audio focus.")
+        
+        val audioAttributes = AudioAttributesCompat.Builder()
+            .setUsage(AudioAttributesCompat.USAGE_MEDIA)
+            .setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC)
+            .build()
+            
+        val request = AudioFocusRequestCompat.Builder(AudioManagerCompat.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(audioAttributes)
+            .setOnAudioFocusChangeListener(afChangeListener)
+            .build()
+            
+        audioFocusRequest = request
+        val result = AudioManagerCompat.requestAudioFocus(audioManager, request)
+        
+        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            Log.e(TAG, "acquiring audio focus failed!")
+        }
+        return result
+    }
+
+    fun releaseAudioFocus() {
+        if (BuildConfig.DEBUG) Log.d(TAG, "releasing audio focus.")
+        audioFocusRequest?.let { 
+            AudioManagerCompat.abandonAudioFocusRequest(audioManager, it)
         }
     }
 }
