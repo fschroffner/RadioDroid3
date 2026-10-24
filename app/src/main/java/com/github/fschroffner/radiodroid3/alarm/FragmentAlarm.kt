@@ -10,23 +10,24 @@ import android.widget.ListView
 import android.widget.TimePicker
 import androidx.fragment.app.Fragment
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Observer
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class FragmentAlarm : Fragment(), TimePickerDialog.OnTimeSetListener {
-    private lateinit var ram: RadioAlarmManager
+    @Inject
+    lateinit var ram: RadioAlarmManager
+
     private lateinit var adapterRadioAlarm: ItemAdapterRadioAlarm
     private lateinit var lvAlarms: ListView
     private lateinit var alarmsObserver: Observer
     private var clickedAlarm: DataRadioStationAlarm? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val radioDroidApp = requireActivity().application as RadioDroidApp
-        ram = radioDroidApp.alarmManager
-
         val view = inflater.inflate(R.layout.layout_alarms, container, false)
 
-        adapterRadioAlarm = ItemAdapterRadioAlarm(requireActivity())
+        adapterRadioAlarm = ItemAdapterRadioAlarm(requireActivity(), ram)
         lvAlarms = view.findViewById(R.id.listViewAlarms)
         lvAlarms.adapter = adapterRadioAlarm
         lvAlarms.isClickable = true
@@ -68,5 +69,4 @@ class FragmentAlarm : Fragment(), TimePickerDialog.OnTimeSetListener {
         view.invalidate()
     }
 
-    fun getRam(): RadioAlarmManager = ram
 }

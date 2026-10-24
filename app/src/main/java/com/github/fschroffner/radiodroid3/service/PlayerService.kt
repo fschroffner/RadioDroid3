@@ -49,7 +49,11 @@ import com.squareup.picasso.Target
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import com.github.fschroffner.radiodroid3.FavouriteManager
+import com.github.fschroffner.radiodroid3.HistoryManager
+import com.github.fschroffner.radiodroid3.recording.RecordingsManager
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.players.PlayState
@@ -60,7 +64,13 @@ import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
 import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
 import java.io.ByteArrayOutputStream
 
+@AndroidEntryPoint
 class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
+
+    @Inject lateinit var favouriteManager: FavouriteManager
+    @Inject lateinit var historyManager: HistoryManager
+    @Inject lateinit var recordingsManager: RecordingsManager
+    @Inject lateinit var injectedTrackHistoryRepository: TrackHistoryRepository
 
     companion object {
         const val METERED_CONNECTION_WARNING_KEY = "warn_no_wifi"
@@ -353,9 +363,9 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
         radioPlayer = RadioPlayer(this)
         radioPlayer.setPlayerListener(this)
-        recordingController = RecordingController(this, (application as RadioDroidApp).recordingsManager, radioPlayer)
+        recordingController = RecordingController(this, recordingsManager, radioPlayer)
 
-        browseTree = RadioBrowseTree(application as RadioDroidApp)
+        browseTree = RadioBrowseTree(this, favouriteManager, historyManager)
 
         val startActivityIntent = Intent(itsContext.applicationContext, ActivityMain::class.java)
         val sessionActivityPendingIntent = PendingIntent.getActivity(
@@ -374,8 +384,8 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         notificationProvider.setSmallIcon(R.drawable.ic_play_arrow_white_24dp)
         setMediaNotificationProvider(notificationProvider)
 
-        val radioDroidApp = application as RadioDroidApp
-        trackHistoryRepository = radioDroidApp.trackHistoryRepository
+        
+        trackHistoryRepository = injectedTrackHistoryRepository
         trackHistoryUpdater = TrackHistoryUpdater(trackHistoryRepository)
 
         val headsetConnectionFilter = IntentFilter().apply {
@@ -422,12 +432,12 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         PlayerServiceUtil.bindService(itsContext.applicationContext)
 
         if (currentStation == null) {
-            val radioDroidApp = application as RadioDroidApp
-            currentStation = radioDroidApp.historyManager.getFirst()
+            
+            currentStation = historyManager.getFirst()
         }
         if (currentStation == null) {
-            val radioDroidApp = application as RadioDroidApp
-            currentStation = radioDroidApp.favouriteManager.getFirst()
+            
+            currentStation = favouriteManager.getFirst()
         }
 
         if (intent != null) {
@@ -460,8 +470,8 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     }
 
     private fun playAndWarnIfMetered(station: DataRadioStation) {
-        val radioDroidApp = application as RadioDroidApp
-        Utils.playAndWarnIfMetered(radioDroidApp, station, PlayerType.RADIODROID,
+        
+        Utils.playAndWarnIfMetered(this, station, PlayerType.RADIODROID,
             Runnable { playWithoutWarnings(station) },
             object : Utils.MeteredWarningCallback {
                 override fun warn(station1: DataRadioStation, playerType: PlayerType) {
@@ -509,7 +519,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
     fun next() {
         val station = currentStation ?: return
-        val nextStation = station.queue?.getNextById(station.StationUuid)
+        val nextStation = favouriteManager.getNextById(station.StationUuid) ?: historyManager.getNextById(station.StationUuid)
         if (nextStation != null) {
             if (radioPlayer.isPlaying()) playWithoutWarnings(nextStation)
             else playAndWarnIfMetered(nextStation)
@@ -518,7 +528,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
     fun previous() {
         val station = currentStation ?: return
-        val prevStation = station.queue?.getPreviousById(station.StationUuid)
+        val prevStation = favouriteManager.getPreviousById(station.StationUuid) ?: historyManager.getPreviousById(station.StationUuid)
         if (prevStation != null) {
             if (radioPlayer.isPlaying()) playWithoutWarnings(prevStation)
             else playAndWarnIfMetered(prevStation)
@@ -542,10 +552,10 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         this.lastMeteredConnectionWarningTime = 0
 
         if (!radioPlayer.isPlaying()) {
-            val radioDroidApp = application as RadioDroidApp
+            
             var station = currentStation
             if (currentStation == null) {
-                station = radioDroidApp.historyManager.getFirst()
+                station = historyManager.getFirst()
             }
 
             if (station != null) {

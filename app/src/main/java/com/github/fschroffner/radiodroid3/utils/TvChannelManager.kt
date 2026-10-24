@@ -1,6 +1,7 @@
 package com.github.fschroffner.radiodroid3.utils
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.database.Cursor
 import android.os.Build
@@ -11,8 +12,8 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
 import androidx.tvprovider.media.tv.*
 import com.github.fschroffner.radiodroid3.ActivityMain
+import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
 import java.io.IOException
 import java.util.*
 
@@ -33,8 +34,11 @@ fun <T : BaseProgram> Cursor.asSequence(fromCursor: (Cursor) -> T): Sequence<T> 
 }
 
 @SuppressLint("RestrictedApi")
-class TvChannelManager(val app: RadioDroidApp) : Observer {
-    private val helper = PreviewChannelHelper(app)
+class TvChannelManager(
+    val context: Context,
+    val favouriteManager: FavouriteManager
+) : Observer {
+    private val helper = PreviewChannelHelper(context)
     private var channelId = INVALID_CONTENT_ID
 
     init {
@@ -45,10 +49,10 @@ class TvChannelManager(val app: RadioDroidApp) : Observer {
 
     private fun createDefaultChannel(): Long = try {
         val channel = with(PreviewChannel.Builder()) {
-            setDisplayName(app.getString(R.string.app_name))
-            setDescription(app.getString(R.string.app_name))
-            setAppLinkIntent(Intent(app, ActivityMain::class.java))
-            AppCompatResources.getDrawable(app, R.drawable.ic_launcher)?.toBitmap()?.also { logo ->
+            setDisplayName(context.getString(R.string.app_name))
+            setDescription(context.getString(R.string.app_name))
+            setAppLinkIntent(Intent(context, ActivityMain::class.java))
+            AppCompatResources.getDrawable(context, R.drawable.ic_launcher)?.toBitmap()?.also { logo ->
                 setLogo(logo)
             }
             build()
@@ -61,7 +65,7 @@ class TvChannelManager(val app: RadioDroidApp) : Observer {
 
     @RequiresApi(26)
     private fun getPreviewPrograms(): Sequence<PreviewProgram> = try {
-        val cursor = app.contentResolver.query(
+        val cursor = context.contentResolver.query(
                 TvContractCompat.PreviewPrograms.CONTENT_URI,
                 PreviewProgram.PROJECTION,
                 null,
@@ -82,7 +86,7 @@ class TvChannelManager(val app: RadioDroidApp) : Observer {
             Pair(it.contentId, it)
         }.toMap().toMutableMap()
 
-        for (station in app.favouriteManager.listStations) {
+        for (station in favouriteManager.listStations) {
             val existingProgram = starredPrograms[station.StationUuid]
             val programBuilder = existingProgram?.let {
                 PreviewProgram.Builder(it)
@@ -91,7 +95,7 @@ class TvChannelManager(val app: RadioDroidApp) : Observer {
             val intent = Intent(
                     ActivityMain.ACTION_PLAY_STATION_BY_UUID,
                     null,
-                    app,
+                    context,
                     ActivityMain::class.java
             ).putExtra(ActivityMain.EXTRA_STATION_UUID, station.StationUuid)
 
@@ -121,9 +125,9 @@ class TvChannelManager(val app: RadioDroidApp) : Observer {
             Log.d(TAG, "Deleting programme $program")
             helper.deletePreviewProgram(program.id)
         }
-        if (app.favouriteManager.listStations.any()) {
+        if (favouriteManager.listStations.any()) {
             Log.d(TAG, "Requesting channel to be browseable")
-            TvContractCompat.requestChannelBrowsable(app, channelId)
+            TvContractCompat.requestChannelBrowsable(context, channelId)
         }
     }
 

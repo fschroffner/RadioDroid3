@@ -63,6 +63,9 @@ import com.github.fschroffner.radiodroid3.service.PlayerService
 import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationsFilter
+import com.github.fschroffner.radiodroid3.alarm.RadioAlarmManager
+import okhttp3.OkHttpClient
+import javax.inject.Inject
 import java.io.File
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -78,6 +81,14 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     TimePickerDialog.OnTimeSetListener,
     SearchPreferenceResultListener,
     CastAwareActivity {
+
+    @Inject lateinit var historyManager: HistoryManager
+    @Inject lateinit var favouriteManager: FavouriteManager
+    @Inject lateinit var castHandler: CastHandler
+    @Inject lateinit var mpdClient: MPDClient
+    @Inject lateinit var alarmManager: RadioAlarmManager
+    @Inject lateinit var fallbackStationsManager: FallbackStationsManager
+    @Inject lateinit var okHttpClient: OkHttpClient
 
     companion object {
         const val EXTRA_SEARCH_TAG = "search_tag"
@@ -107,9 +118,9 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         if (result.resultCode == RESULT_OK) {
             val uri = result.data?.data
             Log.d(TAG, "Choosen save path: $uri")
-            val radioDroidApp = application as RadioDroidApp
-            val favouriteManager = radioDroidApp.favouriteManager
-            val historyManager = radioDroidApp.historyManager
+
+
+
             try {
                 val os: OutputStream = contentResolver.openOutputStream(uri!!)!!
                 val writer = OutputStreamWriter(os)
@@ -128,8 +139,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         if (result.resultCode == RESULT_OK) {
             val uri = result.data?.data
             Log.d(TAG, "Choosen load path: $uri")
-            val radioDroidApp = application as RadioDroidApp
-            val favouriteManager = radioDroidApp.favouriteManager
+
+
             try {
                 val `is`: InputStream = contentResolver.openInputStream(uri!!)!!
                 val reader = InputStreamReader(`is`)
@@ -312,7 +323,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             override fun onSlide(bottomSheet: View, slideOffset: Float) {}
         })
 
-        (application as RadioDroidApp).castHandler.onCreate(this)
+        castHandler.onCreate(this)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -460,7 +471,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             PlayerServiceUtil.shutdownService()
         }
 
-        val castHandler = (application as RadioDroidApp).castHandler
+
         castHandler.onPause()
         castHandler.setActivity(null)
     }
@@ -474,8 +485,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             val stationUUID = extras.getString(EXTRA_STATION_UUID)
             if (TextUtils.isEmpty(stationUUID)) return
             intent.removeExtra(EXTRA_STATION_UUID)
-            val radioDroidApp = application as RadioDroidApp
-            val httpClient = radioDroidApp.httpClient
+
+            val httpClient = okHttpClient
 
             @Suppress("DEPRECATION")
             object : AsyncTask<Void, Void, DataRadioStation?>() {
@@ -485,7 +496,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                 override fun onPostExecute(station: DataRadioStation?) {
                     if (!isFinishing) {
                         if (station != null) {
-                            Utils.showPlaySelection(radioDroidApp, station, supportFragmentManager)
+                            Utils.showPlaySelection(this@ActivityMain, station, supportFragmentManager)
 
                             val currentFragment = mFragmentManager.fragments.last()
                             if (currentFragment is FragmentHistory) {
@@ -513,7 +524,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         setupBroadcastReceiver()
 
         PlayerServiceUtil.startService(applicationContext)
-        val castHandler = (application as RadioDroidApp).castHandler
+
         castHandler.onResume()
         castHandler.setActivity(this)
 
@@ -568,13 +579,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         menuItemIconsView!!.isVisible = false
         menuItemAddAlarm!!.isVisible = false
 
-        var mpd_is_visible = false
-        val radioDroidApp = application as? RadioDroidApp
-        if (radioDroidApp != null) {
-            val mpdClient: MPDClient = radioDroidApp.mpdClient
-            val repository: MPDServersRepository = mpdClient.mpdServersRepository
-            mpd_is_visible = !repository.isEmpty()
-        }
+        val repository: MPDServersRepository = mpdClient.mpdServersRepository
+        val mpd_is_visible = !repository.isEmpty()
         menuItemMpd!!.isVisible = mpd_is_visible
 
         when (selectedMenuItem) {
@@ -594,7 +600,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                 } else if (sharedPref.getBoolean("load_icons", false)) {
                     menuItemIconsView!!.isVisible = true
                 }
-                if (radioDroidApp!!.favouriteManager.isEmpty()) {
+                if (favouriteManager.isEmpty()) {
                     menuItemDelete!!.isVisible = false
                 } else {
                     menuItemDelete!!.isVisible = true
@@ -607,7 +613,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                 menuItemSave!!.isVisible = true
                 menuItemSave!!.setTitle(R.string.nav_item_save_history_playlist)
 
-                if (!radioDroidApp!!.historyManager.isEmpty()) {
+                if (!historyManager.isEmpty()) {
                     menuItemDelete!!.isVisible = true
                     menuItemDelete!!.setTitle(R.string.action_delete_history)
                 }
@@ -619,7 +625,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             }
         }
 
-        (application as RadioDroidApp).castHandler.getRouteItem(applicationContext, menu)
+        castHandler.getRouteItem(applicationContext, menu)
 
         return true
     }
@@ -627,9 +633,9 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     override fun onFileSelected(dialog: FileDialog, file: File) {
         try {
             Log.i("MAIN", "save to ${file.parent}/${file.name}")
-            val radioDroidApp = application as RadioDroidApp
-            val favouriteManager = radioDroidApp.favouriteManager
-            val historyManager = radioDroidApp.historyManager
+
+
+
 
             if (dialog is SaveFileDialog) {
                 if (selectedMenuItem == R.id.nav_item_starred) {
@@ -711,7 +717,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                         .setMessage(getString(R.string.alert_delete_history))
                         .setCancelable(true)
                         .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                            val historyManager = (application as RadioDroidApp).historyManager
                             historyManager.clear()
                             Toast.makeText(applicationContext, getString(R.string.notify_deleted_history), Toast.LENGTH_SHORT).show()
                             recreate()
@@ -724,7 +729,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                         .setMessage(getString(R.string.alert_delete_favorites))
                         .setCancelable(true)
                         .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                            val favouriteManager = (application as RadioDroidApp).favouriteManager
                             favouriteManager.clear()
                             Toast.makeText(applicationContext, getString(R.string.notify_deleted_favorites), Toast.LENGTH_SHORT).show()
                             recreate()
@@ -755,12 +759,10 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     }
 
     override fun onTimeSet(view: TimePicker, hourOfDay: Int, minute: Int) {
-        val radioDroidApp = application as RadioDroidApp
-        val historyManager = radioDroidApp.historyManager
         val currentFragment = mFragmentManager.fragments[mFragmentManager.fragments.size - 2]
         if (historyManager.size() > 0 && currentFragment is FragmentAlarm) {
             val station = historyManager.getList()[0]
-            currentFragment.getRam().add(station, hourOfDay, minute)
+            currentFragment.ram.add(station, hourOfDay, minute)
         }
     }
 
@@ -771,9 +773,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             return
         }
 
-        val radioDroidApp = application as RadioDroidApp
-        val hm = radioDroidApp.historyManager
-        val fm = radioDroidApp.favouriteManager
+        val hm = historyManager
+        val fm = favouriteManager
 
         val startupAction = sharedPref.getString("startup_action", resources.getString(R.string.startup_show_history))!!
 
@@ -881,7 +882,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                         val playerType = IntentCompat.getParcelableExtra(intent, PlayerService.PLAYER_SERVICE_METERED_CONNECTION_PLAYER_TYPE, PlayerType::class.java)!!
                         when (playerType) {
                             PlayerType.RADIODROID -> showMeteredConnectionDialog(Runnable {
-                                Utils.play(application as RadioDroidApp, PlayerServiceUtil.getCurrentStation()!!)
+                                Utils.play(PlayerServiceUtil.getCurrentStation()!!)
                             })
                             PlayerType.EXTERNAL -> {
                                 val currentStation = PlayerServiceUtil.getCurrentStation()
@@ -955,8 +956,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     }
 
     private fun selectMPDServer() {
-        val radioDroidApp = application as RadioDroidApp
-        Utils.showMpdServersDialog(radioDroidApp, supportFragmentManager, null)
+        Utils.showMpdServersDialog(this, supportFragmentManager, null)
     }
 
     fun getToolbar(): Toolbar? = findViewById(R.id.my_awesome_toolbar)

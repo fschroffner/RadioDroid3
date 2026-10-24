@@ -11,7 +11,8 @@ import androidx.media3.common.Player
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.players.exoplayer.ExoPlayerWrapper
 import com.github.fschroffner.radiodroid3.players.mediaplayer.MediaPlayerWrapper
@@ -74,8 +75,8 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
         val connectTimeout = prefs.getInt("stream_connect_timeout", 4)
         val readTimeout = prefs.getInt("stream_read_timeout", 10)
 
-        val radioDroidApp = mainContext.applicationContext as RadioDroidApp
-        val client = radioDroidApp.newHttpClient()
+
+        val client = EntryPoints.get(mainContext.applicationContext, AppEntryPoint::class.java).okHttpClient().newBuilder()
             .connectTimeout(connectTimeout.toLong(), TimeUnit.SECONDS)
             .readTimeout(readTimeout.toLong(), TimeUnit.SECONDS)
             .build()

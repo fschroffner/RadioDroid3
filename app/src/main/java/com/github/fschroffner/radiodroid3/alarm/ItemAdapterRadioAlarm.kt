@@ -12,17 +12,14 @@ import android.widget.ToggleButton
 import androidx.appcompat.widget.SwitchCompat
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
 import java.util.Locale
 
-class ItemAdapterRadioAlarm(private val context: Context) : ArrayAdapter<DataRadioStationAlarm>(context, R.layout.list_item_alarm) {
-
-    private lateinit var ram: RadioAlarmManager
+class ItemAdapterRadioAlarm(
+    private val context: Context,
+    private val ram: RadioAlarmManager
+) : ArrayAdapter<DataRadioStationAlarm>(context, R.layout.list_item_alarm) {
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val radioDroidApp = context.applicationContext as RadioDroidApp
-        ram = radioDroidApp.alarmManager
-
         val aData = getItem(position)!!
         val inflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val v = convertView ?: inflater.inflate(R.layout.list_item_alarm, null)

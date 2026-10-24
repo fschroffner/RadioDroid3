@@ -19,18 +19,23 @@ import com.github.fschroffner.radiodroid3.interfaces.IAdapterRefreshable
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.ItemAdapterStation
 import com.github.fschroffner.radiodroid3.station.StationsFilter
+import dagger.hilt.android.AndroidEntryPoint
+import okhttp3.OkHttpClient
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class FragmentHistory : Fragment(), IAdapterRefreshable {
     private val TAG = "FragmentHistory"
+
+    @Inject lateinit var historyManager: HistoryManager
+    @Inject lateinit var okHttpClient: OkHttpClient
 
     private lateinit var rvStations: RecyclerView
     private var swipeRefreshLayout: SwipeRefreshLayout? = null
     private var task: AsyncTask<*, *, *>? = null
-    private lateinit var historyManager: HistoryManager
 
     private fun onStationClick(station: DataRadioStation) {
-        val app = requireActivity().application as RadioDroidApp
-        Utils.showPlaySelection(app, station, requireActivity().supportFragmentManager)
+        Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
         RefreshListGui()
         rvStations.smoothScrollToPosition(0)
     }
@@ -43,9 +48,6 @@ class FragmentHistory : Fragment(), IAdapterRefreshable {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val app = requireActivity().application as RadioDroidApp
-        historyManager = app.historyManager
-
         val adapter = ItemAdapterStation(requireActivity(), R.layout.list_item_station, StationsFilter.FilterType.LOCAL)
         adapter.setStationActionsListener(object : ItemAdapterStation.StationActionsListener {
             override fun onStationClick(station: DataRadioStation, pos: Int) {
@@ -90,7 +92,7 @@ class FragmentHistory : Fragment(), IAdapterRefreshable {
 
     @Suppress("DEPRECATION")
     private fun RefreshDownloadList() {
-        val httpClient = (requireActivity().application as RadioDroidApp).httpClient
+        val httpClient = okHttpClient
         val listUuids = historyManager.listStations.map { it.StationUuid }
         Log.d(TAG, "Search for items: ${listUuids.size}")
 

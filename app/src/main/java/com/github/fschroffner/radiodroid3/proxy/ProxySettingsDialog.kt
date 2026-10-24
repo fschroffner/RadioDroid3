@@ -1,6 +1,8 @@
 package com.github.fschroffner.radiodroid3.proxy
 
 import android.app.Dialog
+import android.content.Context
+import okhttp3.OkHttpClient
 import android.content.DialogInterface
 import android.os.AsyncTask
 import android.os.Bundle
@@ -13,7 +15,7 @@ import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.DialogFragment
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+
 import com.github.fschroffner.radiodroid3.Utils.parseIntWithDefault
 import okhttp3.Call
 import okhttp3.Request
@@ -62,7 +64,7 @@ class ProxySettingsDialog : DialogFragment() {
             .setPositiveButton(R.string.action_ok) { _, _ ->
                 val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
                 createProxySettings().toPreferences(prefs.edit().also { it.apply() })
-                (requireActivity().application as RadioDroidApp).rebuildHttpClient()
+
             }
             .setNegativeButton(R.string.action_cancel) { d, _ -> d.cancel() }
             .setNeutralButton(R.string.settings_proxy_action_test, null)
@@ -90,34 +92,34 @@ class ProxySettingsDialog : DialogFragment() {
     @Suppress("DEPRECATION")
     private fun testProxy(proxySettings: ProxySettings) {
         proxyTestTask?.cancel(true)
-        val app = requireActivity().application as RadioDroidApp
-        proxyTestTask = ConnectionTesterTask(app, textProxyTestResult, proxySettings)
+        val context = requireContext().applicationContext
+        proxyTestTask = ConnectionTesterTask(context, textProxyTestResult, proxySettings)
         proxyTestTask!!.execute()
     }
 
     @Suppress("DEPRECATION")
     private class ConnectionTesterTask(
-        app: RadioDroidApp,
+        context: Context,
         textView: TextView,
         proxySettings: ProxySettings
     ) : AsyncTask<Void, Void, Void>() {
         private val textRef = WeakReference(textView)
         private var call: Call? = null
         private var okHttpClient: okhttp3.OkHttpClient? = null
-        private val successStr = app.getString(R.string.settings_proxy_working, TEST_ADDRESS)
-        private val failedStr = app.getString(R.string.settings_proxy_not_working)
-        private val invalidStr = app.getString(R.string.settings_proxy_invalid)
+        private val successStr = context.getString(R.string.settings_proxy_working, TEST_ADDRESS)
+        private val failedStr = context.getString(R.string.settings_proxy_not_working)
+        private val invalidStr = context.getString(R.string.settings_proxy_invalid)
         private var requestSucceeded = false
         private var errorStr: String? = null
 
         init {
             textView.text = ""
-            val builder = app.newHttpClientWithoutProxy()
+            val builder = OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
             if (com.github.fschroffner.radiodroid3.Utils.setOkHttpProxy(builder, proxySettings)) {
-                okHttpClient = builder.build()
+                okHttpClient = com.github.fschroffner.radiodroid3.Utils.enableTls12OnPreLollipop(builder).build()
             }
         }
 

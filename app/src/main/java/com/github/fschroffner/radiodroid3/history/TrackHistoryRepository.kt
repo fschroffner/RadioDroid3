@@ -8,23 +8,25 @@ import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryEntry.Companion.MAX_HISTORY_ITEMS_IN_TABLE
 import java.util.Date
 import java.util.concurrent.Executor
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class TrackHistoryRepository(application: Application) {
+@Singleton
+class TrackHistoryRepository @Inject constructor(
+    private val database: RadioDroidDatabase,
+    private val dao: TrackHistoryDao
+) {
     fun interface GetItemCallback {
         /** Runs in the DB thread */
         fun onItemFetched(trackHistoryEntry: TrackHistoryEntry?, dao: TrackHistoryDao)
     }
 
-    private val dao: TrackHistoryDao
-    private val queryExecutor: Executor
+    private val queryExecutor: Executor = database.historyQueryExecutor
     val allHistoryPaged: LiveData<PagedList<TrackHistoryEntry>>
 
     private var insertsToTruncateLeft = 0
 
     init {
-        val db = RadioDroidDatabase.getDatabase(application)
-        dao = db.songHistoryDao()
-        queryExecutor = db.historyQueryExecutor
         allHistoryPaged = LivePagedListBuilder(
             dao.getAllHistoryPositional(),
             PagedList.Config.Builder()
@@ -33,6 +35,11 @@ class TrackHistoryRepository(application: Application) {
                 .build()
         ).build()
     }
+
+    constructor(application: Application) : this(
+        RadioDroidDatabase.getDatabase(application),
+        RadioDroidDatabase.getDatabase(application).songHistoryDao()
+    )
 
     fun insert(historyEntry: TrackHistoryEntry) {
         queryExecutor.execute {

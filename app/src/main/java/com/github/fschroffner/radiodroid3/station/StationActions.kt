@@ -16,23 +16,27 @@ import com.google.android.material.snackbar.Snackbar
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.alarm.TimePickerFragment
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.views.ItemListDialog
+import dagger.hilt.EntryPoints
 import java.lang.ref.WeakReference
 
 object StationActions {
     private const val TAG = "StationActions"
 
+    private fun entryPoint(context: Context): AppEntryPoint =
+        EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
+
     @JvmStatic
     fun setAsAlarm(activity: FragmentActivity, station: DataRadioStation) {
-        val radioDroidApp = activity.applicationContext as RadioDroidApp
+        val alarmManager = entryPoint(activity).radioAlarmManager()
         val fragment = TimePickerFragment()
         fragment.setCallback { _, hourOfDay, minute ->
             Log.i(TAG, "Alarm time picked $hourOfDay:$minute")
-            radioDroidApp.alarmManager.add(station, hourOfDay, minute)
+            alarmManager.add(station, hourOfDay, minute)
         }
         fragment.show(activity.supportFragmentManager, "timePicker")
     }
@@ -67,8 +71,8 @@ object StationActions {
         object : AsyncTask<Void, Void, String?>() {
             override fun doInBackground(vararg params: Void?): String? {
                 val ctx = contextRef.get() ?: return null
-                val app = ctx.applicationContext as RadioDroidApp
-                return Utils.getRealStationLink(app.httpClient, app, station.StationUuid)
+                val httpClient = entryPoint(ctx).okHttpClient()
+                return Utils.getRealStationLink(httpClient, ctx, station.StationUuid)
             }
             override fun onPostExecute(result: String?) {
                 val ctx = contextRef.get() ?: return
@@ -90,16 +94,14 @@ object StationActions {
 
     @JvmStatic
     fun markAsFavourite(context: Context, station: DataRadioStation) {
-        val app = context.applicationContext as RadioDroidApp
-        app.favouriteManager.add(station)
+        entryPoint(context).favouriteManager().add(station)
         Toast.makeText(context, context.getString(R.string.notify_starred), Toast.LENGTH_SHORT).show()
         vote(context, station)
     }
 
     @JvmStatic
     fun removeFromFavourites(context: Context, view: View?, station: DataRadioStation) {
-        val app = context.applicationContext as RadioDroidApp
-        val favouriteManager: FavouriteManager = app.favouriteManager
+        val favouriteManager: FavouriteManager = entryPoint(context).favouriteManager()
         val removedIdx = favouriteManager.remove(station.StationUuid)
         if (view != null) {
             val anchorView = view.rootView.findViewById<View>(R.id.bottom_sheet)
@@ -121,8 +123,8 @@ object StationActions {
         object : AsyncTask<Void, Void, String?>() {
             override fun doInBackground(vararg params: Void?): String? {
                 val ctx = contextRef.get() ?: return null
-                val app = ctx.applicationContext as RadioDroidApp
-                return Utils.getRealStationLink(app.httpClient, app, station.StationUuid)
+                val httpClient = entryPoint(ctx).okHttpClient()
+                return Utils.getRealStationLink(httpClient, ctx, station.StationUuid)
             }
             override fun onPostExecute(result: String?) {
                 val ctx = contextRef.get() ?: return
@@ -143,8 +145,7 @@ object StationActions {
 
     @JvmStatic
     fun playInRadioDroid(context: Context, station: DataRadioStation) {
-        val app = context.applicationContext as RadioDroidApp
-        Utils.playAndWarnIfMetered(app, station, PlayerType.RADIODROID) { Utils.play(app, station) }
+        Utils.playAndWarnIfMetered(context, station, PlayerType.RADIODROID) { Utils.play(station) }
     }
 
     @Suppress("DEPRECATION")
@@ -153,8 +154,8 @@ object StationActions {
         object : AsyncTask<Void, Void, String?>() {
             override fun doInBackground(vararg params: Void?): String? {
                 val ctx = contextRef.get() ?: return null
-                val app = ctx.applicationContext as RadioDroidApp
-                return Utils.downloadFeedRelative(app.httpClient, ctx, "json/vote/${station.StationUuid}", true, null)
+                val httpClient = entryPoint(ctx).okHttpClient()
+                return Utils.downloadFeedRelative(httpClient, ctx, "json/vote/${station.StationUuid}", true, null)
             }
             override fun onPostExecute(result: String?) {}
         }.execute()

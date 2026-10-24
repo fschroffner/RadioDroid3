@@ -45,7 +45,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
     }
 
     open fun add(station: DataRadioStation) {
-        if (station.queue == null) station.queue = this
+
         listStations.add(station)
         Save()
         notifyObservers()
@@ -72,7 +72,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
     }
 
     fun addFront(station: DataRadioStation) {
-        if (station.queue == null) station.queue = this
+
         listStations.add(0, station)
         Save()
         notifyObservers()
@@ -81,7 +81,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
     fun addAll(stations: List<DataRadioStation>?) {
         stations ?: return
-        stations.forEach { it.queue = this }
+
         listStations.addAll(stations)
     }
 
@@ -159,7 +159,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
     }
 
     open fun restore(station: DataRadioStation, pos: Int) {
-        station.queue = this
+
         listStations.add(pos, station)
         Save()
         notifyObservers()
@@ -188,8 +188,8 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
     @Suppress("DEPRECATION")
     private fun refreshStationsFromServer() {
-        val radioDroidApp = context.applicationContext as RadioDroidApp
-        val httpClient = radioDroidApp.httpClient
+
+        val httpClient = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).okHttpClient()
         LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
 
         object : AsyncTask<Void, Void, ArrayList<DataRadioStation>>() {
@@ -201,7 +201,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
             override fun doInBackground(vararg params: Void?): ArrayList<DataRadioStation> {
                 return savedStations.filterTo(ArrayList()) { station ->
-                    !station.refresh(httpClient, context) && !station.hasValidUuid() && station.RefreshRetryCount > DataRadioStation.MAX_REFRESH_RETRIES
+                    !Utils.refreshStation(station, httpClient, context) && !station.hasValidUuid() && station.RefreshRetryCount > DataRadioStation.MAX_REFRESH_RETRIES
                 }
             }
 
@@ -220,7 +220,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
         val str = prefs.getString(getSaveId(), null)
         if (str != null) {
             val arr = DataRadioStation.DecodeJson(str)
-            arr.forEach { it.queue = this }
+
             listStations.addAll(arr)
             if (hasInvalidUuids() && Utils.hasAnyConnection(context)) refreshStationsFromServer()
         } else {
@@ -338,7 +338,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
     internal fun LoadM3UReader(reader: Reader): List<DataRadioStation>? {
         return try {
-            val httpClient = (context.applicationContext as RadioDroidApp).httpClient
+            val httpClient = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).okHttpClient()
             val listUuids = mutableListOf<String>()
             BufferedReader(reader).useLines { lines ->
                 for (line in lines) {

@@ -32,7 +32,8 @@ import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.CountryFlagsLoader
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.interfaces.IAdapterRefreshable
 import com.github.fschroffner.radiodroid3.players.PlayStationTask
@@ -134,8 +135,8 @@ open class ItemAdapterStation(
     }
 
     init {
-        val radioDroidApp = activity.application as RadioDroidApp
-        favouriteManager = radioDroidApp.favouriteManager
+
+        favouriteManager = EntryPoints.get(activity.applicationContext, AppEntryPoint::class.java).favouriteManager()
 
         val intentFilter = IntentFilter().apply {
             addAction(PlayerService.PLAYER_SERVICE_META_UPDATE)
@@ -258,7 +259,7 @@ open class ItemAdapterStation(
         }
 
         holder.textViewTitle.text = station.Name
-        holder.textViewShortDescription.text = station.getShortDetails(context)
+        holder.textViewShortDescription.text = StationFormatter.getShortDetails(station, context)
         holder.textViewTags.text = station.TagsAll.replace(",", ", ")
 
         val inFavourites = favouriteManager.has(station.StationUuid)
@@ -324,7 +325,7 @@ open class ItemAdapterStation(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1
                 && context.applicationContext.getSystemService(ShortcutManager::class.java).isRequestPinShortcutSupported) {
                 holder.buttonCreateShortcut!!.visibility = View.VISIBLE
-                holder.buttonCreateShortcut!!.setOnClickListener { station.prepareShortcut(context, CreatePinShortcutListener()) }
+                holder.buttonCreateShortcut!!.setOnClickListener { StationShortcutHelper.prepareShortcut(station, context, CreatePinShortcutListener()) }
             } else {
                 holder.buttonCreateShortcut!!.visibility = View.INVISIBLE
             }
@@ -338,7 +339,7 @@ open class ItemAdapterStation(
                 holder.buttonPlayInternalOrExternal!!.contentDescription = context.getString(R.string.detail_play_in_external_player)
                 holder.buttonPlayInternalOrExternal!!.setImageDrawable(IconicsDrawable(context, CommunityMaterial.Icon2.cmd_play_box_outline).size(IconicsSize.dp(24)))
                 holder.buttonPlayInternalOrExternal!!.setOnClickListener {
-                    Utils.playAndWarnIfMetered(ctx.applicationContext as RadioDroidApp, station, PlayerType.EXTERNAL) {
+                    Utils.playAndWarnIfMetered(ctx, station, PlayerType.EXTERNAL) {
                         PlayStationTask.playExternal(station, ctx).execute()
                     }
                 }
@@ -351,7 +352,7 @@ open class ItemAdapterStation(
     }
 
     @TargetApi(26)
-    inner class CreatePinShortcutListener : DataRadioStation.ShortcutReadyListener {
+    inner class CreatePinShortcutListener : StationShortcutHelper.ShortcutReadyListener {
         override fun onShortcutReadyListener(shortcut: android.content.pm.ShortcutInfo) {
             val shortcutManager = context.applicationContext.getSystemService(ShortcutManager::class.java)
             if (shortcutManager.isRequestPinShortcutSupported) {

@@ -58,6 +58,7 @@ import java.lang.ref.WeakReference
 import java.util.Observable
 import java.util.Observer
 
+@dagger.hilt.android.AndroidEntryPoint
 class FragmentPlayerFull : Fragment() {
 
     private val TAG = "FragmentPlayerFull"
@@ -79,13 +80,15 @@ class FragmentPlayerFull : Fragment() {
     private var trackMetadataLastFailureType: TrackMetadataCallback.FailureType? = null
     private var lastLiveInfoForTrackMetadata: StreamLiveInfo? = null
 
-    private lateinit var recordingsManager: RecordingsManager
+    @javax.inject.Inject lateinit var recordingsManager: RecordingsManager
     private val recordingsObserver = Observer { _: Observable?, _: Any? -> updateRecordings() }
 
-    private lateinit var favouriteManager: FavouriteManager
+    @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
     private val favouritesObserver = FavouritesObserver()
 
-    private lateinit var trackHistoryRepository: TrackHistoryRepository
+    @javax.inject.Inject lateinit var historyManager: HistoryManager
+    @javax.inject.Inject lateinit var trackHistoryRepository: TrackHistoryRepository
+    @javax.inject.Inject lateinit var trackMetadataSearcher: TrackMetadataSearcher
     private lateinit var trackHistoryAdapter: TrackHistoryAdapter
     private lateinit var recordingsAdapter: RecordingsAdapter
 
@@ -112,10 +115,10 @@ class FragmentPlayerFull : Fragment() {
     private lateinit var btnFavourite: ImageButton
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val radioDroidApp = requireActivity().application as RadioDroidApp
-        recordingsManager = radioDroidApp.recordingsManager
-        favouriteManager = radioDroidApp.favouriteManager
-        trackHistoryRepository = radioDroidApp.trackHistoryRepository
+
+
+
+
 
         trackHistoryAdapter = TrackHistoryAdapter(requireActivity())
         trackHistoryAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
@@ -320,10 +323,10 @@ class FragmentPlayerFull : Fragment() {
     fun isScrolled() = scrollViewContent.scrollY > 0
 
     private fun playLastFromHistory() {
-        val app = requireActivity().application as RadioDroidApp
+
         var station = PlayerServiceUtil.getCurrentStation()
-        if (station == null) station = app.historyManager.getFirst()
-        if (station != null) Utils.showPlaySelection(app, station, requireActivity().supportFragmentManager)
+        if (station == null) station = historyManager.getFirst()
+        if (station != null) Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
     }
 
     private fun fullUpdate() {
@@ -345,7 +348,7 @@ class FragmentPlayerFull : Fragment() {
                 @Suppress("DEPRECATION")
                 artAndInfoPagerAdapter.textViewStationDescription.setCompoundDrawables(flag, null, null, null)
             }
-            artAndInfoPagerAdapter.textViewStationDescription.text = station.getLongDetails(requireContext())
+            artAndInfoPagerAdapter.textViewStationDescription.text = com.github.fschroffner.radiodroid3.station.StationFormatter.getLongDetails(station, requireContext())
             artAndInfoPagerAdapter.viewTags.setTags(station.TagsAll.split(","))
         }
 
@@ -412,8 +415,8 @@ class FragmentPlayerFull : Fragment() {
             TextUtils.equals(lastLiveInfoForTrackMetadata!!.track, liveInfo.track) &&
             TrackMetadataCallback.FailureType.RECOVERABLE != trackMetadataLastFailureType) return
 
-        val radioDroidApp = requireActivity().application as RadioDroidApp
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(radioDroidApp)
+
+        val sharedPref = PreferenceManager.getDefaultSharedPreferences(requireContext())
         val lastFMApiKey = sharedPref.getString("last_fm_api_key", "") ?: ""
 
         if (TextUtils.isEmpty(liveInfo.artist) || TextUtils.isEmpty(liveInfo.track) || lastFMApiKey.isEmpty()) {
@@ -429,7 +432,7 @@ class FragmentPlayerFull : Fragment() {
         lastLiveInfoForTrackMetadata = liveInfo
         trackMetadataCallback?.cancel()
 
-        val trackMetadataSearcher = radioDroidApp.trackMetadataSearcher
+
         val fragmentWeakRef = WeakReference(this)
         trackHistoryRepository.getLastInsertedHistoryItem { trackHistoryEntry, _ ->
             if (trackHistoryEntry == null) { Log.e(TAG, "trackHistoryEntry is null in updateAlbumArt"); return@getLastInsertedHistoryItem }

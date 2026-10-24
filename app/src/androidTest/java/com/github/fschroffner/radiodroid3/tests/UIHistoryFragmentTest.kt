@@ -22,7 +22,9 @@ import androidx.test.rule.ActivityTestRule
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.HistoryManager
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import android.content.Context
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.tests.utils.FirstViewMatcher
 import com.github.fschroffner.radiodroid3.tests.utils.RecyclerDragAndDropAction.Companion.recyclerDragAndDrop
 import com.github.fschroffner.radiodroid3.tests.utils.RecyclerRecyclingMatcher.recyclerRecycles
@@ -62,8 +64,8 @@ class UIHistoryFragmentTest {
     fun setUp() {
         TestUtils.populateHistory(ApplicationProvider.getApplicationContext(), STATIONS_COUNT)
 
-        val app = ApplicationProvider.getApplicationContext<RadioDroidApp>()
-        historyManager = app.historyManager
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        historyManager = EntryPoints.get(context, AppEntryPoint::class.java).historyManager()
     }
 
     @Test

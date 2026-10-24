@@ -10,7 +10,8 @@ import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.CastHandler
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
 import com.github.fschroffner.radiodroid3.players.mpd.MPDServerData
@@ -52,7 +53,7 @@ class PlayStationTask(
 
         @JvmStatic
         fun playCAST(stationToPlay: DataRadioStation, ctx: Context): PlayStationTask {
-            val castHandler = (ctx.applicationContext as RadioDroidApp).castHandler
+            val castHandler = EntryPoints.get(ctx.applicationContext, AppEntryPoint::class.java).castHandler()
             return PlayStationTask(stationToPlay, ctx, { url ->
                 castHandler.playRemote(stationToPlay.Name, url, stationToPlay.IconUrl)
             }, null)
@@ -63,12 +64,13 @@ class PlayStationTask(
         val ctx = contextWeakReference.get() ?: return
         LocalBroadcastManager.getInstance(ctx).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
 
-        val radioDroidApp = ctx.applicationContext as RadioDroidApp
-        radioDroidApp.historyManager.add(stationToPlay)
+        val entryPoint = EntryPoints.get(ctx.applicationContext, AppEntryPoint::class.java)
+        val httpClient = entryPoint.okHttpClient()
+        entryPoint.historyManager().add(stationToPlay)
 
         val sharedPref = PreferenceManager.getDefaultSharedPreferences(ctx)
         if (sharedPref.getBoolean("auto_favorite", false)) {
-            val favouriteManager = radioDroidApp.favouriteManager
+            val favouriteManager = entryPoint.favouriteManager()
             if (!favouriteManager.has(stationToPlay.StationUuid)) {
                 favouriteManager.add(stationToPlay)
                 Toast.makeText(ctx, ctx.getString(R.string.notify_autostarred), Toast.LENGTH_SHORT).show()
@@ -78,15 +80,16 @@ class PlayStationTask(
 
     override fun doInBackground(vararg params: Void?): String? {
         val ctx = contextWeakReference.get() ?: return null
-        val radioDroidApp = ctx.applicationContext as RadioDroidApp
+        val entryPoint = EntryPoints.get(ctx.applicationContext, AppEntryPoint::class.java)
+        val httpClient = entryPoint.okHttpClient()
 
         if (!stationToPlay.hasValidUuid()) {
-            if (!stationToPlay.refresh(radioDroidApp.httpClient, ctx)) return null
+            if (!Utils.refreshStation(stationToPlay, httpClient, ctx)) return null
         }
 
         if (isCancelled) return null
 
-        return Utils.getRealStationLink(radioDroidApp.httpClient, ctx.applicationContext, stationToPlay.StationUuid)
+        return Utils.getRealStationLink(httpClient, ctx.applicationContext, stationToPlay.StationUuid)
     }
 
     override fun onPostExecute(result: String?) {

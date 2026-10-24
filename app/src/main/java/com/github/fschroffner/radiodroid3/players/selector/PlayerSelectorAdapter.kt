@@ -14,7 +14,8 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.players.PlayStationTask
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
@@ -66,8 +67,8 @@ class PlayerSelectorAdapter(
     private var mpdServers: List<MPDServerData> = emptyList()
 
     init {
-        val radioDroidApp = context.applicationContext as RadioDroidApp
-        mpdClient = radioDroidApp.mpdClient
+        val entryPoint = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
+        mpdClient = entryPoint.mpdClient()
 
         val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         showPlayInExternal = prefs.getBoolean("play_external", false) && stationToPlay != null
@@ -76,7 +77,7 @@ class PlayerSelectorAdapter(
         var count = 0
         if (stationToPlay != null) { count++; viewTypes.add(PlayerType.RADIODROID.value) }
         if (showPlayInExternal) { count++; viewTypes.add(PlayerType.EXTERNAL.value) }
-        if (radioDroidApp.castHandler.isCastSessionAvailable) { count++; viewTypes.add(PlayerType.CAST.value) }
+        if (entryPoint.castHandler().isCastSessionAvailable) { count++; viewTypes.add(PlayerType.CAST.value) }
         fixedViewsCount = count
     }
 
@@ -121,8 +122,8 @@ class PlayerSelectorAdapter(
                         if (PlayerServiceUtil.isRecording()) PlayerServiceUtil.stopRecording()
                         PlayerServiceUtil.pause(PauseReason.USER)
                     } else {
-                        Utils.playAndWarnIfMetered(context.applicationContext as RadioDroidApp, stationToPlay!!, PlayerType.RADIODROID) {
-                            Utils.play(context.applicationContext as RadioDroidApp, stationToPlay!!)
+                        Utils.playAndWarnIfMetered(context, stationToPlay!!, PlayerType.RADIODROID) {
+                            Utils.play(stationToPlay!!)
                         }
                     }
                 }
@@ -130,7 +131,7 @@ class PlayerSelectorAdapter(
             PlayerType.EXTERNAL.value -> {
                 holder.textViewDescription.setText(R.string.action_play_in_external)
                 holder.btnPlay.setOnClickListener {
-                    Utils.playAndWarnIfMetered(context.applicationContext as RadioDroidApp, stationToPlay!!, PlayerType.EXTERNAL) {
+                    Utils.playAndWarnIfMetered(context, stationToPlay!!, PlayerType.EXTERNAL) {
                         PlayStationTask.playExternal(stationToPlay!!, context).execute()
                     }
                 }

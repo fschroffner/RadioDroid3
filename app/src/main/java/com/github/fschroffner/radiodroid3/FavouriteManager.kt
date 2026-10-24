@@ -8,6 +8,7 @@ import android.content.pm.ShortcutManager
 import android.os.Build
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
+import com.github.fschroffner.radiodroid3.station.StationShortcutHelper
 
 class FavouriteManager(ctx: Context) : StationSaveManager(ctx) {
     override fun getSaveId() = "favourites"
@@ -46,13 +47,13 @@ class FavouriteManager(ctx: Context) : StationSaveManager(ctx) {
             val number = minOf(listStations.size, ActivityMain.MAX_DYNAMIC_LAUNCHER_SHORTCUTS)
             val setter = SetDynamicAppLauncherShortcuts(number)
             for (i in 0 until number) {
-                listStations[i].prepareShortcut(context, setter)
+                StationShortcutHelper.prepareShortcut(listStations[i], context, setter)
             }
         }
     }
 
     @TargetApi(25)
-    inner class SetDynamicAppLauncherShortcuts(private val expectedNumber: Int) : DataRadioStation.ShortcutReadyListener {
+    inner class SetDynamicAppLauncherShortcuts(private val expectedNumber: Int) : StationShortcutHelper.ShortcutReadyListener {
         private val shortcuts = ArrayList<ShortcutInfo>(expectedNumber)
 
         override fun onShortcutReadyListener(shortcutInfo: ShortcutInfo) {

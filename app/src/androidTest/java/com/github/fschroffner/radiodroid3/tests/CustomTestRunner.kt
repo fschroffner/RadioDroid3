@@ -10,7 +10,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiObjectNotFoundException
 import androidx.test.uiautomator.UiSelector
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import com.github.fschroffner.radiodroid3.di.NetworkModule
 import com.github.fschroffner.radiodroid3.tests.utils.http.HttpToMockInterceptor
 import com.github.fschroffner.radiodroid3.tests.utils.http.MockHttpDispatcher
 import okhttp3.mockwebserver.MockWebServer
@@ -27,8 +27,8 @@ class CustomTestRunner : AndroidJUnitRunner() {
         resetGlobalState(app)
         setupMockWebServer()
 
-        val radioDroidApp = app as RadioDroidApp
-        radioDroidApp.testsInterceptor = httpToMockInterceptor
+
+        NetworkModule.testsInterceptor = httpToMockInterceptor
 
         super.callApplicationOnCreate(app)
     }

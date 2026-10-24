@@ -9,7 +9,8 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.tests.utils.conditionwatcher.ConditionWatcher
 
@@ -54,8 +55,8 @@ object TestUtils {
     }
 
     fun populateFavourites(context: Context, stationsCount: Int) {
-        val app = context.applicationContext as RadioDroidApp
-        val favouriteManager = app.favouriteManager
+
+        val favouriteManager = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).favouriteManager()
         favouriteManager.clear()
 
         for (i in 0 until stationsCount) {
@@ -64,8 +65,8 @@ object TestUtils {
     }
 
     fun populateHistory(context: Context, stationsCount: Int) {
-        val app = context.applicationContext as RadioDroidApp
-        val historyManager = app.historyManager
+
+        val historyManager = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).historyManager()
         historyManager.clear()
 
         for (i in 0 until stationsCount) {

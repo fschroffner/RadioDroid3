@@ -27,6 +27,7 @@ import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationActions
 
+@dagger.hilt.android.AndroidEntryPoint
 class FragmentPlayerSmall : Fragment() {
 
     enum class Role { HEADER, PLAYER }
@@ -35,8 +36,10 @@ class FragmentPlayerSmall : Fragment() {
         fun onToggle()
     }
 
-    private lateinit var trackHistoryRepository: TrackHistoryRepository
-    private lateinit var mpdClient: MPDClient
+    @javax.inject.Inject lateinit var trackHistoryRepository: TrackHistoryRepository
+    @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
+    @javax.inject.Inject lateinit var historyManager: HistoryManager
+    @javax.inject.Inject lateinit var mpdClient: MPDClient
     private lateinit var updateUIReceiver: BroadcastReceiver
     private var callback: Callback? = null
     private var role = Role.PLAYER
@@ -53,9 +56,9 @@ class FragmentPlayerSmall : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.layout_player_small, container, false)
 
-        val radioDroidApp = requireActivity().application as RadioDroidApp
-        mpdClient = radioDroidApp.mpdClient
-        trackHistoryRepository = radioDroidApp.trackHistoryRepository
+
+
+
 
         updateUIReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -93,7 +96,7 @@ class FragmentPlayerSmall : Fragment() {
 
         buttonMore.setOnClickListener {
             val station = Utils.getCurrentOrLastStation(requireContext()) ?: return@setOnClickListener
-            val favouriteManager = (requireActivity().application as RadioDroidApp).favouriteManager
+
             showPlayerMenu(station, favouriteManager.has(station.StationUuid))
         }
 
@@ -128,11 +131,11 @@ class FragmentPlayerSmall : Fragment() {
     }
 
     private fun playLastFromHistory() {
-        val app = requireActivity().application as RadioDroidApp
+
         var station = PlayerServiceUtil.getCurrentStation()
-        if (station == null) station = app.historyManager.getFirst()
+        if (station == null) station = historyManager.getFirst()
         if (station != null && !PlayerServiceUtil.isPlaying()) {
-            Utils.showPlaySelection(app, station, requireActivity().supportFragmentManager)
+            Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
         }
     }
 

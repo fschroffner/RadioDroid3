@@ -24,20 +24,25 @@ import com.github.fschroffner.radiodroid3.station.ItemAdapterIconOnlyStation
 import com.github.fschroffner.radiodroid3.station.ItemAdapterStation
 import com.github.fschroffner.radiodroid3.station.StationActions
 import com.github.fschroffner.radiodroid3.station.StationsFilter
+import dagger.hilt.android.AndroidEntryPoint
+import okhttp3.OkHttpClient
 import java.util.Observable
 import java.util.Observer
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
     private val TAG = "FragmentStarred"
+
+    @Inject lateinit var favouriteManager: FavouriteManager
+    @Inject lateinit var okHttpClient: OkHttpClient
 
     private lateinit var rvStations: RecyclerView
     private var swipeRefreshLayout: SwipeRefreshLayout? = null
     private var task: AsyncTask<*, *, *>? = null
-    private lateinit var favouriteManager: FavouriteManager
 
     private fun onStationClick(station: DataRadioStation) {
-        val app = requireActivity().application as RadioDroidApp
-        Utils.showPlaySelection(app, station, requireActivity().supportFragmentManager)
+        Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
     }
 
     override fun RefreshListGui() {
@@ -48,8 +53,6 @@ class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val app = requireActivity().application as RadioDroidApp
-        favouriteManager = app.favouriteManager
         favouriteManager.addObserver(this)
 
         val view = inflater.inflate(R.layout.fragment_stations, container, false)
@@ -105,7 +108,7 @@ class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
 
     @Suppress("DEPRECATION")
     private fun RefreshDownloadList() {
-        val httpClient = (requireActivity().application as RadioDroidApp).httpClient
+        val httpClient = okHttpClient
         val listUuids = favouriteManager.listStations.map { it.StationUuid }
         Log.d(TAG, "Search for items: ${listUuids.size}")
 
@@ -118,40 +121,32 @@ class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
                 if (result != null) {
                     if (BuildConfig.DEBUG) Log.d(TAG, "Found items: ${result.size}")
                     SyncList(result)
-                    RefreshListGui()
                 } else {
-                    try { Toast.makeText(context, resources.getText(R.string.error_list_update), Toast.LENGTH_SHORT).show() }
-                    catch (e: Exception) { Log.e("ERR", e.toString()) }
+                    Log.e(TAG, "Search for items failed")
+                    if (context != null)
+                        Toast.makeText(context, resources.getString(R.string.error_station_load), Toast.LENGTH_SHORT).show()
                 }
             }
         }.execute()
     }
 
-    private fun SyncList(listNew: List<DataRadioStation>) {
-        val toRemove = mutableListOf<String>()
-        for (current in favouriteManager.listStations) {
-            if (listNew.none { it.StationUuid == current.StationUuid }) {
-                Log.d(TAG, "Remove station: ${current.StationUuid} - ${current.Name}")
-                toRemove.add(current.StationUuid)
-                current.DeletedOnServer = true
-            }
-        }
-        Log.d(TAG, "replace items")
-        favouriteManager.replaceList(listNew)
-        Log.d(TAG, "fin save")
-        if (toRemove.isNotEmpty()) {
-            Toast.makeText(context, resources.getString(R.string.notify_sync_list_deleted_entries, toRemove.size, favouriteManager.size()), Toast.LENGTH_LONG).show()
-        }
+    private fun DownloadFinished() {
+        swipeRefreshLayout?.isRefreshing = false
+        task = null
     }
 
-    private fun DownloadFinished() { swipeRefreshLayout?.isRefreshing = false }
+    private fun SyncList(stationsNew: List<DataRadioStation>) {
+        favouriteManager.replaceList(stationsNew)
+        RefreshListGui()
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        rvStations.adapter = null
-        favouriteManager = (requireActivity().application as RadioDroidApp).favouriteManager
+        task?.cancel(true)
         favouriteManager.deleteObserver(this)
     }
 
-    override fun update(o: Observable?, arg: Any?) { RefreshListGui() }
+    override fun update(observable: Observable?, data: Any?) {
+        RefreshListGui()
+    }
 }

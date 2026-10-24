@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+
 import com.github.fschroffner.radiodroid3.StationSaveManager
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentRefreshable
@@ -62,8 +62,8 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
     private lateinit var queue: StationSaveManager
 
     private fun onStationClick(theStation: DataRadioStation, pos: Int) {
-        val app = requireActivity().application as RadioDroidApp
-        Utils.showPlaySelection(app, theStation, requireActivity().supportFragmentManager)
+
+        Utils.showPlaySelection(requireContext(), theStation, requireActivity().supportFragmentManager)
     }
 
     /** hidebroken API parameter: the inverse of the "show_broken" preference. */

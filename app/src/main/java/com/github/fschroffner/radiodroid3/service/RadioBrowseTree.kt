@@ -1,5 +1,6 @@
 package com.github.fschroffner.radiodroid3.service
 
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.MediaItem
@@ -7,8 +8,9 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.session.MediaConstants
 import androidx.preference.PreferenceManager
 import com.google.common.collect.ImmutableList
+import com.github.fschroffner.radiodroid3.FavouriteManager
+import com.github.fschroffner.radiodroid3.HistoryManager
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 
@@ -23,7 +25,11 @@ import com.github.fschroffner.radiodroid3.station.DataRadioStation
  * The tree is a root folder containing two station folders (Favorites, History); each of those
  * lists the stored stations as playable leaves whose media id encodes the station UUID.
  */
-class RadioBrowseTree(private val app: RadioDroidApp) {
+class RadioBrowseTree(
+    private val context: Context,
+    private val favouriteManager: FavouriteManager,
+    private val historyManager: HistoryManager
+) {
 
     companion object {
         const val MEDIA_ID_ROOT = "__ROOT__"
@@ -48,7 +54,7 @@ class RadioBrowseTree(private val app: RadioDroidApp) {
      * browsable items as a list, playable items as a grid only when the favorites-icon style is on.
      */
     fun rootExtras(): Bundle {
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(app.applicationContext)
+        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
         val gridForPlayables = sharedPref.getBoolean("load_icons", false) &&
                 sharedPref.getBoolean("icons_only_favorites_style", false)
         return Bundle().apply {
@@ -69,19 +75,19 @@ class RadioBrowseTree(private val app: RadioDroidApp) {
         MEDIA_ID_ROOT -> ImmutableList.of(
             browsableItem(
                 MEDIA_ID_FAVORITE,
-                app.getString(R.string.nav_item_starred),
+                context.getString(R.string.nav_item_starred),
                 R.drawable.ic_star_white_24,
                 MediaMetadata.MEDIA_TYPE_FOLDER_RADIO_STATIONS
             ),
             browsableItem(
                 MEDIA_ID_HISTORY,
-                app.getString(R.string.nav_item_history),
+                context.getString(R.string.nav_item_history),
                 R.drawable.ic_star_white_24,
                 MediaMetadata.MEDIA_TYPE_FOLDER_RADIO_STATIONS
             )
         )
-        MEDIA_ID_FAVORITE -> stationsToItems(MEDIA_ID_FAVORITE, app.favouriteManager.getList())
-        MEDIA_ID_HISTORY -> stationsToItems(MEDIA_ID_HISTORY, app.historyManager.getList())
+        MEDIA_ID_FAVORITE -> stationsToItems(MEDIA_ID_FAVORITE, favouriteManager.getList())
+        MEDIA_ID_HISTORY -> stationsToItems(MEDIA_ID_HISTORY, historyManager.getList())
         else -> ImmutableList.of()
     }
 
@@ -100,7 +106,7 @@ class RadioBrowseTree(private val app: RadioDroidApp) {
     fun stationForMediaId(mediaId: String): DataRadioStation? {
         val uuid = stationIdFromMediaId(mediaId)
         if (uuid.isEmpty()) return null
-        return app.favouriteManager.getById(uuid) ?: app.historyManager.getById(uuid)
+        return favouriteManager.getById(uuid) ?: historyManager.getById(uuid)
     }
 
     private fun stationsToItems(
@@ -142,7 +148,7 @@ class RadioBrowseTree(private val app: RadioDroidApp) {
             .setIsBrowsable(true)
             .setIsPlayable(false)
             .setMediaType(mediaType)
-        iconResId?.let { metadataBuilder.setArtworkUri(Utils.resourceToUri(app.resources, it)) }
+        iconResId?.let { metadataBuilder.setArtworkUri(Utils.resourceToUri(context.resources, it)) }
         return MediaItem.Builder()
             .setMediaId(mediaId)
             .setMediaMetadata(metadataBuilder.build())

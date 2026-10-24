@@ -3,7 +3,7 @@ package com.github.fschroffner.radiodroid3.station
 import android.content.Context
 import android.util.Log
 import androidx.preference.PreferenceManager
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.utils.CustomFilter
 import me.xdrop.fuzzywuzzy.FuzzySearch
@@ -54,8 +54,8 @@ class StationsFilter(
 
     private fun searchGlobal(query: String): List<DataRadioStation> {
         Log.d("FILTER", "searchGlobal 1:$query")
-        val radioDroidApp = context.applicationContext as RadioDroidApp
-        val httpClient = radioDroidApp.httpClient
+
+        val httpClient = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).okHttpClient()
 
         val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
         val showBroken = sharedPref.getBoolean("show_broken", false)
@@ -77,7 +77,7 @@ class StationsFilter(
             }
 
             Log.d("FILTER", "searchGlobal 2:$query")
-            val resultString = Utils.downloadFeedRelative(httpClient, radioDroidApp, searchUrl, false, p)
+            val resultString = Utils.downloadFeedRelative(httpClient, context, searchUrl, false, p)
             if (resultString != null) {
                 Log.d("FILTER", "searchGlobal 3a:$query")
                 lastRemoteSearchStatus = SearchStatus.SUCCESS

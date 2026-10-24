@@ -266,46 +266,63 @@ object Utils {
     }
 
     @JvmStatic
+    fun refreshStation(station: DataRadioStation, httpClient: okhttp3.OkHttpClient, context: Context): Boolean {
+        @Suppress("DEPRECATION")
+        val refreshed = if (!TextUtils.isEmpty(station.StationUuid)) getStationByUuid(httpClient, context, station.StationUuid)
+                        else getStationById(httpClient, context, station.StationId)
+        return if (refreshed != null && refreshed.hasValidUuid()) {
+            station.copyPropertiesFrom(refreshed)
+            station.RefreshRetryCount = 0
+            true
+        } else {
+            if (hasAnyConnection(context)) station.RefreshRetryCount++
+            false
+        }
+    }
+
+    @JvmStatic
     fun getCurrentOrLastStation(ctx: Context): DataRadioStation? {
         var station = PlayerServiceUtil.getCurrentStation()
         if (station == null) {
-            val radioDroidApp = ctx.applicationContext as RadioDroidApp
-            station = radioDroidApp.historyManager.getFirst()
+            val entryPoint = dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+            station = entryPoint.historyManager().getFirst()
         }
         return station
     }
 
     @JvmStatic
-    fun showMpdServersDialog(radioDroidApp: RadioDroidApp, fragmentManager: FragmentManager, station: DataRadioStation?) {
+    fun showMpdServersDialog(context: Context, fragmentManager: FragmentManager, station: DataRadioStation?) {
         val oldFragment = fragmentManager.findFragmentByTag(PlayerSelectorDialog.FRAGMENT_TAG)
         if (oldFragment != null && oldFragment.isVisible) return
 
-        val playerSelectorDialogFragment = PlayerSelectorDialog(radioDroidApp.mpdClient, station)
+        val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+        val playerSelectorDialogFragment = PlayerSelectorDialog(entryPoint.mpdClient(), station)
         playerSelectorDialogFragment.show(fragmentManager, PlayerSelectorDialog.FRAGMENT_TAG)
     }
 
     @JvmStatic
-    fun showPlaySelection(radioDroidApp: RadioDroidApp, station: DataRadioStation, fragmentManager: FragmentManager) {
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(radioDroidApp)
+    fun showPlaySelection(context: Context, station: DataRadioStation, fragmentManager: FragmentManager) {
+        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
         val externalAvailable = sharedPref.getBoolean("play_external", false)
-        val castHandler = radioDroidApp.castHandler
+        val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+        val castHandler = entryPoint.castHandler()
         val castAvailable = castHandler.isCastSessionAvailable
-        val mpdAvailable = radioDroidApp.mpdClient.isMpdEnabled
+        val mpdAvailable = entryPoint.mpdClient().isMpdEnabled
 
         if (castAvailable && !externalAvailable && !mpdAvailable) {
-            PlayStationTask(station, radioDroidApp.applicationContext,
+            PlayStationTask(station, context.applicationContext,
                 { url -> castHandler.playRemote(station.Name, url, station.IconUrl) },
                 null).execute()
         } else if (externalAvailable || mpdAvailable) {
-            showMpdServersDialog(radioDroidApp, fragmentManager, station)
+            showMpdServersDialog(context, fragmentManager, station)
         } else {
-            playAndWarnIfMetered(radioDroidApp, station, PlayerType.RADIODROID) { play(radioDroidApp, station) }
+            playAndWarnIfMetered(context, station, PlayerType.RADIODROID) { play(station) }
         }
     }
 
     @JvmStatic
-    fun playAndWarnIfMetered(radioDroidApp: RadioDroidApp, station: DataRadioStation, playerType: PlayerType, playFunc: Runnable) {
-        playAndWarnIfMetered(radioDroidApp, station, playerType, playFunc) { station1, playerType1 ->
+    fun playAndWarnIfMetered(context: Context, station: DataRadioStation, playerType: PlayerType, playFunc: Runnable) {
+        playAndWarnIfMetered(context, station, playerType, playFunc) { station1, playerType1 ->
             PlayerServiceUtil.setStation(station1)
             PlayerServiceUtil.warnAboutMeteredConnection(playerType1)
         }
@@ -322,12 +339,12 @@ object Utils {
     }
 
     @JvmStatic
-    fun playAndWarnIfMetered(radioDroidApp: RadioDroidApp, station: DataRadioStation, playerType: PlayerType,
+    fun playAndWarnIfMetered(context: Context, station: DataRadioStation, playerType: PlayerType,
                              playFunc: Runnable, warningCallback: MeteredWarningCallback) {
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(radioDroidApp)
+        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
         val warnOnMetered = sharedPref.getBoolean("warn_no_wifi", false)
 
-        if (warnOnMetered && ConnectivityChecker.getCurrentConnectionType(radioDroidApp) == ConnectivityChecker.ConnectionType.METERED) {
+        if (warnOnMetered && ConnectivityChecker.getCurrentConnectionType(context) == ConnectivityChecker.ConnectionType.METERED) {
             warningCallback.warn(station, playerType)
         } else {
             playFunc.run()
@@ -335,7 +352,12 @@ object Utils {
     }
 
     @JvmStatic
-    fun play(radioDroidApp: RadioDroidApp, station: DataRadioStation) {
+    fun play(station: DataRadioStation) {
+        PlayerServiceUtil.play(station)
+    }
+
+    @JvmStatic
+    fun play(context: Context, station: DataRadioStation) {
         PlayerServiceUtil.play(station)
     }
 

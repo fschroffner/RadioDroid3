@@ -13,6 +13,8 @@ import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.fschroffner.radiodroid3.adapters.ItemAdapterStatistics
 import com.github.fschroffner.radiodroid3.data.DataStatistics
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentRefreshable
 
 class FragmentServerInfo : Fragment(), IFragmentRefreshable {
@@ -34,7 +36,7 @@ class FragmentServerInfo : Fragment(), IFragmentRefreshable {
     @Suppress("DEPRECATION")
     private fun download(forceUpdate: Boolean) {
         LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
-        val httpClient = (requireActivity().application as RadioDroidApp).httpClient
+        val httpClient = EntryPoints.get(requireContext().applicationContext, AppEntryPoint::class.java).okHttpClient()
 
         object : AsyncTask<Void, Void, String?>() {
             override fun doInBackground(vararg params: Void?) =

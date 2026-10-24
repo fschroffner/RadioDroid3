@@ -23,10 +23,13 @@ import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.github.fschroffner.radiodroid3.interfaces.IApplicationSelected
 import com.github.fschroffner.radiodroid3.proxy.ProxySettingsDialog
 
+@dagger.hilt.android.AndroidEntryPoint
 class FragmentSettings : PreferenceFragmentCompat(),
     SharedPreferences.OnSharedPreferenceChangeListener,
     IApplicationSelected,
     PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
+
+    @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
 
     companion object {
         @JvmStatic
@@ -117,8 +120,8 @@ class FragmentSettings : PreferenceFragmentCompat(),
             }
             "pref_category_mpd" -> {
                 findPreference<Preference>("mpd_servers_viewer")?.setOnPreferenceClickListener {
-                    val app = requireActivity().application as RadioDroidApp
-                    Utils.showMpdServersDialog(app, requireActivity().supportFragmentManager, null)
+
+                    Utils.showMpdServersDialog(requireContext(), requireActivity().supportFragmentManager, null)
                     false
                 }
             }
@@ -188,7 +191,7 @@ class FragmentSettings : PreferenceFragmentCompat(),
             }
             "theme_name", "circular_icons", "bottom_navigation" -> {
                 if (key == "circular_icons") {
-                    (requireActivity().application as RadioDroidApp).favouriteManager.updateShortcuts()
+                    favouriteManager.updateShortcuts()
                 }
                 requireActivity().recreate()
             }

@@ -17,7 +17,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils.parseIntWithDefault
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
 import com.github.fschroffner.radiodroid3.players.mpd.MPDServerData
@@ -51,8 +52,8 @@ class PlayerSelectorDialog : BottomSheetDialogFragment {
         retainInstance = true
         val view = inflater.inflate(R.layout.dialog_mpd_servers, container, false)
 
-        val radioDroidApp = requireActivity().application as RadioDroidApp
-        serversRepository = radioDroidApp.mpdClient.mpdServersRepository
+
+        serversRepository = EntryPoints.get(requireContext().applicationContext, AppEntryPoint::class.java).mpdClient().mpdServersRepository
 
         recyclerViewServers = view.findViewById(R.id.recyclerViewMPDServers)
         recyclerViewServers.layoutManager = GridLayoutManager(context, 2, RecyclerView.VERTICAL, false)

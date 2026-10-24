@@ -13,7 +13,7 @@ import com.mikepenz.iconics.typeface.library.community.material.CommunityMateria
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.utils.sizeDp
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.players.PlayStationTask
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
@@ -41,7 +41,7 @@ object StationPopupMenu {
                         labelRes = R.string.context_menu_play_in_external_player
                         iconDrawable = IconicsDrawable(context, CommunityMaterial.Icon2.cmd_play_box_outline).sizeDp(24)
                         callback = {
-                            Utils.playAndWarnIfMetered(context.applicationContext as RadioDroidApp, station,
+                            Utils.playAndWarnIfMetered(context, station,
                                     PlayerType.EXTERNAL) { PlayStationTask.playExternal(station, context).execute() }
                         }
                     }
@@ -72,7 +72,7 @@ object StationPopupMenu {
                         labelRes = R.string.context_menu_create_shortcut
                         icon = R.drawable.ic_back_arrow_24dp
                         callback = {
-                            station.prepareShortcut(context, itemAdapterStation.CreatePinShortcutListener())
+                            StationShortcutHelper.prepareShortcut(station, context, itemAdapterStation.CreatePinShortcutListener())
                         }
                     }
                 }

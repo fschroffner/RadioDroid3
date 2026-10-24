@@ -52,7 +52,7 @@ open class FragmentBase : Fragment() {
                     LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
                 }
 
-                val httpClient = (requireActivity().application as RadioDroidApp).httpClient
+                val httpClient = dagger.hilt.EntryPoints.get(requireContext().applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).okHttpClient()
 
                 task = object : AsyncTask<Void, Void, String?>() {
                     override fun doInBackground(vararg params: Void?): String? {

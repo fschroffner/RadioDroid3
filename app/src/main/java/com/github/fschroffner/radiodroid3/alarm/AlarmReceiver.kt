@@ -22,7 +22,8 @@ import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.RadioDroidApp
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.service.ConnectivityChecker
 import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
@@ -42,15 +43,15 @@ class AlarmReceiver : BroadcastReceiver() {
         Toast.makeText(context, context.resources.getText(R.string.alert_alarm_working), Toast.LENGTH_SHORT).show()
 
         alarmId = intent.getIntExtra("id", -1)
-        val app = context.applicationContext as RadioDroidApp
-        val ram = app.alarmManager
+        val entryPoint = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
+        val ram = entryPoint.radioAlarmManager()
         station = ram.getStation(alarmId)
         ram.resetAllAlarms()
 
         if (station != null && alarmId >= 0) {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(app)
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val warnOnMetered = prefs.getBoolean("warn_no_wifi", false)
-            if (warnOnMetered && ConnectivityChecker.getCurrentConnectionType(app) == ConnectivityChecker.ConnectionType.METERED) {
+            if (warnOnMetered && ConnectivityChecker.getCurrentConnectionType(context) == ConnectivityChecker.ConnectionType.METERED) {
                 playSystemAlarm(context)
             } else {
                 play(context, station!!.StationUuid)
@@ -76,8 +77,8 @@ class AlarmReceiver : BroadcastReceiver() {
 
     @Suppress("DEPRECATION")
     private fun play(context: Context, stationId: String) {
-        val app = context.applicationContext as RadioDroidApp
-        val httpClient = app.httpClient
+        val entryPoint = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
+        val httpClient = entryPoint.okHttpClient()
 
         @Suppress("ObjectLiteralToLambda")
         object : AsyncTask<Void, Void, String?>() {
