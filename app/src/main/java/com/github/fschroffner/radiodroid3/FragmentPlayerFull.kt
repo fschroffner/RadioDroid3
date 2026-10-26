@@ -1,21 +1,15 @@
 package com.github.fschroffner.radiodroid3
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.text.format.DateUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import android.view.animation.AnimationUtils
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -23,15 +17,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.widget.Group
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
-import com.github.fschroffner.radiodroid3.player.PlaybackState
-import kotlinx.coroutines.launch
 import androidx.paging.PagedList
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -40,31 +31,22 @@ import androidx.viewpager.widget.ViewPager
 import com.squareup.picasso.Picasso
 import com.github.fschroffner.radiodroid3.history.TrackHistoryAdapter
 import com.github.fschroffner.radiodroid3.history.TrackHistoryEntry
-import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.history.TrackHistoryViewModel
-import com.github.fschroffner.radiodroid3.recording.Recordable
+import com.github.fschroffner.radiodroid3.player.PlayerUiState
+import com.github.fschroffner.radiodroid3.player.PlayerViewModel
 import com.github.fschroffner.radiodroid3.recording.RecordingsAdapter
-import com.github.fschroffner.radiodroid3.recording.RecordingsManager
 import com.github.fschroffner.radiodroid3.recording.RunningRecordingInfo
-import com.github.fschroffner.radiodroid3.service.PauseReason
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
-import com.github.fschroffner.radiodroid3.station.StationActions
-import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
-import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
-import com.github.fschroffner.radiodroid3.station.live.metadata.TrackMetadata
-import com.github.fschroffner.radiodroid3.station.live.metadata.TrackMetadataCallback
-import com.github.fschroffner.radiodroid3.station.live.metadata.TrackMetadataSearcher
-import com.github.fschroffner.radiodroid3.utils.RefreshHandler
 import com.github.fschroffner.radiodroid3.views.RecyclerAwareNestedScrollView
 import com.github.fschroffner.radiodroid3.views.TagsView
-import java.lang.ref.WeakReference
-import java.util.Observable
-import java.util.Observer
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
-@dagger.hilt.android.AndroidEntryPoint
+@AndroidEntryPoint
 class FragmentPlayerFull : Fragment() {
 
-    private val TAG = "FragmentPlayerFull"
     private val PERM_REQ_STORAGE_RECORD = 1001
 
     interface TouchInterceptListener {
@@ -72,26 +54,8 @@ class FragmentPlayerFull : Fragment() {
     }
 
     private var touchInterceptListener: TouchInterceptListener? = null
-    private var initialized = false
-    @javax.inject.Inject lateinit var mediaControllerRepository: MediaControllerRepository
+    private val playerViewModel: PlayerViewModel by activityViewModels()
 
-    private val refreshHandler = RefreshHandler()
-    private val timedUpdateTask = TimedUpdateTask(this)
-    private val TIMED_UPDATE_INTERVAL = 1000
-
-    private var trackMetadataCallback: PlayerTrackMetadataCallback? = null
-    private var trackMetadataLastFailureType: TrackMetadataCallback.FailureType? = null
-    private var lastLiveInfoForTrackMetadata: StreamLiveInfo? = null
-
-    @javax.inject.Inject lateinit var recordingsManager: RecordingsManager
-    private val recordingsObserver = Observer { _: Observable?, _: Any? -> updateRecordings() }
-
-    @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
-    private val favouritesObserver = FavouritesObserver()
-
-    @javax.inject.Inject lateinit var historyManager: HistoryManager
-    @javax.inject.Inject lateinit var trackHistoryRepository: TrackHistoryRepository
-    @javax.inject.Inject lateinit var trackMetadataSearcher: TrackMetadataSearcher
     private lateinit var trackHistoryAdapter: TrackHistoryAdapter
     private lateinit var recordingsAdapter: RecordingsAdapter
 
@@ -118,11 +82,6 @@ class FragmentPlayerFull : Fragment() {
     private lateinit var btnFavourite: ImageButton
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-
-
-
-
-
         trackHistoryAdapter = TrackHistoryAdapter(requireActivity())
         trackHistoryAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
@@ -147,7 +106,8 @@ class FragmentPlayerFull : Fragment() {
             override fun onTouch(v: View, event: MotionEvent): Boolean {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        downX = event.rawX.toInt(); downY = event.rawY.toInt()
+                        downX = event.rawX.toInt()
+                        downY = event.rawY.toInt()
                     }
                     MotionEvent.ACTION_MOVE -> {
                         val dx = Math.abs(event.rawX.toInt() - downX)
@@ -231,83 +191,55 @@ class FragmentPlayerFull : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         btnPlay.setOnClickListener {
-            if (mediaControllerRepository.isPlaying()) {
-                if (mediaControllerRepository.playbackState.value.isRecording) {
-                    mediaControllerRepository.stopRecording()
-                    updateRunningRecording()
-                }
-                mediaControllerRepository.pause(PauseReason.USER)
-            } else {
-                playLastFromHistory()
+            playerViewModel.playPause { station ->
+                Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
             }
-            updatePlaybackButtons(mediaControllerRepository.isPlaying(), mediaControllerRepository.playbackState.value.isRecording)
         }
 
-        btnPrev.setOnClickListener { mediaControllerRepository.skipToPrevious() }
-        btnNext.setOnClickListener { mediaControllerRepository.skipToNext() }
+        btnPrev.setOnClickListener { playerViewModel.skipToPrevious() }
+        btnNext.setOnClickListener { playerViewModel.skipToNext() }
 
         btnRecord.setOnClickListener {
-            if (mediaControllerRepository.isPlaying()) {
-                if (mediaControllerRepository.playbackState.value.isRecording) {
-                    mediaControllerRepository.stopRecording()
-                } else {
-                    if (Utils.verifyStoragePermissions(this, PERM_REQ_STORAGE_RECORD)) {
-                        mediaControllerRepository.startRecording()
-                    }
-                }
-                updateRunningRecording()
-                pagerHistoryAndRecordings.setCurrentItem(1, true)
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mediaControllerRepository.playbackState.collect { state ->
-                    fullUpdate(state)
+            if (playerViewModel.uiState.value.isPlaying) {
+                val startedOrStopped = playerViewModel.toggleRecording(
+                    Utils.verifyStoragePermissions(this, PERM_REQ_STORAGE_RECORD)
+                )
+                if (startedOrStopped) {
+                    pagerHistoryAndRecordings.setCurrentItem(1, true)
                 }
             }
         }
 
         btnFavourite.setOnClickListener {
-            val station = Utils.getCurrentOrLastStation(requireContext()) ?: return@setOnClickListener
-            if (favouriteManager.has(station.StationUuid)) {
-                StationActions.removeFromFavourites(requireContext(), null, station)
-            } else {
-                StationActions.markAsFavourite(requireContext(), station)
+            playerViewModel.toggleFavorite()
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    playerViewModel.uiState.collect { state ->
+                        fullUpdate(state)
+                    }
+                }
+                launch {
+                    while (isActive) {
+                        val state = playerViewModel.uiState.value
+                        if (state.isPlaying) {
+                            updateMetrics(state)
+                            updateRunningRecording(state.isRecording, state.runningRecordingInfo)
+                        }
+                        delay(1000)
+                    }
+                }
             }
         }
     }
 
     fun init() {
-        if (!initialized) fullUpdate()
+        if (isAdded) fullUpdate(playerViewModel.uiState.value)
     }
-
-    override fun onHiddenChanged(hidden: Boolean) {
-        super.onHiddenChanged(hidden)
-        if (hidden) stopUpdating() else startUpdating()
-        touchInterceptListener?.requestDisallowInterceptTouchEvent(false)
-    }
-
-    override fun onResume() { super.onResume(); startUpdating() }
-    override fun onPause() { super.onPause(); stopUpdating() }
 
     fun setTouchInterceptListener(l: TouchInterceptListener) { touchInterceptListener = l }
-
-    private fun startUpdating() {
-        if (!isVisible) return
-        fullUpdate()
-        refreshHandler.executePeriodically(timedUpdateTask, TIMED_UPDATE_INTERVAL.toLong())
-        recordingsManager.savedRecordingsObservable.addObserver(recordingsObserver)
-        favouriteManager.addObserver(favouritesObserver)
-    }
-
-    private fun stopUpdating() {
-        view ?: return
-        refreshHandler.cancel()
-        trackMetadataCallback?.cancel()
-        recordingsManager.savedRecordingsObservable.deleteObserver(recordingsObserver)
-        favouriteManager.deleteObserver(favouritesObserver)
-    }
 
     fun resetScroll() {
         scrollViewContent.scrollTo(0, 0)
@@ -317,14 +249,8 @@ class FragmentPlayerFull : Fragment() {
 
     fun isScrolled() = scrollViewContent.scrollY > 0
 
-    private fun playLastFromHistory() {
-        var station = mediaControllerRepository.getCurrentStation()
-        if (station == null) station = historyManager.getFirst()
-        if (station != null) Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
-    }
-
-    private fun fullUpdate(state: PlaybackState = mediaControllerRepository.playbackState.value) {
-        val station = state.station ?: Utils.getCurrentOrLastStation(requireContext())
+    private fun fullUpdate(state: PlayerUiState) {
+        val station = state.station
         val liveInfo = state.streamLiveInfo
         if (station != null) {
             val streamTitle = liveInfo.title
@@ -346,12 +272,24 @@ class FragmentPlayerFull : Fragment() {
             artAndInfoPagerAdapter.viewTags.setTags(station.TagsAll.split(","))
         }
 
-        updateAlbumArt(station, liveInfo)
-        updateRecordings()
+        updateAlbumArt(state)
+        recordingsAdapter.setRecordings(state.savedRecordings)
+        updateRunningRecording(state.isRecording, state.runningRecordingInfo)
         updatePlaybackButtons(state.isPlaying, state.isRecording)
-        updateFavouriteButton()
-        timedUpdateTask.run()
-        initialized = true
+        updateFavouriteButton(state.isFavorite)
+        updateMetrics(state)
+    }
+
+    private fun updateAlbumArt(state: PlayerUiState) {
+        val artUrl = state.albumArtUrl
+        val station = state.station
+        if (!artUrl.isNullOrEmpty()) {
+            Picasso.get().load(artUrl).error(R.drawable.ic_launcher).into(artAndInfoPagerAdapter.imageViewArt)
+        } else if (station != null && station.hasIcon()) {
+            Picasso.get().load(station.IconUrl).error(R.drawable.ic_launcher).into(artAndInfoPagerAdapter.imageViewArt)
+        } else {
+            artAndInfoPagerAdapter.imageViewArt.setImageResource(R.drawable.ic_launcher)
+        }
     }
 
     private fun updatePlaybackButtons(playing: Boolean, recording: Boolean) {
@@ -382,14 +320,8 @@ class FragmentPlayerFull : Fragment() {
         }
     }
 
-    private fun updateRecordings() {
-        recordingsAdapter.setRecordings(recordingsManager.getSavedRecordings())
-        updateRunningRecording()
-    }
-
-    private fun updateRunningRecording() {
-        if (mediaControllerRepository.playbackState.value.isRecording) {
-            val recordingInfo = recordingsManager.getRunningRecordings().entries.first().value
+    private fun updateRunningRecording(isRecording: Boolean, recordingInfo: RunningRecordingInfo?) {
+        if (isRecording && recordingInfo != null) {
             groupRecordings.visibility = View.VISIBLE
             imgRecordingIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.blink_recording))
             textViewRecordingSize.text = Utils.getReadableBytes(recordingInfo.bytesWritten.toDouble())
@@ -400,51 +332,8 @@ class FragmentPlayerFull : Fragment() {
         }
     }
 
-    private fun updateAlbumArt(station: DataRadioStation? = mediaControllerRepository.getCurrentStation(), liveInfo: StreamLiveInfo = mediaControllerRepository.playbackState.value.streamLiveInfo) {
-        if (station == null) return
-
-        if (lastLiveInfoForTrackMetadata != null &&
-            TextUtils.equals(lastLiveInfoForTrackMetadata!!.artist, liveInfo.artist) &&
-            TextUtils.equals(lastLiveInfoForTrackMetadata!!.track, liveInfo.track) &&
-            TrackMetadataCallback.FailureType.RECOVERABLE != trackMetadataLastFailureType) return
-
-
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        val lastFMApiKey = sharedPref.getString("last_fm_api_key", "") ?: ""
-
-        if (TextUtils.isEmpty(liveInfo.artist) || TextUtils.isEmpty(liveInfo.track) || lastFMApiKey.isEmpty()) {
-            if (station.hasIcon()) {
-                Picasso.get().load(station.IconUrl).error(R.drawable.ic_launcher).into(artAndInfoPagerAdapter.imageViewArt)
-            } else {
-                artAndInfoPagerAdapter.imageViewArt.setImageResource(R.drawable.ic_launcher)
-            }
-            return
-        }
-
-        trackMetadataLastFailureType = null
-        lastLiveInfoForTrackMetadata = liveInfo
-        trackMetadataCallback?.cancel()
-
-
-        val fragmentWeakRef = WeakReference(this)
-        trackHistoryRepository.getLastInsertedHistoryItem { trackHistoryEntry, _ ->
-            if (trackHistoryEntry == null) { Log.e(TAG, "trackHistoryEntry is null in updateAlbumArt"); return@getLastInsertedHistoryItem }
-            if (!TextUtils.isEmpty(trackHistoryEntry.artUrl)) return@getLastInsertedHistoryItem
-            val fragment = fragmentWeakRef.get()
-            if (fragment != null) {
-                fragment.requireActivity().runOnUiThread {
-                    if (fragment.isResumed) {
-                        fragment.trackMetadataCallback = PlayerTrackMetadataCallback(fragmentWeakRef, trackHistoryEntry)
-                        trackMetadataSearcher.fetchTrackMetadata(lastFMApiKey, liveInfo.artist, liveInfo.track, fragment.trackMetadataCallback!!)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun updateFavouriteButton() {
-        val station = Utils.getCurrentOrLastStation(requireContext())
-        if (station != null && favouriteManager.has(station.StationUuid)) {
+    private fun updateFavouriteButton(isFavorite: Boolean) {
+        if (isFavorite) {
             btnFavourite.setImageResource(R.drawable.ic_star_24dp)
             btnFavourite.contentDescription = requireContext().applicationContext.getString(R.string.detail_unstar)
         } else {
@@ -453,53 +342,18 @@ class FragmentPlayerFull : Fragment() {
         }
     }
 
-    private inner class FavouritesObserver : Observer {
-        override fun update(o: Observable?, arg: Any?) {
-            if (isAdded) requireActivity().runOnUiThread { updateFavouriteButton() }
-        }
-    }
+    private fun updateMetrics(state: PlayerUiState) {
+        val shoutcastInfo = state.shoutcastInfo
+        if (state.isPlaying) {
+            var networkUsageInfo = Utils.getReadableBytes(state.transferredBytes.toDouble())
+            if (shoutcastInfo != null && shoutcastInfo.bitrate > 0) networkUsageInfo += " (${shoutcastInfo.bitrate} kbps)"
+            textViewNetworkUsageInfo.text = networkUsageInfo
 
-    private class PlayerTrackMetadataCallback(
-        private val fragmentWeakReference: WeakReference<FragmentPlayerFull>,
-        private val trackHistoryEntry: TrackHistoryEntry
-    ) : TrackMetadataCallback {
-        private var canceled = false
-
-        fun cancel() { canceled = true }
-
-        override fun onFailure(failureType: TrackMetadataCallback.FailureType) {
-            val fragment = fragmentWeakReference.get()
-            fragment?.requireActivity()?.runOnUiThread {
-                if (canceled) return@runOnUiThread
-                fragment.trackMetadataLastFailureType = failureType
-                val station = Utils.getCurrentOrLastStation(fragment.requireContext())
-                if (station != null && station.hasIcon()) {
-                    Picasso.get().load(station.IconUrl).error(R.drawable.ic_launcher).into(fragment.artAndInfoPagerAdapter.imageViewArt)
-                } else {
-                    fragment.artAndInfoPagerAdapter.imageViewArt.setImageResource(R.drawable.ic_launcher)
-                }
-                fragment.trackMetadataCallback = null
-            }
-        }
-
-        override fun onSuccess(trackMetadata: TrackMetadata) {
-            val fragment = fragmentWeakReference.get()
-            fragment?.requireActivity()?.runOnUiThread {
-                if (canceled) return@runOnUiThread
-                val albumArts = trackMetadata.albumArts
-                if (!albumArts.isNullOrEmpty()) {
-                    val albumArtUrl = albumArts[0].url
-                    if (!TextUtils.isEmpty(albumArtUrl)) {
-                        Picasso.get().load(albumArtUrl).into(fragment.artAndInfoPagerAdapter.imageViewArt)
-                        if (albumArtUrl != trackHistoryEntry.stationIconUrl) {
-                            fragment.trackHistoryRepository.setTrackArtUrl(trackHistoryEntry.uid, albumArtUrl)
-                        }
-                        fragment.trackMetadataCallback = null
-                        return@runOnUiThread
-                    }
-                }
-                onFailure(TrackMetadataCallback.FailureType.UNRECOVERABLE)
-            }
+            val now = System.currentTimeMillis()
+            val startTime = state.lastPlayStartTime
+            val deltaSeconds = maxOf(if (startTime > 0) (now - startTime) / 1000 else 0, 0)
+            textViewTimePlayed.text = DateUtils.formatElapsedTime(deltaSeconds)
+            textViewTimeCached.text = DateUtils.formatElapsedTime(state.bufferedSeconds)
         }
     }
 
@@ -563,36 +417,15 @@ class FragmentPlayerFull : Fragment() {
         override fun getPageTitle(position: Int): CharSequence = titles[position]
     }
 
-    private class TimedUpdateTask(obj: FragmentPlayerFull) : RefreshHandler.ObjectBoundRunnable<FragmentPlayerFull>(obj) {
-        override fun run(f: FragmentPlayerFull) {
-            val state = f.mediaControllerRepository.playbackState.value
-            val shoutcastInfo = state.shoutcastInfo
-            if (state.isPlaying) {
-                var networkUsageInfo = Utils.getReadableBytes(state.transferredBytes.toDouble())
-                if (shoutcastInfo != null && shoutcastInfo.bitrate > 0) networkUsageInfo += " (${shoutcastInfo.bitrate} kbps)"
-                f.textViewNetworkUsageInfo.text = networkUsageInfo
-
-                val now = System.currentTimeMillis()
-                val startTime = state.lastPlayStartTime
-                val deltaSeconds = maxOf(if (startTime > 0) (now - startTime) / 1000 else 0, 0)
-                f.textViewTimePlayed.text = DateUtils.formatElapsedTime(deltaSeconds)
-                f.textViewTimeCached.text = DateUtils.formatElapsedTime(state.bufferedSeconds)
-                f.updateRunningRecording()
-            }
-        }
-    }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         if (requestCode == PERM_REQ_STORAGE_RECORD) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 storagePermissionsDenied = false
-                mediaControllerRepository.startRecording()
+                playerViewModel.toggleRecording(true)
             } else {
                 storagePermissionsDenied = true
                 Toast.makeText(activity, resources.getString(R.string.error_record_needs_write), Toast.LENGTH_SHORT).show()
             }
-            updatePlaybackButtons(mediaControllerRepository.isPlaying(), mediaControllerRepository.playbackState.value.isRecording)
-            updateRecordings()
         }
     }
 }

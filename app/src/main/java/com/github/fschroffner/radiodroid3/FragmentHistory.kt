@@ -1,7 +1,5 @@
 package com.github.fschroffner.radiodroid3
 
-import android.content.Intent
-import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -9,46 +7,40 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
-import com.github.fschroffner.radiodroid3.interfaces.IAdapterRefreshable
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
+import com.github.fschroffner.radiodroid3.station.HistoryViewModel
 import com.github.fschroffner.radiodroid3.station.ItemAdapterStation
 import com.github.fschroffner.radiodroid3.station.StationsFilter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import javax.inject.Inject
 
 @AndroidEntryPoint
-class FragmentHistory : Fragment(), IAdapterRefreshable {
+class FragmentHistory : Fragment() {
     private val TAG = "FragmentHistory"
 
-    @Inject lateinit var historyManager: HistoryManager
-    @Inject lateinit var okHttpClient: OkHttpClient
+    private val historyViewModel: HistoryViewModel by viewModels()
 
     private lateinit var rvStations: RecyclerView
     private var swipeRefreshLayout: SwipeRefreshLayout? = null
-    private var task: AsyncTask<*, *, *>? = null
 
     private fun onStationClick(station: DataRadioStation) {
         Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
-        RefreshListGui()
         rvStations.smoothScrollToPosition(0)
     }
 
-    override fun RefreshListGui() {
-        if (BuildConfig.DEBUG) Log.d(TAG, "refreshing the stations list.")
+    fun RefreshListGui() {
+        if (!::rvStations.isInitialized) return
         val adapter = rvStations.adapter as? ItemAdapterStation ?: return
-        if (BuildConfig.DEBUG) Log.d(TAG, "stations count:${historyManager.listStations.size}")
-        adapter.updateList(null, historyManager.listStations)
+        adapter.updateList(null, historyViewModel.uiState.value.stations)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -58,8 +50,7 @@ class FragmentHistory : Fragment(), IAdapterRefreshable {
                 this@FragmentHistory.onStationClick(station)
             }
             override fun onStationSwiped(station: DataRadioStation) {
-                val removedIdx = historyManager.remove(station.StationUuid)
-                RefreshListGui()
+                val removedIdx = historyViewModel.removeStation(station)
                 val snackbar = Snackbar.make(requireView(), R.string.notify_station_removed_from_list, 6000)
                 val anchorView = requireView().rootView.findViewById<View>(R.id.bottom_sheet)
                     ?: requireView().rootView.findViewById<View>(R.id.fragment_player_small)
@@ -67,8 +58,7 @@ class FragmentHistory : Fragment(), IAdapterRefreshable {
                     snackbar.anchorView = anchorView
                 }
                 snackbar.setAction(R.string.action_station_removed_from_list_undo) {
-                    historyManager.restore(station, removedIdx)
-                    RefreshListGui()
+                    historyViewModel.restoreStation(station, removedIdx)
                 }
                 snackbar.show()
             }
@@ -87,10 +77,9 @@ class FragmentHistory : Fragment(), IAdapterRefreshable {
         swipeRefreshLayout = view.findViewById(R.id.swiperefresh)
         swipeRefreshLayout?.setOnRefreshListener {
             if (BuildConfig.DEBUG) Log.d(TAG, "onRefresh called from SwipeRefreshLayout")
-            RefreshDownloadList()
+            historyViewModel.refresh()
         }
 
-        RefreshListGui()
         return view
     }
 
@@ -98,59 +87,15 @@ class FragmentHistory : Fragment(), IAdapterRefreshable {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                historyManager.stationsFlow.collect { stations ->
+                historyViewModel.uiState.collect { state ->
+                    swipeRefreshLayout?.isRefreshing = state.isRefreshing
+                    if (state.errorMessage != null && context != null) {
+                        Toast.makeText(context, state.errorMessage, Toast.LENGTH_SHORT).show()
+                    }
                     val adapter = rvStations.adapter as? ItemAdapterStation ?: return@collect
-                    adapter.updateList(null, stations)
+                    adapter.updateList(null, state.stations)
                 }
             }
         }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun RefreshDownloadList() {
-        val httpClient = okHttpClient
-        val listUuids = historyManager.listStations.map { it.StationUuid }
-        Log.d(TAG, "Search for items: ${listUuids.size}")
-
-        task = object : AsyncTask<Void, Void, List<DataRadioStation>?>() {
-            override fun doInBackground(vararg p: Void?) = Utils.getStationsByUuid(httpClient, requireActivity(), listUuids)
-            override fun onPostExecute(result: List<DataRadioStation>?) {
-                DownloadFinished()
-                if (context != null)
-                    LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
-                if (result != null) {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "Found items: ${result.size}")
-                    SyncList(result)
-                    RefreshListGui()
-                } else {
-                    try { Toast.makeText(context, resources.getText(R.string.error_list_update), Toast.LENGTH_SHORT).show() }
-                    catch (e: Exception) { Log.e("ERR", e.toString()) }
-                }
-            }
-        }.execute()
-    }
-
-    private fun SyncList(listNew: List<DataRadioStation>) {
-        val toRemove = mutableListOf<String>()
-        for (current in historyManager.listStations) {
-            if (listNew.none { it.StationUuid == current.StationUuid }) {
-                Log.d(TAG, "Remove station: ${current.StationUuid} - ${current.Name}")
-                toRemove.add(current.StationUuid)
-                current.DeletedOnServer = true
-            }
-        }
-        Log.d(TAG, "replace items")
-        historyManager.replaceList(listNew)
-        Log.d(TAG, "fin save")
-        if (toRemove.isNotEmpty()) {
-            Toast.makeText(context, resources.getString(R.string.notify_sync_list_deleted_entries, toRemove.size, historyManager.size()), Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun DownloadFinished() { swipeRefreshLayout?.isRefreshing = false }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        rvStations.adapter = null
     }
 }

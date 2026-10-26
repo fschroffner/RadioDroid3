@@ -7,6 +7,9 @@ import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.Utils
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -27,6 +30,8 @@ class RecordingsManager {
     }
 
     val savedRecordingsObservable: Observable = RecordingsObservable()
+    private val _recordingsFlow = MutableStateFlow<List<DataRecording>>(emptyList())
+    val recordingsFlow: StateFlow<List<DataRecording>> = _recordingsFlow.asStateFlow()
 
     private inner class RunningRecordableListener(
         private val runningRecordingInfo: RunningRecordingInfo
@@ -53,6 +58,12 @@ class RecordingsManager {
 
     private val runningRecordings = mutableMapOf<Recordable, RunningRecordingInfo>()
     private val savedRecordings = mutableListOf<DataRecording>()
+
+    init {
+        try {
+            updateRecordingsList()
+        } catch (_: Exception) {}
+    }
 
     fun record(context: Context, recordable: Recordable) {
         if (!recordable.canRecord() || runningRecordings.containsKey(recordable)) return
@@ -113,6 +124,7 @@ class RecordingsManager {
         } else {
             Log.e(TAG, "Could not enumerate files in recordings directory")
         }
+        _recordingsFlow.value = ArrayList(savedRecordings)
         savedRecordingsObservable.notifyObservers()
     }
 

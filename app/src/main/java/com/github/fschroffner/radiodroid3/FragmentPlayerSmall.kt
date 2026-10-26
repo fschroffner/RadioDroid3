@@ -1,11 +1,5 @@
 package com.github.fschroffner.radiodroid3
 
-import android.app.Activity
-import android.app.Application
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.Gravity
@@ -17,20 +11,24 @@ import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
-import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
-import com.github.fschroffner.radiodroid3.player.PlaybackState
+import com.github.fschroffner.radiodroid3.player.PlayerUiState
+import com.github.fschroffner.radiodroid3.player.PlayerViewModel
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
-import com.github.fschroffner.radiodroid3.service.PauseReason
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationActions
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-@dagger.hilt.android.AndroidEntryPoint
+@AndroidEntryPoint
 class FragmentPlayerSmall : Fragment() {
 
     enum class Role { HEADER, PLAYER }
@@ -39,11 +37,10 @@ class FragmentPlayerSmall : Fragment() {
         fun onToggle()
     }
 
-    @javax.inject.Inject lateinit var trackHistoryRepository: TrackHistoryRepository
-    @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
-    @javax.inject.Inject lateinit var historyManager: HistoryManager
-    @javax.inject.Inject lateinit var mpdClient: MPDClient
-    @javax.inject.Inject lateinit var mediaControllerRepository: MediaControllerRepository
+    @Inject lateinit var trackHistoryRepository: TrackHistoryRepository
+    @Inject lateinit var mpdClient: MPDClient
+
+    private val viewModel: PlayerViewModel by activityViewModels()
     private var callback: Callback? = null
     private var role = Role.PLAYER
 
@@ -53,8 +50,6 @@ class FragmentPlayerSmall : Fragment() {
     private lateinit var imageViewIcon: ImageView
     private lateinit var buttonPlay: ImageButton
     private lateinit var buttonMore: ImageButton
-
-    private var firstPlayAttempted = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.layout_player_small, container, false)
@@ -72,21 +67,21 @@ class FragmentPlayerSmall : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        requireActivity().application.registerActivityLifecycleCallbacks(LifecycleCallbacks())
+        viewLifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                checkStartupPlay()
+            }
+        })
 
         buttonPlay.setOnClickListener {
-            if (mediaControllerRepository.isPlaying()) {
-                if (mediaControllerRepository.playbackState.value.isRecording) mediaControllerRepository.stopRecording()
-                mediaControllerRepository.pause(PauseReason.USER)
-            } else {
-                playLastFromHistory()
+            viewModel.playPause { station ->
+                Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
             }
         }
 
         buttonMore.setOnClickListener {
-            val station = Utils.getCurrentOrLastStation(requireContext()) ?: return@setOnClickListener
-
-            showPlayerMenu(station, favouriteManager.has(station.StationUuid))
+            val station = viewModel.uiState.value.station ?: Utils.getCurrentOrLastStation(requireContext()) ?: return@setOnClickListener
+            showPlayerMenu(station, viewModel.uiState.value.isFavorite)
         }
 
         requireView().setOnClickListener { callback?.onToggle() }
@@ -95,10 +90,10 @@ class FragmentPlayerSmall : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                mediaControllerRepository.playbackState.collect { state ->
+                viewModel.uiState.collect { state ->
                     fullUpdate(state)
                     if (state.isConnected) {
-                        tryPlayAtStart()
+                        checkStartupPlay()
                     }
                 }
             }
@@ -109,36 +104,22 @@ class FragmentPlayerSmall : Fragment() {
 
     fun setRole(role: Role) {
         this.role = role
-        fullUpdate()
+        fullUpdate(viewModel.uiState.value)
     }
 
-    private fun playLastFromHistory() {
-        var station = mediaControllerRepository.getCurrentStation()
-        if (station == null) station = historyManager.getFirst()
-        if (station != null && !mediaControllerRepository.isPlaying()) {
-            Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
-        }
-    }
+    private fun checkStartupPlay() {
+        val ctx = context ?: return
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx.applicationContext)
+        val autoPlay = sharedPreferences.getBoolean("auto_play_on_startup", false)
+        val autoOff = sharedPreferences.getBoolean("auto_off_on_startup", false)
+        val timeout = try {
+            sharedPreferences.getString("auto_off_timeout", "10")!!.toInt()
+        } catch (e: Exception) { 10 }
 
-    private fun tryPlayAtStart() {
-        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext().applicationContext)
-        var play = false
-        var autoOff = false
-        if (!firstPlayAttempted && mediaControllerRepository.isConnected()) {
-            firstPlayAttempted = true
-            if (!mediaControllerRepository.isPlaying()) {
-                play = sharedPreferences.getBoolean("auto_play_on_startup", false)
+        viewModel.tryPlayAtStart(autoPlay, autoOff, timeout) { station ->
+            if (isAdded) {
+                Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
             }
-        }
-        if (play) {
-            autoOff = sharedPreferences.getBoolean("auto_off_on_startup", false)
-            if (autoOff) {
-                val timeout = try {
-                    sharedPreferences.getString("auto_off_timeout", "10")!!.toInt()
-                } catch (e: Exception) { 10 }
-                mediaControllerRepository.addTimer(timeout * 60)
-            }
-            playLastFromHistory()
         }
     }
 
@@ -151,7 +132,7 @@ class FragmentPlayerSmall : Fragment() {
         requireView().findViewById<ImageView>(R.id.transparentCircle).visibility = if (useCircularIcons) View.VISIBLE else View.GONE
     }
 
-    private fun fullUpdate(state: PlaybackState = mediaControllerRepository.playbackState.value) {
+    private fun fullUpdate(state: PlayerUiState) {
         if (state.isPlaying) {
             buttonPlay.setImageResource(R.drawable.ic_pause_circle)
             buttonPlay.contentDescription = resources.getString(R.string.detail_pause)
@@ -160,7 +141,7 @@ class FragmentPlayerSmall : Fragment() {
             buttonPlay.contentDescription = resources.getString(R.string.detail_play)
         }
 
-        val station = state.station ?: Utils.getCurrentOrLastStation(requireContext())
+        val station = state.station
         val stationName = station?.Name ?: ""
         textViewStationName.text = stationName
 
@@ -217,18 +198,5 @@ class FragmentPlayerSmall : Fragment() {
             true
         }
         dropDownMenu.show()
-    }
-
-    inner class LifecycleCallbacks : Application.ActivityLifecycleCallbacks {
-        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-        override fun onActivityStarted(activity: Activity) {
-            context ?: return
-            tryPlayAtStart()
-        }
-        override fun onActivityResumed(activity: Activity) {}
-        override fun onActivityPaused(activity: Activity) {}
-        override fun onActivityStopped(activity: Activity) {}
-        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
-        override fun onActivityDestroyed(activity: Activity) {}
     }
 }

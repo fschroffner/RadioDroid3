@@ -12,6 +12,9 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.Calendar
 import java.util.Collections
 import java.util.Observable
@@ -37,6 +40,8 @@ class RadioAlarmManager(
     }
 
     val savedAlarmsObservable: Observable = AlarmsObservable()
+    private val _alarmsFlow = MutableStateFlow<List<DataRadioStationAlarm>>(emptyList())
+    val alarmsFlow: StateFlow<List<DataRadioStationAlarm>> = _alarmsFlow.asStateFlow()
 
     init {
         load()
@@ -94,6 +99,7 @@ class RadioAlarmManager(
             }
             appPreferencesDataStore.putStringAsync("alarm.ids", ids)
         }
+        _alarmsFlow.value = list.toList()
         savedAlarmsObservable.notifyObservers()
     }
 
@@ -125,6 +131,7 @@ class RadioAlarmManager(
         } else {
             Log.w("ALARM", "empty load() string")
         }
+        _alarmsFlow.value = list.toList()
     }
 
     fun setEnabled(alarmId: Int, enabled: Boolean) {

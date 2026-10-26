@@ -1,8 +1,6 @@
 package com.github.fschroffner.radiodroid3
 
-import android.content.Intent
 import android.content.SharedPreferences
-import android.os.AsyncTask
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.util.Log
@@ -11,54 +9,45 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.github.fschroffner.radiodroid3.interfaces.IAdapterRefreshable
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
+import com.github.fschroffner.radiodroid3.station.FavoritesViewModel
 import com.github.fschroffner.radiodroid3.station.ItemAdapterIconOnlyStation
 import com.github.fschroffner.radiodroid3.station.ItemAdapterStation
 import com.github.fschroffner.radiodroid3.station.StationActions
 import com.github.fschroffner.radiodroid3.station.StationsFilter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import java.util.Observable
-import java.util.Observer
-import javax.inject.Inject
 
 @AndroidEntryPoint
-class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
+class FragmentStarred : Fragment() {
     private val TAG = "FragmentStarred"
 
-    @Inject lateinit var favouriteManager: FavouriteManager
-    @Inject lateinit var okHttpClient: OkHttpClient
+    private val favoritesViewModel: FavoritesViewModel by viewModels()
 
     private lateinit var rvStations: RecyclerView
     private var swipeRefreshLayout: SwipeRefreshLayout? = null
-    private var task: AsyncTask<*, *, *>? = null
 
     private fun onStationClick(station: DataRadioStation) {
         Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
     }
 
-    override fun RefreshListGui() {
-        if (BuildConfig.DEBUG) Log.d(TAG, "refreshing the stations list.")
+    fun RefreshListGui() {
+        if (!::rvStations.isInitialized) return
         val adapter = rvStations.adapter as? ItemAdapterStation ?: return
-        if (BuildConfig.DEBUG) Log.d(TAG, "stations count:${favouriteManager.listStations.size}")
-        adapter.updateList(this, favouriteManager.listStations)
+        adapter.updateList(null, favoritesViewModel.uiState.value.stations)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        favouriteManager.addObserver(this)
-
         val view = inflater.inflate(R.layout.fragment_stations, container, false)
         rvStations = view.findViewById(R.id.recyclerViewStations)
 
@@ -90,12 +79,11 @@ class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
                 StationActions.removeFromFavourites(requireContext(), view, station)
             }
             override fun onStationMoved(from: Int, to: Int) {
-                favouriteManager.moveWithoutNotify(from, to)
+                favoritesViewModel.moveStation(from, to)
             }
             override fun onStationMoveFinished() {
                 requireView().post {
-                    favouriteManager.Save()
-                    favouriteManager.notifyObservers()
+                    favoritesViewModel.saveOrder()
                 }
             }
         })
@@ -103,10 +91,9 @@ class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
         swipeRefreshLayout = view.findViewById(R.id.swiperefresh)
         swipeRefreshLayout?.setOnRefreshListener {
             if (BuildConfig.DEBUG) Log.d(TAG, "onRefresh called from SwipeRefreshLayout")
-            RefreshDownloadList()
+            favoritesViewModel.refresh()
         }
 
-        RefreshListGui()
         return view
     }
 
@@ -114,55 +101,15 @@ class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                favouriteManager.stationsFlow.collect { stations ->
+                favoritesViewModel.uiState.collect { state ->
+                    swipeRefreshLayout?.isRefreshing = state.isRefreshing
+                    if (state.errorMessage != null && context != null) {
+                        Toast.makeText(context, state.errorMessage, Toast.LENGTH_SHORT).show()
+                    }
                     val adapter = rvStations.adapter as? ItemAdapterStation ?: return@collect
-                    adapter.updateList(this@FragmentStarred, stations)
+                    adapter.updateList(null, state.stations)
                 }
             }
         }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun RefreshDownloadList() {
-        val httpClient = okHttpClient
-        val listUuids = favouriteManager.listStations.map { it.StationUuid }
-        Log.d(TAG, "Search for items: ${listUuids.size}")
-
-        task = object : AsyncTask<Void, Void, List<DataRadioStation>?>() {
-            override fun doInBackground(vararg p: Void?) = Utils.getStationsByUuid(httpClient, requireActivity(), listUuids)
-            override fun onPostExecute(result: List<DataRadioStation>?) {
-                DownloadFinished()
-                if (context != null)
-                    LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
-                if (result != null) {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "Found items: ${result.size}")
-                    SyncList(result)
-                } else {
-                    Log.e(TAG, "Search for items failed")
-                    if (context != null)
-                        Toast.makeText(context, resources.getString(R.string.error_station_load), Toast.LENGTH_SHORT).show()
-                }
-            }
-        }.execute()
-    }
-
-    private fun DownloadFinished() {
-        swipeRefreshLayout?.isRefreshing = false
-        task = null
-    }
-
-    private fun SyncList(stationsNew: List<DataRadioStation>) {
-        favouriteManager.replaceList(stationsNew)
-        RefreshListGui()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        task?.cancel(true)
-        favouriteManager.deleteObserver(this)
-    }
-
-    override fun update(observable: Observable?, data: Any?) {
-        RefreshListGui()
     }
 }

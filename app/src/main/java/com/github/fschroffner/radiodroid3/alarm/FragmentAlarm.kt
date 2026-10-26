@@ -9,9 +9,12 @@ import android.widget.AdapterView
 import android.widget.ListView
 import android.widget.TimePicker
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.github.fschroffner.radiodroid3.R
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Observer
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -21,7 +24,6 @@ class FragmentAlarm : Fragment(), TimePickerDialog.OnTimeSetListener {
 
     private lateinit var adapterRadioAlarm: ItemAdapterRadioAlarm
     private lateinit var lvAlarms: ListView
-    private lateinit var alarmsObserver: Observer
     private var clickedAlarm: DataRadioStationAlarm? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -36,25 +38,19 @@ class FragmentAlarm : Fragment(), TimePickerDialog.OnTimeSetListener {
             if (obj is DataRadioStationAlarm) clickOnItem(obj)
         }
 
-        alarmsObserver = Observer { _, _ -> refreshListAndView() }
-
         return view
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshListAndView()
-        ram.savedAlarmsObservable.addObserver(alarmsObserver)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        ram.savedAlarmsObservable.deleteObserver(alarmsObserver)
-    }
-
-    private fun refreshListAndView() {
-        adapterRadioAlarm.clear()
-        adapterRadioAlarm.addAll(*ram.getList())
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                ram.alarmsFlow.collect { alarms ->
+                    adapterRadioAlarm.clear()
+                    adapterRadioAlarm.addAll(*alarms.toTypedArray())
+                }
+            }
+        }
     }
 
     private fun clickOnItem(alarm: DataRadioStationAlarm) {
@@ -68,5 +64,4 @@ class FragmentAlarm : Fragment(), TimePickerDialog.OnTimeSetListener {
         clickedAlarm?.let { ram.changeTime(it.id, hourOfDay, minute) }
         view.invalidate()
     }
-
 }

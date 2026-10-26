@@ -43,13 +43,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 interface RadioPlayerController {
-    val uiState: StateFlow<PlayerUiState>
+    val uiState: StateFlow<PlayerBasicState>
     fun play()
     fun pause()
     fun skip()
 }
 
-data class PlayerUiState(
+data class PlayerBasicState(
     val isPlaying: Boolean = false,
     val title: String = "",
     val artist: String = ""
@@ -71,19 +71,19 @@ class MediaControllerRepository @Inject constructor(
     )
     val meteredConnectionEvents: SharedFlow<PlayerType> = _meteredConnectionEvents.asSharedFlow()
 
-    override val uiState: StateFlow<PlayerUiState> = _playbackState.map { state ->
+    override val uiState: StateFlow<PlayerBasicState> = _playbackState.map { state ->
         val title = state.streamLiveInfo.title?.takeIf { it.isNotBlank() }
             ?: state.station?.Name
             ?: ""
         val artist = state.streamLiveInfo.artist?.takeIf { it.isNotBlank() }
             ?: state.station?.TagsAll
             ?: ""
-        PlayerUiState(
+        PlayerBasicState(
             isPlaying = state.isPlaying,
             title = title,
             artist = artist
         )
-    }.stateIn(scope, SharingStarted.Eagerly, PlayerUiState())
+    }.stateIn(scope, SharingStarted.Eagerly, PlayerBasicState())
 
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
