@@ -88,57 +88,6 @@ class MediaControllerRepository @Inject constructor(
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var mediaController: MediaController? = null
 
-    init {
-        connect()
-    }
-
-    fun connect() {
-        if (controllerFuture != null) return
-        val sessionToken = SessionToken(
-            context,
-            ComponentName(context, PlayerService::class.java)
-        )
-        val future = MediaController.Builder(context, sessionToken)
-            .setListener(controllerListener)
-            .buildAsync()
-        controllerFuture = future
-        future.addListener({
-            try {
-                val controller = future.get()
-                mediaController = controller
-                controller.addListener(playerListener)
-                _playbackState.update { it.copy(isConnected = true) }
-                readStateFromExtras(controller.sessionExtras)
-                if (BuildConfig.DEBUG) Log.d(TAG, "MediaController successfully connected")
-            } catch (e: Exception) {
-                Log.e(TAG, "MediaController connection failed", e)
-                controllerFuture = null
-                _playbackState.update { it.copy(isConnected = false) }
-            }
-        }, ContextCompat.getMainExecutor(context))
-    }
-
-    private fun withController(action: (MediaController) -> Unit) {
-        val currentController = mediaController
-        if (currentController != null && currentController.isConnected) {
-            action(currentController)
-            return
-        }
-        val future = controllerFuture ?: run {
-            connect()
-            controllerFuture
-        } ?: return
-
-        future.addListener({
-            try {
-                val controller = future.get()
-                action(controller)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to run action on MediaController", e)
-            }
-        }, ContextCompat.getMainExecutor(context))
-    }
-
     private val playerListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
             val playState = when (playbackState) {
@@ -215,6 +164,57 @@ class MediaControllerRepository @Inject constructor(
             controllerFuture = null
             _playbackState.update { it.copy(isConnected = false) }
         }
+    }
+
+    init {
+        connect()
+    }
+
+    fun connect() {
+        if (controllerFuture != null) return
+        val sessionToken = SessionToken(
+            context,
+            ComponentName(context, PlayerService::class.java)
+        )
+        val future = MediaController.Builder(context, sessionToken)
+            .setListener(controllerListener)
+            .buildAsync()
+        controllerFuture = future
+        future.addListener({
+            try {
+                val controller = future.get()
+                mediaController = controller
+                controller.addListener(playerListener)
+                _playbackState.update { it.copy(isConnected = true) }
+                readStateFromExtras(controller.sessionExtras)
+                if (BuildConfig.DEBUG) Log.d(TAG, "MediaController successfully connected")
+            } catch (e: Exception) {
+                Log.e(TAG, "MediaController connection failed", e)
+                controllerFuture = null
+                _playbackState.update { it.copy(isConnected = false) }
+            }
+        }, ContextCompat.getMainExecutor(context))
+    }
+
+    private fun withController(action: (MediaController) -> Unit) {
+        val currentController = mediaController
+        if (currentController != null && currentController.isConnected) {
+            action(currentController)
+            return
+        }
+        val future = controllerFuture ?: run {
+            connect()
+            controllerFuture
+        } ?: return
+
+        future.addListener({
+            try {
+                val controller = future.get()
+                action(controller)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to run action on MediaController", e)
+            }
+        }, ContextCompat.getMainExecutor(context))
     }
 
     private fun readStateFromExtras(extras: Bundle?) {
