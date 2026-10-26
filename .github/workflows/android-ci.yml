@@ -28,7 +28,7 @@ jobs:
     - name: Tests
       run: bash ./gradlew assembleDebug test --stacktrace
     - name: Upload Debug APK
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: debug-apk
         path: app/build/outputs/apk/free/debug/*.apk
