@@ -1,0 +1,225 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "88f58936df3deb84fcd545eb4353e4fa",
+    "entities": [
+      {
+        "tableName": "track_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `station_uuid` TEXT NOT NULL, `station_icon_url` TEXT NOT NULL, `track` TEXT NOT NULL, `artist` TEXT NOT NULL, `title` TEXT NOT NULL, `art_url` TEXT, `start_time` INTEGER NOT NULL, `end_time` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stationUuid",
+            "columnName": "station_uuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stationIconUrl",
+            "columnName": "station_icon_url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "track",
+            "columnName": "track",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "artist",
+            "columnName": "artist",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "artUrl",
+            "columnName": "art_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "startTime",
+            "columnName": "start_time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "end_time",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "uid"
+          ]
+        }
+      },
+      {
+        "tableName": "radio_stations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`StationUuid` TEXT NOT NULL, `Name` TEXT NOT NULL, `ChangeUuid` TEXT NOT NULL, `StreamUrl` TEXT NOT NULL, `HomePageUrl` TEXT NOT NULL, `IconUrl` TEXT NOT NULL, `Country` TEXT NOT NULL, `CountryCode` TEXT, `State` TEXT NOT NULL, `TagsAll` TEXT NOT NULL, `Language` TEXT NOT NULL, `ClickCount` INTEGER NOT NULL, `ClickTrend` INTEGER NOT NULL, `Votes` INTEGER NOT NULL, `RefreshRetryCount` INTEGER NOT NULL, `Bitrate` INTEGER NOT NULL, `Codec` TEXT, `Working` INTEGER NOT NULL, `Hls` INTEGER NOT NULL, `DeletedOnServer` INTEGER NOT NULL, `isFavorite` INTEGER NOT NULL, `favoriteOrder` INTEGER NOT NULL, `lastPlayed` INTEGER, PRIMARY KEY(`StationUuid`))",
+        "fields": [
+          {
+            "fieldPath": "StationUuid",
+            "columnName": "StationUuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "Name",
+            "columnName": "Name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ChangeUuid",
+            "columnName": "ChangeUuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "StreamUrl",
+            "columnName": "StreamUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "HomePageUrl",
+            "columnName": "HomePageUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "IconUrl",
+            "columnName": "IconUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "Country",
+            "columnName": "Country",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "CountryCode",
+            "columnName": "CountryCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "State",
+            "columnName": "State",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "TagsAll",
+            "columnName": "TagsAll",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "Language",
+            "columnName": "Language",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ClickCount",
+            "columnName": "ClickCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ClickTrend",
+            "columnName": "ClickTrend",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "Votes",
+            "columnName": "Votes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "RefreshRetryCount",
+            "columnName": "RefreshRetryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "Bitrate",
+            "columnName": "Bitrate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "Codec",
+            "columnName": "Codec",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "Working",
+            "columnName": "Working",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "Hls",
+            "columnName": "Hls",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "DeletedOnServer",
+            "columnName": "DeletedOnServer",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFavorite",
+            "columnName": "isFavorite",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "favoriteOrder",
+            "columnName": "favoriteOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastPlayed",
+            "columnName": "lastPlayed",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "StationUuid"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '88f58936df3deb84fcd545eb4353e4fa')"
+    ]
+  }
+}

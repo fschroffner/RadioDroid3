@@ -16,8 +16,8 @@ class HeadsetConnectionReceiver : BroadcastReceiver() {
     private var headsetConnected = false
 
     override fun onReceive(context: Context, intent: Intent) {
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
-        val resumeOnHeadset = sharedPref.getBoolean("resume_on_headset", false)
+        val entryPoint = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
+        val resumeOnHeadset = entryPoint.appPreferencesDataStore().getBoolean("resume_on_headset", false)
         if (!resumeOnHeadset) return
 
         var play = false

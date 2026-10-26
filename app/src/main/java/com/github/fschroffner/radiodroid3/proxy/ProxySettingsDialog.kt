@@ -52,7 +52,9 @@ class ProxySettingsDialog : DialogFragment() {
         proxyTypeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, arrayOf(Proxy.Type.DIRECT, Proxy.Type.HTTP, Proxy.Type.SOCKS))
         spinnerProxyType.adapter = proxyTypeAdapter
 
-        ProxySettings.fromPreferences(PreferenceManager.getDefaultSharedPreferences(requireContext()))?.let { ps ->
+        val entryPoint = dagger.hilt.EntryPoints.get(requireContext().applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+        val initialProxy = entryPoint.appPreferencesDataStore().getProxySettings() ?: ProxySettings.fromPreferences(PreferenceManager.getDefaultSharedPreferences(requireContext()))
+        initialProxy?.let { ps ->
             editProxyHost.setText(ps.host)
             editProxyPort.setText(ps.port.toString())
             editLogin.setText(ps.login)
@@ -62,9 +64,10 @@ class ProxySettingsDialog : DialogFragment() {
 
         val dialog = builder.setView(layout)
             .setPositiveButton(R.string.action_ok) { _, _ ->
+                val proxy = createProxySettings()
+                entryPoint.appPreferencesDataStore().putStringAsync("proxySettings", com.google.gson.Gson().toJson(proxy))
                 val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-                createProxySettings().toPreferences(prefs.edit().also { it.apply() })
-
+                proxy.toPreferences(prefs.edit().also { it.apply() })
             }
             .setNegativeButton(R.string.action_cancel) { d, _ -> d.cancel() }
             .setNeutralButton(R.string.settings_proxy_action_test, null)

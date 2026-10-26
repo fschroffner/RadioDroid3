@@ -4,13 +4,18 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.text.TextUtils
 import android.util.Log
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
+@Entity(tableName = "radio_stations")
 class DataRadioStation() : Parcelable {
-    var Name: String = ""
+    @PrimaryKey
     var StationUuid: String = ""
+    var Name: String = ""
     var ChangeUuid: String = ""
     var StreamUrl: String = ""
     var HomePageUrl: String = ""
@@ -29,9 +34,16 @@ class DataRadioStation() : Parcelable {
     var Working: Boolean = true
     var Hls: Boolean = false
     var DeletedOnServer: Boolean = false
+
+    var isFavorite: Boolean = false
+    var favoriteOrder: Int = 0
+    var lastPlayed: Long? = null
+
+    @Ignore
     var playableUrl: String? = null
 
     @Deprecated("Use StationUuid instead")
+    @Ignore
     var StationId: String = ""
 
     fun hasIcon(): Boolean = !TextUtils.isEmpty(IconUrl)
@@ -62,6 +74,9 @@ class DataRadioStation() : Parcelable {
         Bitrate = station.Bitrate
         Codec = station.Codec
         Working = station.Working
+        isFavorite = station.isFavorite
+        favoriteOrder = station.favoriteOrder
+        lastPlayed = station.lastPlayed
     }
 
     fun toJson(): JSONObject? {
@@ -87,6 +102,9 @@ class DataRadioStation() : Parcelable {
                 put("codec", Codec)
                 put("lastcheckok", if (Working) "1" else "0")
                 put("DeletedOnServer", if (DeletedOnServer) "1" else "0")
+                put("isFavorite", if (isFavorite) "1" else "0")
+                put("favoriteOrder", favoriteOrder)
+                if (lastPlayed != null) put("lastPlayed", lastPlayed)
             }
         } catch (e: JSONException) {
             Log.e(TAG, "toJson() $e")
@@ -117,8 +135,12 @@ class DataRadioStation() : Parcelable {
         dest.writeByte(if (Hls) 1 else 0)
         dest.writeString(playableUrl)
         @Suppress("DEPRECATION") dest.writeString(StationId)
+        dest.writeByte(if (isFavorite) 1 else 0)
+        dest.writeInt(favoriteOrder)
+        dest.writeValue(lastPlayed)
     }
 
+    @Ignore
     private constructor(parcel: Parcel) : this() {
         Name = parcel.readString() ?: ""
         StationUuid = parcel.readString() ?: ""
@@ -140,6 +162,9 @@ class DataRadioStation() : Parcelable {
         Hls = parcel.readByte() != 0.toByte()
         playableUrl = parcel.readString()
         @Suppress("DEPRECATION") StationId = parcel.readString() ?: ""
+        isFavorite = parcel.readByte() != 0.toByte()
+        favoriteOrder = parcel.readInt()
+        lastPlayed = parcel.readValue(Long::class.java.classLoader) as? Long
     }
 
     companion object {
@@ -211,6 +236,9 @@ class DataRadioStation() : Parcelable {
             if (obj.has("lastcheckok")) station.Working = obj.getInt("lastcheckok") != 0
             if (obj.has("hls")) station.Hls = obj.getInt("hls") != 0
             if (obj.has("DeletedOnServer")) station.DeletedOnServer = obj.getInt("DeletedOnServer") != 0
+            if (obj.has("isFavorite")) station.isFavorite = obj.optBoolean("isFavorite", false) || obj.optInt("isFavorite", 0) == 1
+            if (obj.has("favoriteOrder")) station.favoriteOrder = obj.optInt("favoriteOrder", 0)
+            if (obj.has("lastPlayed")) station.lastPlayed = obj.optLong("lastPlayed")
             station.fixStationFields()
             return station
         }

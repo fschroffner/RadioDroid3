@@ -64,6 +64,7 @@ import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationsFilter
 import com.github.fschroffner.radiodroid3.alarm.RadioAlarmManager
+import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import okhttp3.OkHttpClient
 import javax.inject.Inject
 import java.io.File
@@ -89,6 +90,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     @Inject lateinit var alarmManager: RadioAlarmManager
     @Inject lateinit var fallbackStationsManager: FallbackStationsManager
     @Inject lateinit var okHttpClient: OkHttpClient
+    @Inject lateinit var appPreferencesDataStore: AppPreferencesDataStore
 
     companion object {
         const val EXTRA_SEARCH_TAG = "search_tag"
@@ -738,8 +740,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                 }
                 return true
             }
-            R.id.action_list_view -> { sharedPref.edit().putBoolean("icons_only_favorites_style", false).apply(); recreate(); return true }
-            R.id.action_icons_view -> { sharedPref.edit().putBoolean("icons_only_favorites_style", true).apply(); recreate(); return true }
+            R.id.action_list_view -> { appPreferencesDataStore.putBooleanAsync("icons_only_favorites_style", false); sharedPref.edit().putBoolean("icons_only_favorites_style", false).apply(); recreate(); return true }
+            R.id.action_icons_view -> { appPreferencesDataStore.putBooleanAsync("icons_only_favorites_style", true); sharedPref.edit().putBoolean("icons_only_favorites_style", true).apply(); recreate(); return true }
             R.id.action_add_alarm -> {
                 val newFragment = TimePickerFragment()
                 newFragment.setCallback(this)

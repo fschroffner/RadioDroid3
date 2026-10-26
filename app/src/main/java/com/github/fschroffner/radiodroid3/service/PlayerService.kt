@@ -49,6 +49,7 @@ import com.squareup.picasso.Target
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
+import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import com.github.fschroffner.radiodroid3.FavouriteManager
@@ -71,6 +72,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     @Inject lateinit var historyManager: HistoryManager
     @Inject lateinit var recordingsManager: RecordingsManager
     @Inject lateinit var injectedTrackHistoryRepository: TrackHistoryRepository
+    @Inject lateinit var appPreferencesDataStore: AppPreferencesDataStore
 
     companion object {
         const val METERED_CONNECTION_WARNING_KEY = "warn_no_wifi"
@@ -312,7 +314,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
     private val connectivityCallback = object : ConnectivityChecker.ConnectivityCallback {
         override fun onConnectivityChanged(connected: Boolean, connectionType: ConnectivityChecker.ConnectionType) {
-            if (connectionType == ConnectivityChecker.ConnectionType.METERED && sharedPref.getBoolean(METERED_CONNECTION_WARNING_KEY, false)) {
+            if (connectionType == ConnectivityChecker.ConnectionType.METERED && appPreferencesDataStore.getBoolean(METERED_CONNECTION_WARNING_KEY, false)) {
                 warnAboutMeteredConnection(PlayerType.RADIODROID)
             }
         }
@@ -821,7 +823,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     }
 
     private fun startMeteredConnectionListener() {
-        if (sharedPref.getBoolean(METERED_CONNECTION_WARNING_KEY, false)) {
+        if (appPreferencesDataStore.getBoolean(METERED_CONNECTION_WARNING_KEY, false)) {
             connectivityChecker.startListening(this, connectivityCallback)
         }
     }

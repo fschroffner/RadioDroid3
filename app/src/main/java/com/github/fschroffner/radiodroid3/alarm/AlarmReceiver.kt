@@ -49,8 +49,8 @@ class AlarmReceiver : BroadcastReceiver() {
         ram.resetAllAlarms()
 
         if (station != null && alarmId >= 0) {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-            val warnOnMetered = prefs.getBoolean("warn_no_wifi", false)
+            val dataStore = entryPoint.appPreferencesDataStore()
+            val warnOnMetered = dataStore.getBoolean("warn_no_wifi", false)
             if (warnOnMetered && ConnectivityChecker.getCurrentConnectionType(context) == ConnectivityChecker.ConnectionType.METERED) {
                 playSystemAlarm(context)
             } else {
@@ -94,11 +94,11 @@ class AlarmReceiver : BroadcastReceiver() {
             override fun onPostExecute(result: String?) {
                 if (result != null) {
                     url = result
-                    val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-                    val playExternal = prefs.getBoolean("alarm_external", false)
-                    val packageName = prefs.getString("shareapp_package", null)
-                    val activityName = prefs.getString("shareapp_activity", null)
-                    timeout = prefs.getString("alarm_timeout", "10")?.toIntOrNull() ?: 10
+                    val dataStore = entryPoint.appPreferencesDataStore()
+                    val playExternal = dataStore.getBoolean("alarm_external", false)
+                    val packageName = dataStore.getString("shareapp_package", null)
+                    val activityName = dataStore.getString("shareapp_activity", null)
+                    timeout = dataStore.getString("alarm_timeout", "10")?.toIntOrNull() ?: 10
                     try {
                         if (playExternal && packageName != null && activityName != null) {
                             context.startActivity(Intent(Intent.ACTION_VIEW).apply {

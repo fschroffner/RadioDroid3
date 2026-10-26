@@ -3,6 +3,7 @@ package com.github.fschroffner.radiodroid3.di
 import android.content.Context
 import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryDao
+import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,4 +25,9 @@ object DatabaseModule {
     fun provideTrackHistoryDao(
         database: RadioDroidDatabase
     ): TrackHistoryDao = database.songHistoryDao()
+
+    @Provides
+    fun provideRadioStationDao(
+        database: RadioDroidDatabase
+    ): RadioStationDao = database.radioStationDao()
 }

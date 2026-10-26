@@ -8,10 +8,33 @@ import android.content.pm.ShortcutManager
 import android.os.Build
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
+import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import com.github.fschroffner.radiodroid3.station.StationShortcutHelper
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class FavouriteManager(ctx: Context) : StationSaveManager(ctx) {
+class FavouriteManager(
+    ctx: Context,
+    stationDao: RadioStationDao? = null
+) : StationSaveManager(ctx, stationDao) {
+
     override fun getSaveId() = "favourites"
+
+    override val stationsFlow: Flow<List<DataRadioStation>>
+        get() = stationDao?.getFavoriteStations() ?: emptyFlow()
+
+    @Inject
+    constructor(@ApplicationContext ctx: Context) : this(
+        ctx,
+        try {
+            dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).radioStationDao()
+        } catch (e: Exception) {
+            null
+        }
+    )
 
     init {
         setStationStatusListener(object : StationStatusListener {
@@ -25,11 +48,37 @@ class FavouriteManager(ctx: Context) : StationSaveManager(ctx) {
     }
 
     override fun add(station: DataRadioStation) {
-        if (!has(station.StationUuid)) super.add(station)
+        if (!has(station.StationUuid)) {
+            station.isFavorite = true
+            station.favoriteOrder = listStations.size
+            super.add(station)
+        }
     }
 
     override fun restore(station: DataRadioStation, pos: Int) {
-        if (!has(station.StationUuid)) super.restore(station, pos)
+        if (!has(station.StationUuid)) {
+            station.isFavorite = true
+            station.favoriteOrder = pos
+            super.restore(station, pos)
+        }
+    }
+
+    override fun remove(id: String): Int {
+        stationDao?.let { dao ->
+            coroutineScope.launch {
+                dao.setFavorite(id, false, 0)
+            }
+        }
+        return super.remove(id)
+    }
+
+    override fun clear() {
+        stationDao?.let { dao ->
+            coroutineScope.launch {
+                dao.clearFavorites()
+            }
+        }
+        super.clear()
     }
 
     override fun Load() {

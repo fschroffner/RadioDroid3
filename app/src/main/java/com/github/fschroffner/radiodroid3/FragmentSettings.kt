@@ -30,6 +30,7 @@ class FragmentSettings : PreferenceFragmentCompat(),
     PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
 
     @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
+    @javax.inject.Inject lateinit var dataStoreBridge: com.github.fschroffner.radiodroid3.data.datastore.DataStorePreferenceBridge
 
     companion object {
         @JvmStatic
@@ -84,6 +85,7 @@ class FragmentSettings : PreferenceFragmentCompat(),
     }
 
     override fun onCreatePreferences(bundle: Bundle?, s: String?) {
+        preferenceManager.preferenceDataStore = dataStoreBridge
         setPreferencesFromResource(R.xml.preferences, s)
         refreshToolbar()
 

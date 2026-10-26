@@ -2,20 +2,26 @@ package com.github.fschroffner.radiodroid3
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.AsyncTask
 import android.os.Build
 import android.os.Environment
-import android.preference.PreferenceManager
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.Nullable
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import info.debatty.java.stringsimilarity.Cosine
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
-import org.json.JSONArray
+import com.github.fschroffner.radiodroid3.station.RadioStationDao
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
@@ -26,13 +32,21 @@ import java.io.Writer
 import java.util.Collections
 import java.util.Observable
 
-open class StationSaveManager(protected val context: Context) : Observable() {
+open class StationSaveManager(
+    protected val context: Context,
+    protected val stationDao: RadioStationDao? = null
+) : Observable() {
+
     interface StationStatusListener {
         fun onStationStatusChanged(station: DataRadioStation, favourite: Boolean)
     }
 
     var listStations: MutableList<DataRadioStation> = mutableListOf()
     private var stationStatusListener: StationStatusListener? = null
+    protected val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    open val stationsFlow: Flow<List<DataRadioStation>>
+        get() = emptyFlow()
 
     init {
         Load()
@@ -45,7 +59,6 @@ open class StationSaveManager(protected val context: Context) : Observable() {
     }
 
     open fun add(station: DataRadioStation) {
-
         listStations.add(station)
         Save()
         notifyObservers()
@@ -72,7 +85,6 @@ open class StationSaveManager(protected val context: Context) : Observable() {
     }
 
     fun addFront(station: DataRadioStation) {
-
         listStations.add(0, station)
         Save()
         notifyObservers()
@@ -81,7 +93,6 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
     fun addAll(stations: List<DataRadioStation>?) {
         stations ?: return
-
         listStations.addAll(stations)
     }
 
@@ -90,10 +101,6 @@ open class StationSaveManager(protected val context: Context) : Observable() {
     fun getFirst() = if (listStations.isNotEmpty()) listStations.first() else null
 
     fun getById(id: String): DataRadioStation? {
-        // Index-based lookup (like getNextById/getPreviousById) instead of an
-        // iterator, so a concurrent modification of listStations - e.g. the list
-        // being updated while a RecyclerView binds and calls has() - cannot throw
-        // ConcurrentModificationException.
         var i = 0
         while (i < listStations.size) {
             val station = listStations.getOrNull(i) ?: break
@@ -125,6 +132,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
     fun move(fromPos: Int, toPos: Int) {
         moveWithoutNotify(fromPos, toPos)
+        Save()
         notifyObservers()
     }
 
@@ -144,7 +152,7 @@ open class StationSaveManager(protected val context: Context) : Observable() {
         return bestStation
     }
 
-    fun remove(id: String): Int {
+    open fun remove(id: String): Int {
         for (i in listStations.indices) {
             val station = listStations[i]
             if (station.StationUuid == id) {
@@ -159,14 +167,13 @@ open class StationSaveManager(protected val context: Context) : Observable() {
     }
 
     open fun restore(station: DataRadioStation, pos: Int) {
-
         listStations.add(pos, station)
         Save()
         notifyObservers()
         stationStatusListener?.onStationStatusChanged(station, false)
     }
 
-    fun clear() {
+    open fun clear() {
         val oldStations = listStations.toList()
         listStations = mutableListOf()
         Save()
@@ -188,7 +195,6 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
     @Suppress("DEPRECATION")
     private fun refreshStationsFromServer() {
-
         val httpClient = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).okHttpClient()
         LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
 
@@ -216,25 +222,69 @@ open class StationSaveManager(protected val context: Context) : Observable() {
 
     open internal fun Load() {
         listStations.clear()
-        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val str = prefs.getString(getSaveId(), null)
-        if (str != null) {
-            val arr = DataRadioStation.DecodeJson(str)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val legacyJson = prefs.getString(getSaveId(), null)
 
-            listStations.addAll(arr)
+        if (stationDao != null) {
+            // One-time migration of legacy JSON strings from SharedPreferences into Room
+            if (legacyJson != null) {
+                val legacyStations = DataRadioStation.DecodeJson(legacyJson)
+                if (legacyStations.isNotEmpty()) {
+                    runBlocking(Dispatchers.IO) {
+                        legacyStations.forEachIndexed { index, s ->
+                            if (getSaveId() == "favourites") {
+                                s.isFavorite = true
+                                s.favoriteOrder = index
+                            } else if (getSaveId() == "history") {
+                                s.lastPlayed = System.currentTimeMillis() - (index * 1000L)
+                            }
+                            stationDao.insertOrUpdate(s)
+                        }
+                    }
+                }
+                prefs.edit().remove(getSaveId()).apply()
+            }
+
+            // Load directly from Room
+            val fromDb = runBlocking(Dispatchers.IO) {
+                if (getSaveId() == "favourites") {
+                    stationDao.getFavoriteStationsList()
+                } else if (getSaveId() == "history") {
+                    stationDao.getHistoryStationsList()
+                } else {
+                    emptyList()
+                }
+            }
+            listStations = fromDb.toMutableList()
             if (hasInvalidUuids() && Utils.hasAnyConnection(context)) refreshStationsFromServer()
         } else {
-            Log.w("SAVE", "Load() no stations to load")
+            if (legacyJson != null) {
+                val arr = DataRadioStation.DecodeJson(legacyJson)
+                listStations.addAll(arr)
+            }
         }
     }
 
     open internal fun Save() {
-        val arr = JSONArray()
-        listStations.forEach { arr.put(it.toJson()) }
-        val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val str = arr.toString()
-        if (BuildConfig.DEBUG) Log.d("SAVE", "wrote: $str")
-        prefs.edit().putString(getSaveId(), str).commit()
+        if (stationDao != null) {
+            val currentList = ArrayList(listStations)
+            coroutineScope.launch {
+                if (getSaveId() == "favourites") {
+                    currentList.forEachIndexed { index, station ->
+                        station.isFavorite = true
+                        station.favoriteOrder = index
+                        stationDao.insertOrUpdate(station)
+                    }
+                } else if (getSaveId() == "history") {
+                    currentList.forEachIndexed { index, station ->
+                        if (station.lastPlayed == null) {
+                            station.lastPlayed = System.currentTimeMillis() - (index * 1000L)
+                        }
+                        stationDao.insertOrUpdate(station)
+                    }
+                }
+            }
+        }
     }
 
     @Suppress("DEPRECATION")

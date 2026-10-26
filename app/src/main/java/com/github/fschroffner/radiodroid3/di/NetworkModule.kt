@@ -2,9 +2,9 @@ package com.github.fschroffner.radiodroid3.di
 
 import android.content.Context
 import android.text.TextUtils
-import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.Utils
+import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import com.github.fschroffner.radiodroid3.proxy.ProxySettings
 import dagger.Module
 import dagger.Provides
@@ -49,12 +49,12 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         @ApplicationContext context: Context,
-        connectionPool: ConnectionPool
+        connectionPool: ConnectionPool,
+        appPreferencesDataStore: AppPreferencesDataStore
     ): OkHttpClient {
         val dynamicProxySelector = object : ProxySelector() {
             override fun select(uri: URI?): List<Proxy> {
-                val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
-                val proxySettings = ProxySettings.fromPreferences(sharedPref)
+                val proxySettings = appPreferencesDataStore.getProxySettings()
                 if (proxySettings != null && proxySettings.type != Proxy.Type.DIRECT &&
                     !TextUtils.isEmpty(proxySettings.host) && proxySettings.port in 1..65535
                 ) {
@@ -70,8 +70,7 @@ object NetworkModule {
         }
 
         val dynamicProxyAuthenticator = Authenticator { _, response ->
-            val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
-            val proxySettings = ProxySettings.fromPreferences(sharedPref)
+            val proxySettings = appPreferencesDataStore.getProxySettings()
             if (proxySettings != null && !proxySettings.login.isNullOrEmpty()) {
                 val credential = Credentials.basic(proxySettings.login.orEmpty(), proxySettings.password.orEmpty())
                 response.request.newBuilder()

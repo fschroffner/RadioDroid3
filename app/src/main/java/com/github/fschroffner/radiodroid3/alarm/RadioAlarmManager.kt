@@ -5,7 +5,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
+import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -15,7 +16,18 @@ import java.util.Calendar
 import java.util.Collections
 import java.util.Observable
 
-class RadioAlarmManager(private val context: Context) {
+class RadioAlarmManager(
+    private val context: Context,
+    private val appPreferencesDataStore: AppPreferencesDataStore? = null
+) {
+    constructor(context: Context) : this(
+        context,
+        try {
+            dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).appPreferencesDataStore()
+        } catch (e: Exception) {
+            null
+        }
+    )
 
     private val list = mutableListOf<DataRadioStationAlarm>()
     private val pendingIntentFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
@@ -71,6 +83,17 @@ class RadioAlarmManager(private val context: Context) {
         }
         editor.putString("alarm.ids", ids)
         editor.apply()
+        if (appPreferencesDataStore != null) {
+            list.forEach { alarm ->
+                appPreferencesDataStore.putStringAsync("alarm.${alarm.id}.station", alarm.station?.toJson()?.toString())
+                appPreferencesDataStore.putIntAsync("alarm.${alarm.id}.timeHour", alarm.hour)
+                appPreferencesDataStore.putIntAsync("alarm.${alarm.id}.timeMinutes", alarm.minute)
+                appPreferencesDataStore.putBooleanAsync("alarm.${alarm.id}.enabled", alarm.enabled)
+                appPreferencesDataStore.putBooleanAsync("alarm.${alarm.id}.repeating", alarm.repeating)
+                appPreferencesDataStore.putStringAsync("alarm.${alarm.id}.weekDays", gson.toJson(alarm.weekDays))
+            }
+            appPreferencesDataStore.putStringAsync("alarm.ids", ids)
+        }
         savedAlarmsObservable.notifyObservers()
     }
 
@@ -78,7 +101,7 @@ class RadioAlarmManager(private val context: Context) {
         list.clear()
         if (BuildConfig.DEBUG) Log.d("ALARM", "load()")
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val ids = prefs.getString("alarm.ids", "") ?: ""
+        val ids = appPreferencesDataStore?.getString("alarm.ids", null) ?: prefs.getString("alarm.ids", "") ?: ""
         if (ids.isNotEmpty()) {
             val idsArr = ids.split(",")
             if (BuildConfig.DEBUG) Log.d("ALARM", "load() - ${idsArr.size}")

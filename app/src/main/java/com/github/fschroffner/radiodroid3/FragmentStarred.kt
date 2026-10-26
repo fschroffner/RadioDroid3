@@ -11,6 +11,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -25,6 +28,7 @@ import com.github.fschroffner.radiodroid3.station.ItemAdapterStation
 import com.github.fschroffner.radiodroid3.station.StationActions
 import com.github.fschroffner.radiodroid3.station.StationsFilter
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import java.util.Observable
 import java.util.Observer
@@ -104,6 +108,18 @@ class FragmentStarred : Fragment(), IAdapterRefreshable, Observer {
 
         RefreshListGui()
         return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                favouriteManager.stationsFlow.collect { stations ->
+                    val adapter = rvStations.adapter as? ItemAdapterStation ?: return@collect
+                    adapter.updateList(this@FragmentStarred, stations)
+                }
+            }
+        }
     }
 
     @Suppress("DEPRECATION")
