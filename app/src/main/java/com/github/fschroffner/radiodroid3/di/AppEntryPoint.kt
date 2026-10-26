@@ -10,6 +10,7 @@ import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryDao
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
+import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
 import com.github.fschroffner.radiodroid3.player.RadioPlayerController
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
 import com.github.fschroffner.radiodroid3.recording.RecordingsManager
@@ -39,4 +40,5 @@ interface AppEntryPoint {
     fun castHandler(): CastHandler
     fun trackMetadataSearcher(): TrackMetadataSearcher
     fun radioPlayerController(): RadioPlayerController
+    fun mediaControllerRepository(): MediaControllerRepository
 }

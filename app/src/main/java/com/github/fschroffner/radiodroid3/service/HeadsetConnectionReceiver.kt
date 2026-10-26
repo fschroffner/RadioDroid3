@@ -6,7 +6,6 @@ import android.bluetooth.BluetoothProfile
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.di.AppEntryPoint
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
@@ -43,10 +42,9 @@ class HeadsetConnectionReceiver : BroadcastReceiver() {
         }
 
         if (play) {
-            val entryPoint = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
             val lastStation = entryPoint.historyManager().getFirst()
-            if (lastStation != null && !PlayerServiceUtil.isPlaying() && !entryPoint.mpdClient().isMpdEnabled) {
-                Utils.playAndWarnIfMetered(context, lastStation, PlayerType.RADIODROID) { Utils.play(lastStation) }
+            if (lastStation != null && !entryPoint.mediaControllerRepository().isPlaying() && !entryPoint.mpdClient().isMpdEnabled) {
+                Utils.playAndWarnIfMetered(context, lastStation, PlayerType.RADIODROID) { Utils.play(context, lastStation) }
             }
         }
     }

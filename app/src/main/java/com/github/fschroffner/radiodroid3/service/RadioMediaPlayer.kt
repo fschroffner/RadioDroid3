@@ -21,9 +21,7 @@ import com.google.common.util.concurrent.ListenableFuture
  * rather than seeking a timeline. A MediaSessionService, however, requires the session to always
  * hold a valid Player. This facade bridges that gap: it stays alive for the whole service
  * lifetime, exposes the current playback state and station metadata to the notification, and
- * routes play/pause/stop commands back into [PlayerService]. Station switching (previous/next) is
- * handled through custom notification buttons in PlayerService rather than seek commands, so this
- * facade only advertises the commands it can actually serve.
+ * routes play/pause/stop commands back into [PlayerService].
  *
  * All interaction must happen on the [Looper] passed to the constructor (the main thread).
  */
@@ -36,6 +34,8 @@ class RadioMediaPlayer(
         fun onPlay()
         fun onPause()
         fun onStop()
+        fun onNext()
+        fun onPrevious()
     }
 
     private var playbackStateInt: Int = Player.STATE_IDLE
@@ -51,10 +51,11 @@ class RadioMediaPlayer(
             Player.COMMAND_GET_METADATA,
             Player.COMMAND_GET_CURRENT_MEDIA_ITEM,
             Player.COMMAND_GET_TIMELINE,
-            // Lets a browsing controller (e.g. Android Auto) "set" a station's media item to play it.
-            // The item is resolved and playback is started by PlayerService's session callback
-            // (onAddMediaItems); handleSetMediaItems below is therefore a no-op.
             Player.COMMAND_SET_MEDIA_ITEM,
+            Player.COMMAND_SEEK_TO_NEXT,
+            Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+            Player.COMMAND_SEEK_TO_PREVIOUS,
+            Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
             Player.COMMAND_RELEASE
         )
         .build()
@@ -113,6 +114,20 @@ class RadioMediaPlayer(
 
     override fun handleStop(): ListenableFuture<*> {
         callback.onStop()
+        return Futures.immediateVoidFuture()
+    }
+
+    override fun handleSeek(
+        mediaItemIndex: Int,
+        positionMs: Long,
+        seekCommand: Int
+    ): ListenableFuture<*> {
+        when (seekCommand) {
+            Player.COMMAND_SEEK_TO_NEXT,
+            Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> callback.onNext()
+            Player.COMMAND_SEEK_TO_PREVIOUS,
+            Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> callback.onPrevious()
+        }
         return Futures.immediateVoidFuture()
     }
 

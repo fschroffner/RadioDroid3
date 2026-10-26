@@ -13,7 +13,6 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.images.WebImage
 import com.github.fschroffner.radiodroid3.cast.CastAwareActivity
 import com.github.fschroffner.radiodroid3.service.PauseReason
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 
 private sealed class CastState {
     abstract fun setActivity(activity: CastAwareActivity?)
@@ -81,10 +80,13 @@ private class CastAvailable(val castContext: CastContext,
 
         invalidateOptions()
 
-        if (PlayerServiceUtil.isPlaying()) {
-            PlayerServiceUtil.pause(PauseReason.USER)
+        val appCtx = (activity as? Context)?.applicationContext ?: RadioDroidApp.instance ?: return
+        val entryPoint = dagger.hilt.EntryPoints.get(appCtx, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+        val repo = entryPoint.mediaControllerRepository()
+        if (repo.isPlaying()) {
+            repo.pause(PauseReason.USER)
 
-            val station = PlayerServiceUtil.getCurrentStation()!!
+            val station = repo.getCurrentStation() ?: return
             val url = station.playableUrl ?: return
             play(station.Name, url, station.IconUrl)
         }

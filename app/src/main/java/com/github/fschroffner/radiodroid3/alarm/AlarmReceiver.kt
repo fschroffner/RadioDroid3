@@ -26,7 +26,6 @@ import com.github.fschroffner.radiodroid3.di.AppEntryPoint
 import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.service.ConnectivityChecker
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 
 class AlarmReceiver : BroadcastReceiver() {
@@ -109,11 +108,11 @@ class AlarmReceiver : BroadcastReceiver() {
                             releaseLocks()
                         } else {
                             val alarmStation = station!!.apply { playableUrl = url }
-                            PlayerServiceUtil.playAlarm(context, alarmStation, timeout * 60, Runnable {
+                            entryPoint.mediaControllerRepository().playAlarm(alarmStation, timeout * 60) {
                                 (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
                                     .cancel(BACKUP_NOTIFICATION_ID)
                                 releaseLocks()
-                            })
+                            }
                         }
                     } catch (e: Exception) { Log.e(TAG, "Error starting alarm intent $e"); playSystemAlarm(context) }
                 } else {

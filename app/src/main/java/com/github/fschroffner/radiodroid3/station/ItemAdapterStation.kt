@@ -20,6 +20,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -38,8 +42,6 @@ import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.interfaces.IAdapterRefreshable
 import com.github.fschroffner.radiodroid3.players.PlayStationTask
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
-import com.github.fschroffner.radiodroid3.service.PlayerService
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.utils.RecyclerItemMoveAndSwipeHelper
 import com.github.fschroffner.radiodroid3.utils.RecyclerItemSwipeHelper
 import com.github.fschroffner.radiodroid3.utils.SwipeableViewHolder
@@ -138,25 +140,31 @@ open class ItemAdapterStation(
 
         favouriteManager = EntryPoints.get(activity.applicationContext, AppEntryPoint::class.java).favouriteManager()
 
-        val intentFilter = IntentFilter().apply {
-            addAction(PlayerService.PLAYER_SERVICE_META_UPDATE)
-            addAction(DataRadioStation.RADIO_STATION_LOCAL_INFO_CHAGED)
-        }
+        val intentFilter = IntentFilter(DataRadioStation.RADIO_STATION_LOCAL_INFO_CHAGED)
 
         updateUIReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent?) {
                 intent ?: return
-                when (intent.action) {
-                    PlayerService.PLAYER_SERVICE_META_UPDATE -> highlightCurrentStation()
-                    DataRadioStation.RADIO_STATION_LOCAL_INFO_CHAGED -> {
-                        val uuid = intent.getStringExtra(DataRadioStation.RADIO_STATION_UUID)
-                        notifyChangedByStationUuid(uuid)
-                    }
+                if (intent.action == DataRadioStation.RADIO_STATION_LOCAL_INFO_CHAGED) {
+                    val uuid = intent.getStringExtra(DataRadioStation.RADIO_STATION_UUID)
+                    notifyChangedByStationUuid(uuid)
                 }
             }
         }
 
         LocalBroadcastManager.getInstance(context).registerReceiver(updateUIReceiver, intentFilter)
+
+        val entryPoint = EntryPoints.get(activity.applicationContext, AppEntryPoint::class.java)
+        val repo = entryPoint.mediaControllerRepository()
+        (activity as? androidx.lifecycle.LifecycleOwner)?.let { lifecycleOwner ->
+            lifecycleOwner.lifecycleScope.launch {
+                lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    repo.playbackState.collect { state ->
+                        highlightCurrentStation(state.station?.StationUuid, state.isPlaying)
+                    }
+                }
+            }
+        }
     }
 
     fun setStationActionsListener(listener: StationActionsListener) { stationActionsListener = listener }
@@ -214,7 +222,7 @@ open class ItemAdapterStation(
         } else {
             if (station.hasIcon()) {
                 setupIcon(useCircularIcons, holder.imageViewIcon, holder.transparentImageView)
-                PlayerServiceUtil.getStationIcon(holder.imageViewIcon, station.IconUrl)
+                Utils.loadStationIcon(holder.imageViewIcon, station.IconUrl)
             } else {
                 holder.imageViewIcon.setImageDrawable(stationImagePlaceholder)
             }
@@ -420,12 +428,15 @@ open class ItemAdapterStation(
         }
     }
 
-    private fun highlightCurrentStation() {
-        if (!PlayerServiceUtil.isPlaying()) return
+    private fun highlightCurrentStation(currentUuid: String? = null, isPlaying: Boolean = false) {
+        val entryPoint = EntryPoints.get(activity.applicationContext, AppEntryPoint::class.java)
+        val repo = entryPoint.mediaControllerRepository()
+        val activePlaying = if (currentUuid != null) isPlaying else repo.isPlaying()
+        val activeUuid = currentUuid ?: repo.getCurrentStation()?.StationUuid
+        if (!activePlaying) return
         val oldPos = playingStationPosition
-        val currentUuid = PlayerServiceUtil.getStationId()
         for (i in filteredStationsList.indices) {
-            if (filteredStationsList[i].StationUuid == currentUuid) {
+            if (filteredStationsList[i].StationUuid == activeUuid) {
                 playingStationPosition = i
                 break
             }

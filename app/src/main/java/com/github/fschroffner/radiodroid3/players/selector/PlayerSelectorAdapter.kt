@@ -26,7 +26,6 @@ import com.github.fschroffner.radiodroid3.players.mpd.tasks.MPDResumeTask
 import com.github.fschroffner.radiodroid3.players.mpd.tasks.MPDStopTask
 import com.github.fschroffner.radiodroid3.service.PauseReason
 import com.github.fschroffner.radiodroid3.service.PlayerService
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 
 class PlayerSelectorAdapter(
@@ -110,7 +109,9 @@ class PlayerSelectorAdapter(
         when (holder.itemViewType) {
             PlayerType.RADIODROID.value -> {
                 holder.textViewDescription.setText(R.string.app_name)
-                if (PlayerServiceUtil.isPlaying()) {
+                val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+                val repo = entryPoint.mediaControllerRepository()
+                if (repo.isPlaying()) {
                     holder.btnPlay.setImageResource(R.drawable.ic_pause_circle)
                     holder.btnPlay.contentDescription = context.resources.getString(R.string.detail_pause)
                 } else {
@@ -118,12 +119,12 @@ class PlayerSelectorAdapter(
                     holder.btnPlay.contentDescription = context.getString(R.string.detail_play)
                 }
                 holder.btnPlay.setOnClickListener {
-                    if (PlayerServiceUtil.isPlaying()) {
-                        if (PlayerServiceUtil.isRecording()) PlayerServiceUtil.stopRecording()
-                        PlayerServiceUtil.pause(PauseReason.USER)
+                    if (repo.isPlaying()) {
+                        if (repo.playbackState.value.isRecording) repo.stopRecording()
+                        repo.pause(PauseReason.USER)
                     } else {
                         Utils.playAndWarnIfMetered(context, stationToPlay!!, PlayerType.RADIODROID) {
-                            Utils.play(stationToPlay!!)
+                            Utils.play(context, stationToPlay!!)
                         }
                     }
                 }

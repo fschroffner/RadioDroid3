@@ -1,5 +1,10 @@
 package com.github.fschroffner.radiodroid3.players.selector
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
+
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -12,7 +17,6 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -23,7 +27,6 @@ import com.github.fschroffner.radiodroid3.Utils.parseIntWithDefault
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
 import com.github.fschroffner.radiodroid3.players.mpd.MPDServerData
 import com.github.fschroffner.radiodroid3.players.mpd.MPDServersRepository
-import com.github.fschroffner.radiodroid3.service.PlayerService
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 
 class PlayerSelectorDialog : BottomSheetDialogFragment {
@@ -31,7 +34,6 @@ class PlayerSelectorDialog : BottomSheetDialogFragment {
     private val mpdClient: MPDClient
     private val stationToPlay: DataRadioStation?
 
-    private lateinit var updateUIReceiver: BroadcastReceiver
     private lateinit var recyclerViewServers: RecyclerView
     private lateinit var playerSelectorAdapter: PlayerSelectorAdapter
     private lateinit var serversRepository: MPDServersRepository
@@ -79,29 +81,30 @@ class PlayerSelectorDialog : BottomSheetDialogFragment {
 
         serversRepository.getAllServers().observe(this) { servers -> playerSelectorAdapter.setEntries(servers) }
 
-        updateUIReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                if (PlayerService.PLAYER_SERVICE_STATE_CHANGE == intent.action) {
+        return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val entryPoint = dagger.hilt.EntryPoints.get(requireContext().applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                entryPoint.mediaControllerRepository().playbackState.collect {
                     playerSelectorAdapter.notifyRadioDroidPlaybackStateChanged()
                 }
             }
         }
-
-        return view
     }
 
     override fun onResume() {
         super.onResume()
         if (mpdClient.isMpdEnabled) mpdClient.enableAutoUpdate()
-        val filter = IntentFilter(PlayerService.PLAYER_SERVICE_STATE_CHANGE)
-        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(updateUIReceiver, filter)
         updateEnableMpdButton()
     }
 
     override fun onPause() {
         super.onPause()
         mpdClient.disableAutoUpdate()
-        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(updateUIReceiver)
     }
 
     private fun updateEnableMpdButton() {

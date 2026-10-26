@@ -23,8 +23,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.constraintlayout.widget.Group
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
+import com.github.fschroffner.radiodroid3.player.PlaybackState
+import kotlinx.coroutines.launch
 import androidx.paging.PagedList
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -42,8 +47,6 @@ import com.github.fschroffner.radiodroid3.recording.RecordingsAdapter
 import com.github.fschroffner.radiodroid3.recording.RecordingsManager
 import com.github.fschroffner.radiodroid3.recording.RunningRecordingInfo
 import com.github.fschroffner.radiodroid3.service.PauseReason
-import com.github.fschroffner.radiodroid3.service.PlayerService
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationActions
 import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
@@ -69,8 +72,8 @@ class FragmentPlayerFull : Fragment() {
     }
 
     private var touchInterceptListener: TouchInterceptListener? = null
-    private lateinit var updateUIReceiver: BroadcastReceiver
     private var initialized = false
+    @javax.inject.Inject lateinit var mediaControllerRepository: MediaControllerRepository
 
     private val refreshHandler = RefreshHandler()
     private val timedUpdateTask = TimedUpdateTask(this)
@@ -129,15 +132,6 @@ class FragmentPlayerFull : Fragment() {
                 }
             }
         })
-
-        updateUIReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                when (intent.action) {
-                    PlayerService.PLAYER_SERVICE_STATE_CHANGE,
-                    PlayerService.PLAYER_SERVICE_META_UPDATE -> fullUpdate()
-                }
-            }
-        }
 
         val view = inflater.inflate(R.layout.layout_player_full, container, false)
         scrollViewContent = view.findViewById(R.id.scrollViewContent)
@@ -237,32 +231,40 @@ class FragmentPlayerFull : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         btnPlay.setOnClickListener {
-            if (PlayerServiceUtil.isPlaying()) {
-                if (PlayerServiceUtil.isRecording()) {
-                    PlayerServiceUtil.stopRecording()
+            if (mediaControllerRepository.isPlaying()) {
+                if (mediaControllerRepository.playbackState.value.isRecording) {
+                    mediaControllerRepository.stopRecording()
                     updateRunningRecording()
                 }
-                PlayerServiceUtil.pause(PauseReason.USER)
+                mediaControllerRepository.pause(PauseReason.USER)
             } else {
                 playLastFromHistory()
             }
-            updatePlaybackButtons(PlayerServiceUtil.isPlaying(), PlayerServiceUtil.isRecording())
+            updatePlaybackButtons(mediaControllerRepository.isPlaying(), mediaControllerRepository.playbackState.value.isRecording)
         }
 
-        btnPrev.setOnClickListener { PlayerServiceUtil.skipToPrevious() }
-        btnNext.setOnClickListener { PlayerServiceUtil.skipToNext() }
+        btnPrev.setOnClickListener { mediaControllerRepository.skipToPrevious() }
+        btnNext.setOnClickListener { mediaControllerRepository.skipToNext() }
 
         btnRecord.setOnClickListener {
-            if (PlayerServiceUtil.isPlaying()) {
-                if (PlayerServiceUtil.isRecording()) {
-                    PlayerServiceUtil.stopRecording()
+            if (mediaControllerRepository.isPlaying()) {
+                if (mediaControllerRepository.playbackState.value.isRecording) {
+                    mediaControllerRepository.stopRecording()
                 } else {
                     if (Utils.verifyStoragePermissions(this, PERM_REQ_STORAGE_RECORD)) {
-                        PlayerServiceUtil.startRecording()
+                        mediaControllerRepository.startRecording()
                     }
                 }
                 updateRunningRecording()
                 pagerHistoryAndRecordings.setCurrentItem(1, true)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mediaControllerRepository.playbackState.collect { state ->
+                    fullUpdate(state)
+                }
             }
         }
 
@@ -295,12 +297,6 @@ class FragmentPlayerFull : Fragment() {
         if (!isVisible) return
         fullUpdate()
         refreshHandler.executePeriodically(timedUpdateTask, TIMED_UPDATE_INTERVAL.toLong())
-        val filter = IntentFilter().apply {
-            addAction(PlayerService.PLAYER_SERVICE_TIMER_UPDATE)
-            addAction(PlayerService.PLAYER_SERVICE_STATE_CHANGE)
-            addAction(PlayerService.PLAYER_SERVICE_META_UPDATE)
-        }
-        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(updateUIReceiver, filter)
         recordingsManager.savedRecordingsObservable.addObserver(recordingsObserver)
         favouriteManager.addObserver(favouritesObserver)
     }
@@ -309,7 +305,6 @@ class FragmentPlayerFull : Fragment() {
         view ?: return
         refreshHandler.cancel()
         trackMetadataCallback?.cancel()
-        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(updateUIReceiver)
         recordingsManager.savedRecordingsObservable.deleteObserver(recordingsObserver)
         favouriteManager.deleteObserver(favouritesObserver)
     }
@@ -323,16 +318,15 @@ class FragmentPlayerFull : Fragment() {
     fun isScrolled() = scrollViewContent.scrollY > 0
 
     private fun playLastFromHistory() {
-
-        var station = PlayerServiceUtil.getCurrentStation()
+        var station = mediaControllerRepository.getCurrentStation()
         if (station == null) station = historyManager.getFirst()
         if (station != null) Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
     }
 
-    private fun fullUpdate() {
-        val station = Utils.getCurrentOrLastStation(requireContext())
+    private fun fullUpdate(state: PlaybackState = mediaControllerRepository.playbackState.value) {
+        val station = state.station ?: Utils.getCurrentOrLastStation(requireContext())
+        val liveInfo = state.streamLiveInfo
         if (station != null) {
-            val liveInfo = PlayerServiceUtil.getMetadataLive()
             val streamTitle = liveInfo.title
             textViewGeneralInfo.text = if (!TextUtils.isEmpty(streamTitle)) streamTitle else station.Name
 
@@ -352,9 +346,9 @@ class FragmentPlayerFull : Fragment() {
             artAndInfoPagerAdapter.viewTags.setTags(station.TagsAll.split(","))
         }
 
-        updateAlbumArt()
+        updateAlbumArt(station, liveInfo)
         updateRecordings()
-        updatePlaybackButtons(PlayerServiceUtil.isPlaying(), PlayerServiceUtil.isRecording())
+        updatePlaybackButtons(state.isPlaying, state.isRecording)
         updateFavouriteButton()
         timedUpdateTask.run()
         initialized = true
@@ -394,7 +388,7 @@ class FragmentPlayerFull : Fragment() {
     }
 
     private fun updateRunningRecording() {
-        if (PlayerServiceUtil.isRecording()) {
+        if (mediaControllerRepository.playbackState.value.isRecording) {
             val recordingInfo = recordingsManager.getRunningRecordings().entries.first().value
             groupRecordings.visibility = View.VISIBLE
             imgRecordingIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.blink_recording))
@@ -406,9 +400,8 @@ class FragmentPlayerFull : Fragment() {
         }
     }
 
-    private fun updateAlbumArt() {
-        val station = PlayerServiceUtil.getCurrentStation() ?: return
-        val liveInfo = PlayerServiceUtil.getMetadataLive()
+    private fun updateAlbumArt(station: DataRadioStation? = mediaControllerRepository.getCurrentStation(), liveInfo: StreamLiveInfo = mediaControllerRepository.playbackState.value.streamLiveInfo) {
+        if (station == null) return
 
         if (lastLiveInfoForTrackMetadata != null &&
             TextUtils.equals(lastLiveInfoForTrackMetadata!!.artist, liveInfo.artist) &&
@@ -572,17 +565,18 @@ class FragmentPlayerFull : Fragment() {
 
     private class TimedUpdateTask(obj: FragmentPlayerFull) : RefreshHandler.ObjectBoundRunnable<FragmentPlayerFull>(obj) {
         override fun run(f: FragmentPlayerFull) {
-            val shoutcastInfo = PlayerServiceUtil.getShoutcastInfo()
-            if (PlayerServiceUtil.isPlaying()) {
-                var networkUsageInfo = Utils.getReadableBytes(PlayerServiceUtil.getTransferredBytes().toDouble())
+            val state = f.mediaControllerRepository.playbackState.value
+            val shoutcastInfo = state.shoutcastInfo
+            if (state.isPlaying) {
+                var networkUsageInfo = Utils.getReadableBytes(state.transferredBytes.toDouble())
                 if (shoutcastInfo != null && shoutcastInfo.bitrate > 0) networkUsageInfo += " (${shoutcastInfo.bitrate} kbps)"
                 f.textViewNetworkUsageInfo.text = networkUsageInfo
 
                 val now = System.currentTimeMillis()
-                val startTime = PlayerServiceUtil.getLastPlayStartTime()
+                val startTime = state.lastPlayStartTime
                 val deltaSeconds = maxOf(if (startTime > 0) (now - startTime) / 1000 else 0, 0)
                 f.textViewTimePlayed.text = DateUtils.formatElapsedTime(deltaSeconds)
-                f.textViewTimeCached.text = DateUtils.formatElapsedTime(PlayerServiceUtil.getBufferedSeconds())
+                f.textViewTimeCached.text = DateUtils.formatElapsedTime(state.bufferedSeconds)
                 f.updateRunningRecording()
             }
         }
@@ -592,12 +586,12 @@ class FragmentPlayerFull : Fragment() {
         if (requestCode == PERM_REQ_STORAGE_RECORD) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 storagePermissionsDenied = false
-                PlayerServiceUtil.startRecording()
+                mediaControllerRepository.startRecording()
             } else {
                 storagePermissionsDenied = true
                 Toast.makeText(activity, resources.getString(R.string.error_record_needs_write), Toast.LENGTH_SHORT).show()
             }
-            updatePlaybackButtons(PlayerServiceUtil.isPlaying(), PlayerServiceUtil.isRecording())
+            updatePlaybackButtons(mediaControllerRepository.isPlaying(), mediaControllerRepository.playbackState.value.isRecording)
             updateRecordings()
         }
     }

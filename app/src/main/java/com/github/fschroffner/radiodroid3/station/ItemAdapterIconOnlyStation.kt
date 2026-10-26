@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.github.zawadz88.materialpopupmenu.MaterialPopupMenu
 import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.Utils
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.utils.RecyclerItemMoveAndSwipeHelper
 import com.github.fschroffner.radiodroid3.utils.SwipeableViewHolder
 
@@ -67,7 +66,7 @@ class ItemAdapterIconOnlyStation(
 
         if (station.hasIcon()) {
             setupIcon(useCircularIcons, holder.imageViewIcon, holder.transparentImageView)
-            PlayerServiceUtil.getStationIcon(holder.imageViewIcon, station.IconUrl)
+            Utils.loadStationIcon(holder.imageViewIcon, station.IconUrl)
         } else {
             holder.imageViewIcon.setImageDrawable(stationImagePlaceholder)
         }

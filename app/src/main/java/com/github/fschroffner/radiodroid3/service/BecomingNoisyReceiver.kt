@@ -9,10 +9,11 @@ import dagger.hilt.EntryPoints
 
 class BecomingNoisyReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == intent.action && PlayerServiceUtil.isPlaying()) {
+        if (AudioManager.ACTION_AUDIO_BECOMING_NOISY == intent.action) {
             val entryPoint = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
-            if (entryPoint.appPreferencesDataStore().getBoolean("pause_when_noisy", true)) {
-                PlayerServiceUtil.pause(PauseReason.BECAME_NOISY)
+            val repo = entryPoint.mediaControllerRepository()
+            if (repo.isPlaying() && entryPoint.appPreferencesDataStore().getBoolean("pause_when_noisy", true)) {
+                repo.pause(PauseReason.BECAME_NOISY)
             }
         }
     }

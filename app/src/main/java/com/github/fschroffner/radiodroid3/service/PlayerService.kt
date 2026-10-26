@@ -26,7 +26,8 @@ import androidx.core.content.IntentCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
 import androidx.core.os.BundleCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.github.fschroffner.radiodroid3.player.MediaItemMapper
+import com.github.fschroffner.radiodroid3.player.toDataRadioStation
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -168,15 +169,12 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
     val pendingIntentFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
 
-    fun sendBroadCast(action: String) {
-        val local = Intent().apply { setAction(action) }
-        LocalBroadcastManager.getInstance(itsContext).sendBroadcast(local)
-    }
-
     private val radioMediaPlayerCallback = object : RadioMediaPlayer.Callback {
         override fun onPlay() { resume() }
         override fun onPause() { pause(PauseReason.USER) }
         override fun onStop() { stop() }
+        override fun onNext() { next() }
+        override fun onPrevious() { previous() }
     }
 
     private val media3SessionCallback = object : MediaLibrarySession.Callback {
@@ -209,14 +207,20 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
             controller: MediaSession.ControllerInfo,
             mediaItems: MutableList<MediaItem>
         ): ListenableFuture<MutableList<MediaItem>> {
-            val station = mediaItems.asSequence()
-                .mapNotNull { browseTree.stationForMediaId(it.mediaId) }
-                .firstOrNull()
+            val item = mediaItems.firstOrNull() ?: return Futures.immediateFuture(mutableListOf())
+            val station = item.toDataRadioStation()
+                ?: browseTree.stationForMediaId(item.mediaId)
+                ?: favouriteManager.getById(item.mediaId)
+                ?: historyManager.getById(item.mediaId)
+            val isAlarm = item.mediaMetadata.extras?.getBoolean(MediaItemMapper.EXTRA_IS_ALARM, false) == true
+            val playImmediately = item.mediaMetadata.extras?.getBoolean(MediaItemMapper.EXTRA_PLAY_IMMEDIATELY, true) ?: true
             if (station != null) {
                 setStation(station)
-                playCurrentStation(false)
+                if (playImmediately) {
+                    playCurrentStation(isAlarm)
+                }
             }
-            return Futures.immediateFuture(mutableListOf<MediaItem>())
+            return Futures.immediateFuture(mediaItems)
         }
 
         override fun onGetLibraryRoot(
@@ -323,7 +327,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     private val sleepTimer: SleepTimer = SleepTimer(object : SleepTimer.Callback {
         override fun onTick() {
             if (BuildConfig.DEBUG) Log.d(TAG, "${sleepTimer.seconds}")
-            sendBroadCast(PLAYER_SERVICE_TIMER_UPDATE)
             publishSessionState()
         }
 
@@ -341,7 +344,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
     private fun clearTimer() {
         if (sleepTimer.clear()) {
-            sendBroadCast(PLAYER_SERVICE_TIMER_UPDATE)
             publishSessionState()
         }
     }
@@ -431,7 +433,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        PlayerServiceUtil.bindService(itsContext.applicationContext)
 
         if (currentStation == null) {
             
@@ -596,14 +597,12 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     private fun startRecording() {
         if (!::recordingController.isInitialized) return
         recordingController.start()
-        sendBroadCast(PLAYER_SERVICE_META_UPDATE)
         publishSessionState()
     }
 
     private fun stopRecording() {
         if (!::recordingController.isInitialized) return
         recordingController.stop()
-        sendBroadCast(PLAYER_SERVICE_META_UPDATE)
         publishSessionState()
     }
 
@@ -809,11 +808,15 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
         audioWarning.play()
 
-        val broadcast = Intent().apply {
-            action = PLAYER_SERVICE_METERED_CONNECTION
-            putExtra(PLAYER_SERVICE_METERED_CONNECTION_PLAYER_TYPE, playerType as Parcelable)
+        val bundle = Bundle().apply {
+            putParcelable(PLAYER_SERVICE_METERED_CONNECTION_PLAYER_TYPE, playerType as Parcelable)
         }
-        LocalBroadcastManager.getInstance(itsContext).sendBroadcast(broadcast)
+        if (::media3Session.isInitialized) {
+            media3Session.broadcastCustomCommand(
+                SessionCommand(PLAYER_SERVICE_METERED_CONNECTION, Bundle.EMPTY),
+                bundle
+            )
+        }
 
         updateNotification(PlayState.Paused)
     }
@@ -879,11 +882,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
             updateNotification(state)
 
-            val intent = Intent().apply {
-                action = PLAYER_SERVICE_STATE_CHANGE
-                putExtra(PLAYER_SERVICE_STATE_EXTRA_KEY, state as Parcelable)
-            }
-            LocalBroadcastManager.getInstance(itsContext).sendBroadcast(intent)
+
         }
     }
 
@@ -912,7 +911,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
             Log.d(TAG, "Server:${info.serverName}")
             Log.d(TAG, "AudioInfo:${info.audioInfo}")
         }
-        sendBroadCast(PLAYER_SERVICE_META_UPDATE)
         publishSessionState()
     }
 
@@ -928,7 +926,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         }
 
         if (oldLiveInfo.title != liveInfo.title) {
-            sendBroadCast(PLAYER_SERVICE_META_UPDATE)
             updateNotification()
 
             currentStation?.let { trackHistoryUpdater.onTrackChanged(it, liveInfo) }

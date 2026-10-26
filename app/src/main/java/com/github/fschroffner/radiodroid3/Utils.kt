@@ -1,5 +1,10 @@
 package com.github.fschroffner.radiodroid3
 
+import android.widget.ImageView
+import androidx.appcompat.content.res.AppCompatResources
+import com.squareup.picasso.Callback
+import com.squareup.picasso.NetworkPolicy
+import com.squareup.picasso.Picasso
 import android.Manifest
 import android.app.Activity
 import android.content.ContentResolver
@@ -30,7 +35,6 @@ import com.github.fschroffner.radiodroid3.players.selector.PlayerSelectorDialog
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.proxy.ProxySettings
 import com.github.fschroffner.radiodroid3.service.ConnectivityChecker
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.utils.Tls12SocketFactory
 import okhttp3.Authenticator
@@ -281,10 +285,26 @@ object Utils {
     }
 
     @JvmStatic
+    fun loadStationIcon(holder: ImageView, fromUrl: String?) {
+        if (fromUrl.isNullOrBlank()) return
+        val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 70f, holder.context.resources.displayMetrics)
+        val placeholder = AppCompatResources.getDrawable(holder.context, R.drawable.ic_photo_24dp)
+        Picasso.get().load(fromUrl).placeholder(placeholder!!).resize(px.toInt(), 0)
+            .networkPolicy(NetworkPolicy.OFFLINE)
+            .into(holder, object : Callback {
+                override fun onSuccess() {}
+                override fun onError(e: Exception) {
+                    Picasso.get().load(fromUrl).placeholder(placeholder).resize(px.toInt(), 0)
+                        .networkPolicy(NetworkPolicy.NO_CACHE).into(holder)
+                }
+            })
+    }
+
+    @JvmStatic
     fun getCurrentOrLastStation(ctx: Context): DataRadioStation? {
-        var station = PlayerServiceUtil.getCurrentStation()
+        val entryPoint = dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+        var station = entryPoint.mediaControllerRepository().getCurrentStation()
         if (station == null) {
-            val entryPoint = dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
             station = entryPoint.historyManager().getFirst()
         }
         return station
@@ -322,9 +342,10 @@ object Utils {
 
     @JvmStatic
     fun playAndWarnIfMetered(context: Context, station: DataRadioStation, playerType: PlayerType, playFunc: Runnable) {
+        val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
         playAndWarnIfMetered(context, station, playerType, playFunc) { station1, playerType1 ->
-            PlayerServiceUtil.setStation(station1)
-            PlayerServiceUtil.warnAboutMeteredConnection(playerType1)
+            entryPoint.mediaControllerRepository().setStation(station1)
+            entryPoint.mediaControllerRepository().warnAboutMeteredConnection(playerType1)
         }
     }
 
@@ -353,12 +374,13 @@ object Utils {
 
     @JvmStatic
     fun play(station: DataRadioStation) {
-        PlayerServiceUtil.play(station)
+        RadioDroidApp.instance?.let { play(it, station) }
     }
 
     @JvmStatic
     fun play(context: Context, station: DataRadioStation) {
-        PlayerServiceUtil.play(station)
+        val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+        entryPoint.mediaControllerRepository().playStation(station)
     }
 
     @JvmStatic

@@ -29,6 +29,9 @@ class RadioDroidApp : MultiDexApplication() {
     private var tvChannelManager: TvChannelManager? = null
 
     companion object {
+        var instance: RadioDroidApp? = null
+            private set
+
         init {
             AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
         }
@@ -36,6 +39,7 @@ class RadioDroidApp : MultiDexApplication() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
 
         GoogleProviderHelper.use(baseContext)
 

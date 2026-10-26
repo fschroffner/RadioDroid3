@@ -17,15 +17,18 @@ import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
+import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
+import com.github.fschroffner.radiodroid3.player.PlaybackState
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
 import com.github.fschroffner.radiodroid3.service.PauseReason
-import com.github.fschroffner.radiodroid3.service.PlayerService
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationActions
+import kotlinx.coroutines.launch
 
 @dagger.hilt.android.AndroidEntryPoint
 class FragmentPlayerSmall : Fragment() {
@@ -40,7 +43,7 @@ class FragmentPlayerSmall : Fragment() {
     @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
     @javax.inject.Inject lateinit var historyManager: HistoryManager
     @javax.inject.Inject lateinit var mpdClient: MPDClient
-    private lateinit var updateUIReceiver: BroadcastReceiver
+    @javax.inject.Inject lateinit var mediaControllerRepository: MediaControllerRepository
     private var callback: Callback? = null
     private var role = Role.PLAYER
 
@@ -55,20 +58,6 @@ class FragmentPlayerSmall : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.layout_player_small, container, false)
-
-
-
-
-
-        updateUIReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                when (intent.action) {
-                    PlayerService.PLAYER_SERVICE_STATE_CHANGE,
-                    PlayerService.PLAYER_SERVICE_META_UPDATE -> fullUpdate()
-                    PlayerService.PLAYER_SERVICE_BOUND -> tryPlayAtStart()
-                }
-            }
-        }
 
         textViewStationName = view.findViewById(R.id.textViewStationName)
         textViewLiveInfo = view.findViewById(R.id.textViewLiveInfo)
@@ -86,9 +75,9 @@ class FragmentPlayerSmall : Fragment() {
         requireActivity().application.registerActivityLifecycleCallbacks(LifecycleCallbacks())
 
         buttonPlay.setOnClickListener {
-            if (PlayerServiceUtil.isPlaying()) {
-                if (PlayerServiceUtil.isRecording()) PlayerServiceUtil.stopRecording()
-                PlayerServiceUtil.pause(PauseReason.USER)
+            if (mediaControllerRepository.isPlaying()) {
+                if (mediaControllerRepository.playbackState.value.isRecording) mediaControllerRepository.stopRecording()
+                mediaControllerRepository.pause(PauseReason.USER)
             } else {
                 playLastFromHistory()
             }
@@ -102,25 +91,18 @@ class FragmentPlayerSmall : Fragment() {
 
         requireView().setOnClickListener { callback?.onToggle() }
 
-        tryPlayAtStart()
-        fullUpdate()
         setupStationIcon()
-    }
 
-    override fun onResume() {
-        super.onResume()
-        val filter = IntentFilter().apply {
-            addAction(PlayerService.PLAYER_SERVICE_STATE_CHANGE)
-            addAction(PlayerService.PLAYER_SERVICE_META_UPDATE)
-            addAction(PlayerService.PLAYER_SERVICE_BOUND)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                mediaControllerRepository.playbackState.collect { state ->
+                    fullUpdate(state)
+                    if (state.isConnected) {
+                        tryPlayAtStart()
+                    }
+                }
+            }
         }
-        LocalBroadcastManager.getInstance(requireContext()).registerReceiver(updateUIReceiver, filter)
-        fullUpdate()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(updateUIReceiver)
     }
 
     fun setCallback(callback: Callback) { this.callback = callback }
@@ -131,10 +113,9 @@ class FragmentPlayerSmall : Fragment() {
     }
 
     private fun playLastFromHistory() {
-
-        var station = PlayerServiceUtil.getCurrentStation()
+        var station = mediaControllerRepository.getCurrentStation()
         if (station == null) station = historyManager.getFirst()
-        if (station != null && !PlayerServiceUtil.isPlaying()) {
+        if (station != null && !mediaControllerRepository.isPlaying()) {
             Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
         }
     }
@@ -143,9 +124,9 @@ class FragmentPlayerSmall : Fragment() {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext().applicationContext)
         var play = false
         var autoOff = false
-        if (!firstPlayAttempted && PlayerServiceUtil.isServiceBound()) {
+        if (!firstPlayAttempted && mediaControllerRepository.isConnected()) {
             firstPlayAttempted = true
-            if (!PlayerServiceUtil.isPlaying()) {
+            if (!mediaControllerRepository.isPlaying()) {
                 play = sharedPreferences.getBoolean("auto_play_on_startup", false)
             }
         }
@@ -155,7 +136,7 @@ class FragmentPlayerSmall : Fragment() {
                 val timeout = try {
                     sharedPreferences.getString("auto_off_timeout", "10")!!.toInt()
                 } catch (e: Exception) { 10 }
-                PlayerServiceUtil.addTimer(timeout * 60)
+                mediaControllerRepository.addTimer(timeout * 60)
             }
             playLastFromHistory()
         }
@@ -170,8 +151,8 @@ class FragmentPlayerSmall : Fragment() {
         requireView().findViewById<ImageView>(R.id.transparentCircle).visibility = if (useCircularIcons) View.VISIBLE else View.GONE
     }
 
-    private fun fullUpdate() {
-        if (PlayerServiceUtil.isPlaying()) {
+    private fun fullUpdate(state: PlaybackState = mediaControllerRepository.playbackState.value) {
+        if (state.isPlaying) {
             buttonPlay.setImageResource(R.drawable.ic_pause_circle)
             buttonPlay.contentDescription = resources.getString(R.string.detail_pause)
         } else {
@@ -179,11 +160,11 @@ class FragmentPlayerSmall : Fragment() {
             buttonPlay.contentDescription = resources.getString(R.string.detail_play)
         }
 
-        val station = Utils.getCurrentOrLastStation(requireContext())
+        val station = state.station ?: Utils.getCurrentOrLastStation(requireContext())
         val stationName = station?.Name ?: ""
         textViewStationName.text = stationName
 
-        val liveInfo = PlayerServiceUtil.getMetadataLive()
+        val liveInfo = state.streamLiveInfo
         val streamTitle = liveInfo.title
         if (!TextUtils.isEmpty(streamTitle)) {
             textViewLiveInfo.visibility = View.VISIBLE
@@ -200,7 +181,7 @@ class FragmentPlayerSmall : Fragment() {
             imageViewIcon.visibility = View.GONE
         } else if (station != null && station.hasIcon()) {
             imageViewIcon.visibility = View.VISIBLE
-            PlayerServiceUtil.getStationIcon(imageViewIcon, station.IconUrl)
+            Utils.loadStationIcon(imageViewIcon, station.IconUrl)
         } else {
             imageViewIcon.visibility = View.VISIBLE
             imageViewIcon.setImageResource(R.drawable.ic_launcher)

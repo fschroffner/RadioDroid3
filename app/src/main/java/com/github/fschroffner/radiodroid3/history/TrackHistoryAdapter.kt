@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.Utils
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
 
 class TrackHistoryAdapter(private val activity: FragmentActivity) :
     PagedListAdapter<TrackHistoryEntry, TrackHistoryAdapter.TrackHistoryItemViewHolder>(DIFF_CALLBACK) {
@@ -42,7 +41,7 @@ class TrackHistoryAdapter(private val activity: FragmentActivity) :
 
         if (shouldLoadIcons) {
             if (!TextUtils.isEmpty(historyEntry.stationIconUrl)) {
-                PlayerServiceUtil.getStationIcon(holder.imageViewStationIcon, historyEntry.stationIconUrl)
+                Utils.loadStationIcon(holder.imageViewStationIcon, historyEntry.stationIconUrl)
             } else {
                 holder.imageViewStationIcon.setImageDrawable(stationImagePlaceholder)
             }

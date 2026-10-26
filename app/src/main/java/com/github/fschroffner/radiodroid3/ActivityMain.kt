@@ -60,7 +60,11 @@ import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
 import com.github.fschroffner.radiodroid3.players.mpd.MPDServersRepository
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.service.PlayerService
-import com.github.fschroffner.radiodroid3.service.PlayerServiceUtil
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
+import kotlinx.coroutines.launch
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationsFilter
 import com.github.fschroffner.radiodroid3.alarm.RadioAlarmManager
@@ -91,6 +95,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     @Inject lateinit var fallbackStationsManager: FallbackStationsManager
     @Inject lateinit var okHttpClient: OkHttpClient
     @Inject lateinit var appPreferencesDataStore: AppPreferencesDataStore
+    @Inject lateinit var mediaControllerRepository: MediaControllerRepository
 
     companion object {
         const val EXTRA_SEARCH_TAG = "search_tag"
@@ -212,7 +217,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         val myToolbar = findViewById<Toolbar>(R.id.my_awesome_toolbar)
         setSupportActionBar(myToolbar)
 
-        PlayerServiceUtil.startService(applicationContext)
+        mediaControllerRepository.connect()
 
         selectedMenuItem = sharedPref.getInt("last_selectedMenuItem", -1)
         instanceStateWasSaved = savedInstanceState != null
@@ -333,6 +338,40 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             }
         }
 
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    mediaControllerRepository.playbackState.collect { state ->
+                        if (state.isPlaying) {
+                            meteredConnectionAlertDialog?.cancel()
+                            meteredConnectionAlertDialog = null
+                        }
+                    }
+                }
+                launch {
+                    mediaControllerRepository.meteredConnectionEvents.collect { playerType ->
+                        meteredConnectionAlertDialog?.cancel()
+                        meteredConnectionAlertDialog = null
+                        when (playerType) {
+                            PlayerType.RADIODROID -> showMeteredConnectionDialog(Runnable {
+                                mediaControllerRepository.getCurrentStation()?.let { Utils.play(this@ActivityMain, it) }
+                            })
+                            PlayerType.EXTERNAL -> {
+                                val currentStation = mediaControllerRepository.getCurrentStation()
+                                if (currentStation != null) {
+                                    showMeteredConnectionDialog(Runnable {
+                                        @Suppress("DEPRECATION")
+                                        PlayStationTask.playExternal(currentStation, this@ActivityMain).execute()
+                                    })
+                                }
+                            }
+                            else -> Log.e(TAG, "unexpected PlayerType '$playerType'")
+                        }
+                    }
+                }
+            }
+        }
+
         setupStartUpFragment()
 
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
@@ -360,7 +399,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
                 if (Utils.bottomNavigationEnabled(this@ActivityMain)) {
                     if (lastExitTry != null && Date().time < lastExitTry!!.time + 3 * 1000) {
-                        PlayerServiceUtil.shutdownService()
+                        mediaControllerRepository.shutdownService()
                         finish()
                     } else {
                         Toast.makeText(this@ActivityMain, R.string.alert_press_back_to_exit, Toast.LENGTH_SHORT).show()
@@ -455,8 +494,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
     override fun onDestroy() {
         super.onDestroy()
-        if (!PlayerServiceUtil.isNotificationActive()) {
-            PlayerServiceUtil.shutdownService()
+        if (!mediaControllerRepository.playbackState.value.isNotificationActive) {
+            mediaControllerRepository.shutdownService()
         }
     }
 
@@ -469,8 +508,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
         super.onPause()
 
-        if (PlayerServiceUtil.getPlayerState() == com.github.fschroffner.radiodroid3.players.PlayState.Idle) {
-            PlayerServiceUtil.shutdownService()
+        if (mediaControllerRepository.playbackState.value.playState == com.github.fschroffner.radiodroid3.players.PlayState.Idle) {
+            mediaControllerRepository.shutdownService()
         }
 
 
@@ -525,7 +564,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
         setupBroadcastReceiver()
 
-        PlayerServiceUtil.startService(applicationContext)
+        mediaControllerRepository.connect()
 
         castHandler.onResume()
         castHandler.setActivity(this)
@@ -869,41 +908,12 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         val filter = IntentFilter().apply {
             addAction(ACTION_HIDE_LOADING)
             addAction(ACTION_SHOW_LOADING)
-            addAction(PlayerService.PLAYER_SERVICE_STATE_CHANGE)
-            addAction(PlayerService.PLAYER_SERVICE_METERED_CONNECTION)
         }
         broadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 when (intent.action) {
                     ACTION_HIDE_LOADING -> hideLoadingIcon()
                     ACTION_SHOW_LOADING -> showLoadingIcon()
-                    PlayerService.PLAYER_SERVICE_METERED_CONNECTION -> {
-                        meteredConnectionAlertDialog?.cancel()
-                        meteredConnectionAlertDialog = null
-
-                        val playerType = IntentCompat.getParcelableExtra(intent, PlayerService.PLAYER_SERVICE_METERED_CONNECTION_PLAYER_TYPE, PlayerType::class.java)!!
-                        when (playerType) {
-                            PlayerType.RADIODROID -> showMeteredConnectionDialog(Runnable {
-                                Utils.play(PlayerServiceUtil.getCurrentStation()!!)
-                            })
-                            PlayerType.EXTERNAL -> {
-                                val currentStation = PlayerServiceUtil.getCurrentStation()
-                                if (currentStation != null) {
-                                    showMeteredConnectionDialog(Runnable {
-                                        @Suppress("DEPRECATION")
-                                        PlayStationTask.playExternal(currentStation, this@ActivityMain).execute()
-                                    })
-                                }
-                            }
-                            else -> Log.e(TAG, "broadcastReceiver unexpected PlayerType '$playerType'")
-                        }
-                    }
-                    PlayerService.PLAYER_SERVICE_STATE_CHANGE -> {
-                        if (PlayerServiceUtil.isPlaying()) {
-                            meteredConnectionAlertDialog?.cancel()
-                            meteredConnectionAlertDialog = null
-                        }
-                    }
                 }
             }
         }
@@ -935,7 +945,7 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             override fun onStopTrackingTouch(seekBar: SeekBar) {}
         })
 
-        val currenTimerSeconds = PlayerServiceUtil.getTimerSeconds()
+        val currenTimerSeconds = mediaControllerRepository.playbackState.value.sleepTimerSeconds
         val currentTimer = when {
             currenTimerSeconds <= 0 -> sharedPref.getInt("sleep_timer_default_minutes", 10).toLong()
             currenTimerSeconds < 60 -> 1L
@@ -944,13 +954,13 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         seekBar.progress = currentTimer.toInt()
 
         seekDialog.setPositiveButton(R.string.sleep_timer_apply) { _, _ ->
-            PlayerServiceUtil.clearTimer()
-            PlayerServiceUtil.addTimer(seekBar.progress * 60)
+            mediaControllerRepository.clearTimer()
+            mediaControllerRepository.addTimer(seekBar.progress * 60)
             sharedPref.edit().putInt("sleep_timer_default_minutes", seekBar.progress).apply()
         }
 
         seekDialog.setNegativeButton(R.string.sleep_timer_clear) { _, _ ->
-            PlayerServiceUtil.clearTimer()
+            mediaControllerRepository.clearTimer()
         }
 
         seekDialog.create()
