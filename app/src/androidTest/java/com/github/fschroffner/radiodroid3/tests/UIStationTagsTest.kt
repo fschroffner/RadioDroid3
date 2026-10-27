@@ -9,7 +9,7 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.rule.ActivityTestRule
-import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.widget.ViewPager2
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.tests.utils.ClickableSpanViewAction.Companion.clickClickableSpan
@@ -32,15 +32,16 @@ class UIStationTagsTest {
 
     @Test
     fun stationTag_ShouldSearchStationsByTag_WhenClicked() {
-        val idlingResource = ViewPagerIdlingResource(activityRule.activity.findViewById<ViewPager>(R.id.viewpager), "ViewPager")
+        val idlingResource = ViewPagerIdlingResource(activityRule.activity.findViewById<ViewPager2>(R.id.viewpager), "ViewPager")
         IdlingRegistry.getInstance().register(idlingResource)
+        try {
+            onView(allOf(withId(R.id.buttonMore), isDescendantOfA(withRecyclerView(R.id.recyclerViewStations).atPosition(0)))).perform(ViewActions.click())
+            onView(allOf(withId(R.id.viewTags), isDescendantOfA(withRecyclerView(R.id.recyclerViewStations).atPosition(0)))).perform(clickClickableSpan(0))
 
-        onView(allOf(withId(R.id.buttonMore), isDescendantOfA(withRecyclerView(R.id.recyclerViewStations).atPosition(0)))).perform(ViewActions.click())
-        onView(allOf(withId(R.id.viewTags), isDescendantOfA(withRecyclerView(R.id.recyclerViewStations).atPosition(0)))).perform(clickClickableSpan(0))
-
-        waitForView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(90)))
-            .toCheck(withItemCount(greaterThan(0)))
-
-        IdlingRegistry.getInstance().unregister(idlingResource)
+            waitForView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(90)))
+                .toCheck(withItemCount(greaterThan(0)))
+        } finally {
+            IdlingRegistry.getInstance().unregister(idlingResource)
+        }
     }
 }

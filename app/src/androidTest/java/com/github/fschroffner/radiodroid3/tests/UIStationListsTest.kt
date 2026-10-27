@@ -12,7 +12,7 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.filters.LargeTest
 import androidx.test.rule.ActivityTestRule
-import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.widget.ViewPager2
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.tests.utils.RecyclerRecyclingMatcher.recyclerRecycles
@@ -48,25 +48,26 @@ class UIStationListsTest {
 
     @Test
     fun stationTabs_DoWork_WhenSwiped() {
-        val idlingResource = ViewPagerIdlingResource(activityRule.activity.findViewById<ViewPager>(R.id.viewpager), "ViewPager")
+        val idlingResource = ViewPagerIdlingResource(activityRule.activity.findViewById<ViewPager2>(R.id.viewpager), "ViewPager")
         IdlingRegistry.getInstance().register(idlingResource)
-
-        onView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(30)))
-            .check(withItemCount(greaterThan(0)))
-            .check(matches(recyclerRecycles()))
-
-        for (i in 0 until 7) {
-            // TODO: We cannot swipe on containerView because it is displayed by less than 90%,
-            //       which breaks constraint in swipeLeft().
-            onView(withId(R.id.main_content)).perform(ViewActions.swipeLeft())
+        try {
             onView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(30)))
                 .check(withItemCount(greaterThan(0)))
                 .check(matches(recyclerRecycles()))
+
+            for (i in 0 until 7) {
+                // TODO: We cannot swipe on containerView because it is displayed by less than 90%,
+                //       which breaks constraint in swipeLeft().
+                onView(withId(R.id.main_content)).perform(ViewActions.swipeLeft())
+                onView(allOf(withId(R.id.recyclerViewStations), isDisplayingAtLeast(30)))
+                    .check(withItemCount(greaterThan(0)))
+                    .check(matches(recyclerRecycles()))
+            }
+
+            onView(withId(R.id.main_content)).perform(ViewActions.swipeLeft())
+        } finally {
+            IdlingRegistry.getInstance().unregister(idlingResource)
         }
-
-        onView(withId(R.id.main_content)).perform(ViewActions.swipeLeft())
-
-        IdlingRegistry.getInstance().unregister(idlingResource)
     }
 
     companion object {

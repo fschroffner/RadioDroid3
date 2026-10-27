@@ -1,9 +1,9 @@
 package com.github.fschroffner.radiodroid3.tests.utils
 
 import androidx.test.espresso.IdlingResource
-import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.widget.ViewPager2
 
-class ViewPagerIdlingResource(viewPager: ViewPager, name: String) : IdlingResource {
+class ViewPagerIdlingResource(viewPager: ViewPager2, name: String) : IdlingResource {
     private val resourceName: String = name
 
     private var isIdle = true
@@ -11,7 +11,7 @@ class ViewPagerIdlingResource(viewPager: ViewPager, name: String) : IdlingResour
     private var resourceCallback: IdlingResource.ResourceCallback? = null
 
     init {
-        viewPager.addOnPageChangeListener(ViewPagerListener())
+        viewPager.registerOnPageChangeCallback(ViewPager2Listener())
     }
 
     override fun getName(): String = resourceName
@@ -22,9 +22,9 @@ class ViewPagerIdlingResource(viewPager: ViewPager, name: String) : IdlingResour
         this.resourceCallback = resourceCallback
     }
 
-    private inner class ViewPagerListener : ViewPager.SimpleOnPageChangeListener() {
+    private inner class ViewPager2Listener : ViewPager2.OnPageChangeCallback() {
         override fun onPageScrollStateChanged(state: Int) {
-            isIdle = state == ViewPager.SCROLL_STATE_IDLE
+            isIdle = state == ViewPager2.SCROLL_STATE_IDLE
             if (isIdle) {
                 resourceCallback?.onTransitionToIdle()
             }

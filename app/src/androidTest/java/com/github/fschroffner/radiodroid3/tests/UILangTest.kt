@@ -11,7 +11,7 @@ import androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.filters.LargeTest
 import androidx.test.rule.ActivityTestRule
-import androidx.viewpager.widget.ViewPager
+import androidx.viewpager2.widget.ViewPager2
 import com.yariksoffice.lingver.Lingver
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.BuildConfig
@@ -72,20 +72,23 @@ class UILangTest {
 
     @Test
     fun application_ShouldNotCrash_WithLanguage() {
-        val idlingResource = ViewPagerIdlingResource(activityRule.activity.findViewById<ViewPager>(R.id.viewpager), "ViewPager")
+        val idlingResource = ViewPagerIdlingResource(activityRule.activity.findViewById<ViewPager2>(R.id.viewpager), "ViewPager")
         IdlingRegistry.getInstance().register(idlingResource)
+        try {
+            onView(AllOf.allOf(withId(R.id.buttonMore), isDescendantOfA(withRecyclerView(R.id.recyclerViewStations).atPosition(0)))).perform(ViewActions.click())
 
-        onView(AllOf.allOf(withId(R.id.buttonMore), isDescendantOfA(withRecyclerView(R.id.recyclerViewStations).atPosition(0)))).perform(ViewActions.click())
+            onView(withId(R.id.nav_item_starred)).perform(ViewActions.click())
 
-        onView(withId(R.id.nav_item_starred)).perform(ViewActions.click())
+            onView(withId(R.id.nav_item_history)).perform(ViewActions.click())
 
-        onView(withId(R.id.nav_item_history)).perform(ViewActions.click())
+            onView(withId(R.id.nav_item_alarm)).perform(ViewActions.click())
 
-        onView(withId(R.id.nav_item_alarm)).perform(ViewActions.click())
+            onView(withId(R.id.nav_item_settings)).perform(ViewActions.click())
 
-        onView(withId(R.id.nav_item_settings)).perform(ViewActions.click())
-
-        onView(withId(R.id.fragment_player_small)).perform(ViewActions.swipeUp())
+            onView(withId(R.id.fragment_player_small)).perform(ViewActions.swipeUp())
+        } finally {
+            IdlingRegistry.getInstance().unregister(idlingResource)
+        }
     }
 
     companion object {
