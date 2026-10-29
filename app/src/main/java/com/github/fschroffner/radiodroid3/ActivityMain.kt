@@ -192,13 +192,12 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     private var meteredConnectionAlertDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
+        sharedPref = PreferenceManager.getDefaultSharedPreferences(this)
+        setTheme(Utils.getThemeResId(this))
         Iconics.init(this)
         super.onCreate(savedInstanceState)
 
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
-        sharedPref = PreferenceManager.getDefaultSharedPreferences(this)
-
-        setTheme(Utils.getThemeResId(this))
         setContentView(R.layout.layout_main)
 
         Log.d(TAG, "FilesDir: ${filesDir.absolutePath}")

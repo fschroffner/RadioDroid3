@@ -486,6 +486,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
     fun setStation(station: DataRadioStation) {
         this.currentStation = station
+        publishSessionState()
     }
 
     fun playCurrentStation(isAlarm: Boolean) {

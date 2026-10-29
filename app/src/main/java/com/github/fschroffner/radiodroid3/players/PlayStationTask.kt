@@ -96,13 +96,17 @@ class PlayStationTask(
         val ctx = contextWeakReference.get() ?: return
         LocalBroadcastManager.getInstance(ctx).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
 
-        if (result != null) {
-            stationToPlay.playableUrl = result
-            playFunc.play(result)
+        val resolvedUrl = result?.takeIf { it.isNotBlank() }
+            ?: stationToPlay.playableUrl?.takeIf { it.isNotBlank() }
+            ?: stationToPlay.StreamUrl.takeIf { it.isNotBlank() }
+
+        if (resolvedUrl != null) {
+            stationToPlay.playableUrl = resolvedUrl
+            playFunc.play(resolvedUrl)
         } else {
             Toast.makeText(ctx.applicationContext, ctx.resources.getText(R.string.error_station_load), Toast.LENGTH_SHORT).show()
         }
 
-        postExecuteTask?.onPostExecute(if (result != null) ExecutionResult.SUCCESS else ExecutionResult.FAILURE)
+        postExecuteTask?.onPostExecute(if (resolvedUrl != null) ExecutionResult.SUCCESS else ExecutionResult.FAILURE)
     }
 }

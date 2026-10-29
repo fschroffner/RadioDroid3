@@ -97,15 +97,25 @@ class MediaControllerRepository @Inject constructor(
                 else -> PlayState.Idle
             }
             _playbackState.update { state ->
+                val isPlaying = when (playState) {
+                    PlayState.Playing -> true
+                    PlayState.PrePlaying -> state.isPlaying
+                    else -> false
+                }
                 state.copy(
                     playState = playState,
-                    isPlaying = mediaController?.isPlaying == true
+                    isPlaying = isPlaying
                 )
             }
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            _playbackState.update { state -> state.copy(isPlaying = isPlaying) }
+            _playbackState.update { state ->
+                state.copy(
+                    isPlaying = isPlaying,
+                    playState = if (isPlaying) PlayState.Playing else if (state.playState == PlayState.PrePlaying) PlayState.PrePlaying else PlayState.Paused
+                )
+            }
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -268,19 +278,20 @@ class MediaControllerRepository @Inject constructor(
     }
 
     fun playStation(station: DataRadioStation, isAlarm: Boolean = false) {
-        withController { controller ->
-            val mediaItem = station.toMediaItem(isAlarm = isAlarm, playImmediately = true)
-            controller.setMediaItem(mediaItem)
-            controller.prepare()
-            controller.play()
+        _playbackState.update { it.copy(station = station, playState = PlayState.PrePlaying, isPlaying = true) }
+        val args = Bundle().apply {
+            putParcelable(PlayerService.CMD_ARG_STATION, station)
+            putBoolean(PlayerService.CMD_ARG_IS_ALARM, isAlarm)
         }
+        sendCustomCommand(PlayerService.CUSTOM_COMMAND_PLAY_STATION, args)
     }
 
     fun setStation(station: DataRadioStation) {
-        withController { controller ->
-            val mediaItem = station.toMediaItem(playImmediately = false)
-            controller.setMediaItem(mediaItem)
+        _playbackState.update { it.copy(station = station) }
+        val args = Bundle().apply {
+            putParcelable(PlayerService.CMD_ARG_STATION, station)
         }
+        sendCustomCommand(PlayerService.CUSTOM_COMMAND_SET_STATION, args)
     }
 
     fun pause(reason: PauseReason = PauseReason.USER) {
@@ -331,16 +342,11 @@ class MediaControllerRepository @Inject constructor(
         timerSeconds: Int,
         onStarted: (() -> Unit)? = null
     ) {
-        withController { controller ->
-            val mediaItem = station.toMediaItem(isAlarm = true, playImmediately = true)
-            controller.setMediaItem(mediaItem)
-            controller.prepare()
-            controller.play()
-            if (timerSeconds > 0) {
-                addTimer(timerSeconds)
-            }
-            onStarted?.invoke()
+        playStation(station, isAlarm = true)
+        if (timerSeconds > 0) {
+            addTimer(timerSeconds)
         }
+        onStarted?.invoke()
     }
 
     fun shutdownService() {

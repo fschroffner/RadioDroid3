@@ -52,8 +52,9 @@ object StorageModule {
     @Provides
     @Singleton
     fun provideDataStorePreferenceBridge(
-        appPreferencesDataStore: AppPreferencesDataStore
-    ): DataStorePreferenceBridge = DataStorePreferenceBridge(appPreferencesDataStore)
+        appPreferencesDataStore: AppPreferencesDataStore,
+        sharedPreferences: SharedPreferences
+    ): DataStorePreferenceBridge = DataStorePreferenceBridge(appPreferencesDataStore, sharedPreferences)
 
     @Provides
     @Singleton

@@ -115,7 +115,9 @@ class IcyDataSource(
     override fun read(buffer: ByteArray, offset: Int, readLength: Int): Int {
         return try {
             val bytesTransferred = readInternal(buffer, offset, readLength)
-            transferListener.onBytesTransferred(this, dataSpec, true, bytesTransferred)
+            if (bytesTransferred > 0) {
+                transferListener.onBytesTransferred(this, dataSpec, true, bytesTransferred)
+            }
             bytesTransferred
         } catch (e: HttpDataSourceException) {
             dataSourceListener.onDataSourceConnectionLost()
@@ -160,7 +162,9 @@ class IcyDataSource(
         } catch (e: IOException) {
             throw HttpDataSourceException(e, dataSpec, HttpDataSourceException.TYPE_READ)
         }
-        sendToDataSourceListenersWithoutMetadata(buffer, offset, bytesRead)
+        if (bytesRead > 0) {
+            sendToDataSourceListenersWithoutMetadata(buffer, offset, bytesRead)
+        }
         return bytesRead
     }
 

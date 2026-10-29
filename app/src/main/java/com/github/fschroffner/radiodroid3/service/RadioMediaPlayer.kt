@@ -133,14 +133,23 @@ class RadioMediaPlayer(
 
     /**
      * Browse-initiated playback is resolved and started by PlayerService's session callback
-     * (onAddMediaItems), which returns an empty list. The radio engine drives the timeline exposed
-     * through [getState], so there is nothing to apply here.
+     * (onAddMediaItems). We also store the media item here and ensure a non-empty playlist
+     * so that standard Media3 controllers (Android Auto, System UI) observe the item.
      */
     override fun handleSetMediaItems(
         mediaItems: MutableList<MediaItem>,
         startIndex: Int,
         startPositionMs: Long
     ): ListenableFuture<*> {
+        val item = mediaItems.firstOrNull()
+        if (item != null) {
+            currentMediaItem = item
+            currentMediaMetadata = item.mediaMetadata
+            if (playbackStateInt == Player.STATE_IDLE) {
+                playbackStateInt = Player.STATE_BUFFERING
+            }
+            invalidateState()
+        }
         return Futures.immediateVoidFuture()
     }
 

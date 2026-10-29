@@ -414,11 +414,21 @@ object Utils {
 
     @JvmStatic
     fun getThemeResId(context: Context): Int {
-        return when (getTheme(context)) {
-            context.resources.getString(R.string.theme_dark) -> R.style.MyMaterialTheme_Dark
-            context.resources.getString(R.string.theme_oled) -> R.style.MyMaterialTheme_Oled
-            context.resources.getString(R.string.theme_system) ->
+        val theme = getTheme(context)
+        return when {
+            theme.equals(context.resources.getString(R.string.theme_dark), ignoreCase = true) ||
+            theme.equals("dark", ignoreCase = true) ||
+            theme.equals("dunkel", ignoreCase = true) -> R.style.MyMaterialTheme_Dark
+
+            theme.equals(context.resources.getString(R.string.theme_oled), ignoreCase = true) ||
+            theme.equals("oled", ignoreCase = true) ||
+            theme.contains("oled", ignoreCase = true) -> R.style.MyMaterialTheme_Oled
+
+            theme.equals(context.resources.getString(R.string.theme_system), ignoreCase = true) ||
+            theme.equals("system", ignoreCase = true) ||
+            theme.startsWith("system", ignoreCase = true) ->
                 if (isSystemDarkMode(context)) R.style.MyMaterialTheme_Dark else R.style.MyMaterialTheme
+
             else -> R.style.MyMaterialTheme
         }
     }
