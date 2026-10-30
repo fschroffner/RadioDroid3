@@ -11,30 +11,22 @@ import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import com.github.fschroffner.radiodroid3.station.StationShortcutHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
-class FavouriteManager(
-    ctx: Context,
-    stationDao: RadioStationDao? = null
+class FavouriteManager @Inject constructor(
+    @ApplicationContext ctx: Context,
+    stationDao: RadioStationDao
 ) : StationSaveManager(ctx, stationDao) {
 
     override fun getSaveId() = "favourites"
 
     override val stationsFlow: Flow<List<DataRadioStation>>
-        get() = stationDao?.getFavoriteStations() ?: emptyFlow()
-
-    @Inject
-    constructor(@ApplicationContext ctx: Context) : this(
-        ctx,
-        try {
-            dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).radioStationDao()
-        } catch (e: Exception) {
-            null
-        }
-    )
+        get() = stationDao.getFavoriteStations()
 
     init {
         setStationStatusListener(object : StationStatusListener {
@@ -82,8 +74,12 @@ class FavouriteManager(
     }
 
     override fun Load() {
-        super.Load()
-        updateShortcuts()
+        coroutineScope.launch {
+            loadInternal()
+            withContext(Dispatchers.Main) {
+                updateShortcuts()
+            }
+        }
     }
 
     override fun Save() {

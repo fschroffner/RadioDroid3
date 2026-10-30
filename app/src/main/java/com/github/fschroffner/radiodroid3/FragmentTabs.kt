@@ -12,13 +12,18 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import com.github.fschroffner.radiodroid3.databinding.LayoutTabsBinding
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentRefreshable
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentSearchable
 import com.github.fschroffner.radiodroid3.station.FragmentStations
 import com.github.fschroffner.radiodroid3.station.StationsFilter
+import dagger.hilt.android.AndroidEntryPoint
 
-@dagger.hilt.android.AndroidEntryPoint
+@AndroidEntryPoint
 class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
+    private var _binding: LayoutTabsBinding? = null
+    private val binding get() = _binding!!
+
     private val itsAdressWWWLocal = "json/stations/bycountryexact/internet?order=clickcount&reverse=true"
     private val itsAdressWWWTopClick = "json/stations/topclick/100"
     private val itsAdressWWWTopVote = "json/stations/topvote/100"
@@ -44,12 +49,12 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
         ""
     )
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val x = inflater.inflate(R.layout.layout_tabs, null)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = LayoutTabsBinding.inflate(inflater, container, false)
         val tabLayout = requireActivity().findViewById<TabLayout>(R.id.tabs)
-        viewPager = x.findViewById(R.id.viewpager)
+        val viewPager = binding.viewpager
 
-        setupViewPager(viewPager!!)
+        setupViewPager(viewPager)
 
         if (queuedSearchQuery != null) {
             Log.d("TABS", "do queued search by name:$queuedSearchQuery")
@@ -59,15 +64,17 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
         }
 
         tabLayout.post {
-            if (context != null && viewPager != null) {
-                val adapter = viewPager!!.adapter as ViewPagerAdapter
-                TabLayoutMediator(tabLayout, viewPager!!) { tab, position ->
-                    tab.text = resources.getString(adapter.getPageTitle(position))
-                }.attach()
+            if (context != null && _binding != null) {
+                val adapter = binding.viewpager.adapter as? ViewPagerAdapter
+                if (adapter != null) {
+                    TabLayoutMediator(tabLayout, binding.viewpager) { tab, position ->
+                        tab.text = resources.getString(adapter.getPageTitle(position))
+                    }.attach()
+                }
             }
         }
 
-        return x
+        return binding.root
     }
 
     override fun onResume() {
@@ -82,8 +89,8 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        viewPager?.adapter = null
-        viewPager = null
+        _binding?.viewpager?.adapter = null
+        _binding = null
     }
 
     private fun getCountryCode(): String? {
@@ -146,9 +153,10 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
 
     override fun Search(searchStyle: StationsFilter.SearchStyle, query: String) {
         Log.d("TABS", "Search = $query searchStyle=$searchStyle")
-        if (viewPager != null) {
+        val vp = _binding?.viewpager
+        if (vp != null) {
             Log.d("TABS", "a Search = $query")
-            viewPager!!.setCurrentItem(IDX_SEARCH, false)
+            vp.setCurrentItem(IDX_SEARCH, false)
             (fragments[IDX_SEARCH] as IFragmentSearchable).Search(searchStyle, query)
         } else {
             Log.d("TABS", "b Search = $query")
@@ -158,11 +166,10 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
     }
 
     override fun Refresh() {
-        if (viewPager != null) {
-            when (val fragment = fragments[viewPager!!.currentItem]) {
-                is IFragmentRefreshable -> fragment.Refresh()
-                is FragmentBase -> fragment.DownloadUrl(true)
-            }
+        val vp = _binding?.viewpager ?: return
+        when (val fragment = fragments[vp.currentItem]) {
+            is IFragmentRefreshable -> fragment.Refresh()
+            is FragmentBase -> fragment.DownloadUrl(true)
         }
     }
 
@@ -191,8 +198,5 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
         private const val IDX_COUNTRIES = 6
         private const val IDX_LANGUAGES = 7
         private const val IDX_SEARCH = 8
-
-        @JvmField
-        var viewPager: ViewPager2? = null
     }
 }

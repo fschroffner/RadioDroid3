@@ -7,20 +7,22 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.github.fschroffner.radiodroid3.adapters.ItemAdapterCategory
 import com.github.fschroffner.radiodroid3.data.DataCategory
+import com.github.fschroffner.radiodroid3.databinding.FragmentStationsRemoteBinding
 import com.github.fschroffner.radiodroid3.station.StationsFilter
-import java.util.*
+import java.util.ArrayList
+import java.util.Collections
 
 class FragmentCategories : FragmentBase() {
     companion object {
         private const val TAG = "FragmentCategories"
     }
 
-    private var rvCategories: androidx.recyclerview.widget.RecyclerView? = null
+    private var _binding: FragmentStationsRemoteBinding? = null
+    private val binding get() = _binding!!
+
     private var searchStyle = StationsFilter.SearchStyle.ByName
-    private var swipeRefreshLayout: SwipeRefreshLayout? = null
     private var singleUseFilter = false
 
     fun SetBaseSearchLink(searchStyle: StationsFilter.SearchStyle) {
@@ -32,7 +34,7 @@ class FragmentCategories : FragmentBase() {
     }
 
     override fun RefreshListGui() {
-        val rv = rvCategories ?: return
+        val currentBinding = _binding ?: return
         if (BuildConfig.DEBUG) Log.d(TAG, "refreshing the categories list.")
 
         val ctx = context ?: return
@@ -59,10 +61,12 @@ class FragmentCategories : FragmentBase() {
         if (searchStyle == StationsFilter.SearchStyle.ByCountryCodeExact) {
             Collections.sort(filteredCategoriesList)
         }
-        (rv.adapter as ItemAdapterCategory).updateList(filteredCategoriesList)
+        (currentBinding.recyclerViewStations.adapter as? ItemAdapterCategory)?.updateList(filteredCategoriesList)
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentStationsRemoteBinding.inflate(inflater, container, false)
+
         val adapterCategory = ItemAdapterCategory(R.layout.list_item_category)
         adapterCategory.categoryClickListener = object : ItemAdapterCategory.CategoryClickListener {
             override fun onCategoryClick(category: DataCategory) {
@@ -70,21 +74,22 @@ class FragmentCategories : FragmentBase() {
             }
         }
 
-        val view = inflater.inflate(R.layout.fragment_stations_remote, container, false)
-
         val llm = LinearLayoutManager(context).apply { orientation = LinearLayoutManager.VERTICAL }
-        rvCategories = view.findViewById(R.id.recyclerViewStations)
-        rvCategories!!.adapter = adapterCategory
-        rvCategories!!.layoutManager = llm
+        binding.recyclerViewStations.adapter = adapterCategory
+        binding.recyclerViewStations.layoutManager = llm
 
-        swipeRefreshLayout = view.findViewById(R.id.swiperefresh)
-        swipeRefreshLayout?.setOnRefreshListener {
+        binding.swiperefresh.setOnRefreshListener {
             if (BuildConfig.DEBUG) Log.d(TAG, "onRefresh called from SwipeRefreshLayout")
             DownloadUrl(true, false)
         }
 
         RefreshListGui()
-        return view
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     fun EnableSingleUseFilter(b: Boolean) {
@@ -92,6 +97,6 @@ class FragmentCategories : FragmentBase() {
     }
 
     override fun DownloadFinished() {
-        swipeRefreshLayout?.isRefreshing = false
+        _binding?.swiperefresh?.isRefreshing = false
     }
 }

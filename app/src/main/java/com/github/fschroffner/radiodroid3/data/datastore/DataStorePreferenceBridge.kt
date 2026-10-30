@@ -16,7 +16,7 @@ class DataStorePreferenceBridge(
             } else {
                 putString(key, value)
             }
-            commit()
+            apply()
         }
     }
 
@@ -28,7 +28,7 @@ class DataStorePreferenceBridge(
 
     override fun putBoolean(key: String, value: Boolean) {
         dataStore.putBooleanAsync(key, value)
-        sharedPreferences.edit().putBoolean(key, value).commit()
+        sharedPreferences.edit().putBoolean(key, value).apply()
     }
 
     override fun getBoolean(key: String, defValue: Boolean): Boolean {
@@ -40,7 +40,7 @@ class DataStorePreferenceBridge(
 
     override fun putInt(key: String, value: Int) {
         dataStore.putIntAsync(key, value)
-        sharedPreferences.edit().putInt(key, value).commit()
+        sharedPreferences.edit().putInt(key, value).apply()
     }
 
     override fun getInt(key: String, defValue: Int): Int {
@@ -52,7 +52,7 @@ class DataStorePreferenceBridge(
 
     override fun putLong(key: String, value: Long) {
         dataStore.putLongAsync(key, value)
-        sharedPreferences.edit().putLong(key, value).commit()
+        sharedPreferences.edit().putLong(key, value).apply()
     }
 
     override fun getLong(key: String, defValue: Long): Long {

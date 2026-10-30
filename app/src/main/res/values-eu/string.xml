@@ -210,17 +210,8 @@
     <string name="alert_delete_favorites">Ziur zaude gogokoak ezabatu nahi dituzula?</string>
     <string name="yes">Bai</string>
     <string name="no">Ez</string>
-
-    <string name="alert_select_mpd_server">Mesedez hautatu zerbitzari bat</string>
-    <string name="alert_select_mpd_server_name">Zerbitzariaren izena</string>
-    <string name="alert_select_mpd_server_password">Zerbitzariaren pasahitza</string>
     <string name="hostname">Ostalariaren izena</string>
     <string name="port">Ataka</string>
-
-    <string name="alert_select_mpd_server_add">Gehitu</string>
-    <string name="alert_select_mpd_server_save">Gorde</string>
-    <string name="alert_select_mpd_server_remove">Kendu</string>
-    <string name="alert_add_or_edit_mpd_server">Idatzi zerbitzariaren xehetasunak</string>
     <string name="alert_alarm_working">Uneko alarmaren denbora</string>
     <string name="alert_alarm_not_working">Alarma erabiltzeko ez dago informazio nahikorik</string>
     <string name="alert_select_external_alarm_app">Aukeratu audio-erreproduzigailua</string>
@@ -271,18 +262,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Musika erreproduzitzeko demonioa (Music Player Daemon, MPD)</string>
-    <string name="settings_mpd_port">MPD-ren ataka</string>
-    <string name="settings_view_mpd_servers">Zure zerbitzariak</string>
-    <string name="action_mpd_nok">MPD konexiorik gabe</string>
-    <string name="action_mpd_ok">MPD konektatuta</string>
-    <string name="action_mpd_connected">Zerbitzari honetara konektuta: %1$s</string>
-
-    <string name="mpd_no_connection">Konexiorik ez</string>
-    <string name="action_enable_mpd">Gaitu MPD</string>
-    <string name="action_disable_mpd">Ezgaitu MPD</string>
-    <string name="action_add_mpd_server">Gehitu MPD zerbitzaria</string>
 
     <string name="action_play_in_external">Erreproduzitu kanpoko erreproduzigailu baten bidez</string>
     <string name="action_choose_external_player">Aukeratu kanpoko erreproduzigailua</string>

@@ -2,7 +2,7 @@ package com.github.fschroffner.radiodroid3.players
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.AsyncTask
+
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
@@ -104,7 +104,7 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
                     onPlayerError(R.string.error_station_load)
                 }
             })
-        playStationTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        playStationTask!!.execute()
     }
 
     private fun cancelStationLinkRetrieval() {

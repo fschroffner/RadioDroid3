@@ -152,16 +152,8 @@
     <string name="alert_delete_favorites">Θέλεις πραγματικά να διαγράψεις όλα τα αγαπημένα;</string>
     <string name="yes">Ναι</string>
     <string name="no">Όχι</string>
-
-    <string name="alert_select_mpd_server">Ποιον εξυπηρετητή;</string>
-    <string name="alert_select_mpd_server_name">Όνομα του εξυπηρετητή</string>
     <string name="hostname">Όνομα του οικοδεσπότη</string>
     <string name="port">Θύρα</string>
-
-    <string name="alert_select_mpd_server_add">Προσθήκη</string>
-    <string name="alert_select_mpd_server_save">Αποθήκευση</string>
-    <string name="alert_select_mpd_server_remove">Απομάκρυνση</string>
-    <string name="alert_add_or_edit_mpd_server">Εισαγωγή λεπτομερειών για τον εξυπηρετητή</string>
 
     <string name="alert_press_back_to_exit">Πίεσε το «Επιστροφή» ακόμη μία φορά, για την έξοδο</string>
 
@@ -196,12 +188,6 @@
 
     <string name="media_route_menu_title">GoogleCast</string>
 
-    <string name="settings_mpd">Δαίμονας Αναπαραγωγής Μουσικής</string>
-    <string name="settings_view_mpd_servers">Οι εξυπηρετητές</string>
-    <string name="action_mpd_nok">Δεν συνδέθηκε το MPD</string>
-    <string name="action_mpd_ok">Συνδέθηκε το MPD</string>
-    <string name="action_mpd_connected">Συνδέθηκε στον εξυπηρετητή:  %1$s</string>
-
     <string name="settings_other">Άλλα</string>
     <string name="settings_statistics">Στατιστικά</string>
     <string name="settings_about">Σχετικά με το ΡάδιοΔροειδές</string>
@@ -220,6 +206,5 @@
 
     <string name="nav_item_statistics">Στατιστικά</string>
     <string name="nav_item_about">Σχετικά με...</string>
-    <string name="settings_mpd_port">Θύρα MPD</string>
     <string name="refresh">Ανανέωση</string>
 </resources>

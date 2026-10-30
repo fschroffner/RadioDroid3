@@ -1,1 +1,0 @@
--keep class com.github.fschroffner.radiodroid3.tests.** { *; }

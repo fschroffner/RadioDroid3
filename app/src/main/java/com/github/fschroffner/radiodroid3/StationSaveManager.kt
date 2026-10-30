@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.media.MediaScannerConnection
 import android.net.Uri
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Environment
 import android.util.Log
@@ -21,7 +20,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
@@ -30,12 +29,15 @@ import java.io.FileWriter
 import java.io.Reader
 import java.io.Writer
 import java.util.Collections
-import java.util.Observable
 
 open class StationSaveManager(
     protected val context: Context,
     protected val stationDao: RadioStationDao? = null
-) : Observable() {
+) {
+
+    fun interface DataChangeListener {
+        fun onDataChanged()
+    }
 
     interface StationStatusListener {
         fun onStationStatusChanged(station: DataRadioStation, favourite: Boolean)
@@ -44,6 +46,7 @@ open class StationSaveManager(
     var listStations: MutableList<DataRadioStation> = mutableListOf()
     private var stationStatusListener: StationStatusListener? = null
     protected val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val dataChangeListeners = Collections.synchronizedList(mutableListOf<DataChangeListener>())
 
     open val stationsFlow: Flow<List<DataRadioStation>>
         get() = emptyFlow()
@@ -56,6 +59,26 @@ open class StationSaveManager(
 
     protected fun setStationStatusListener(listener: StationStatusListener) {
         stationStatusListener = listener
+    }
+
+    fun addListener(listener: DataChangeListener) {
+        if (!dataChangeListeners.contains(listener)) {
+            dataChangeListeners.add(listener)
+        }
+    }
+
+    fun removeListener(listener: DataChangeListener) {
+        dataChangeListeners.remove(listener)
+    }
+
+    fun addObserver(listener: DataChangeListener) = addListener(listener)
+    fun deleteObserver(listener: DataChangeListener) = removeListener(listener)
+
+    open fun notifyObservers() {
+        val listenersCopy = synchronized(dataChangeListeners) { ArrayList(dataChangeListeners) }
+        for (listener in listenersCopy) {
+            listener.onDataChanged()
+        }
     }
 
     open fun add(station: DataRadioStation) {
@@ -181,7 +204,7 @@ open class StationSaveManager(
         oldStations.forEach { stationStatusListener?.onStationStatusChanged(it, false) }
     }
 
-    override fun hasChanged() = true
+    open fun hasChanged() = true
 
     fun size() = listStations.size
 
@@ -193,35 +216,27 @@ open class StationSaveManager(
 
     fun getList(): List<DataRadioStation> = Collections.unmodifiableList(listStations)
 
-    @Suppress("DEPRECATION")
     private fun refreshStationsFromServer() {
         val httpClient = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).okHttpClient()
         LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
 
-        object : AsyncTask<Void, Void, ArrayList<DataRadioStation>>() {
-            private lateinit var savedStations: ArrayList<DataRadioStation>
-
-            override fun onPreExecute() {
-                savedStations = ArrayList(listStations)
-            }
-
-            override fun doInBackground(vararg params: Void?): ArrayList<DataRadioStation> {
-                return savedStations.filterTo(ArrayList()) { station ->
+        coroutineScope.launch {
+            val savedStations = ArrayList(listStations)
+            val stationsToRemove = withContext(Dispatchers.IO) {
+                savedStations.filterTo(ArrayList()) { station ->
                     !Utils.refreshStation(station, httpClient, context) && !station.hasValidUuid() && station.RefreshRetryCount > DataRadioStation.MAX_REFRESH_RETRIES
                 }
             }
-
-            override fun onPostExecute(stationsToRemove: ArrayList<DataRadioStation>) {
+            withContext(Dispatchers.Main) {
                 listStations.removeAll(stationsToRemove.toSet())
                 Save()
                 notifyObservers()
                 LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
             }
-        }.execute()
+        }
     }
 
-    open internal fun Load() {
-        listStations.clear()
+    protected open suspend fun loadInternal() = withContext(Dispatchers.IO) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val legacyJson = prefs.getString(getSaveId(), null)
 
@@ -230,38 +245,47 @@ open class StationSaveManager(
             if (legacyJson != null) {
                 val legacyStations = DataRadioStation.DecodeJson(legacyJson)
                 if (legacyStations.isNotEmpty()) {
-                    runBlocking(Dispatchers.IO) {
-                        legacyStations.forEachIndexed { index, s ->
-                            if (getSaveId() == "favourites") {
-                                s.isFavorite = true
-                                s.favoriteOrder = index
-                            } else if (getSaveId() == "history") {
-                                s.lastPlayed = System.currentTimeMillis() - (index * 1000L)
-                            }
-                            stationDao.insertOrUpdate(s)
+                    legacyStations.forEachIndexed { index, s ->
+                        if (getSaveId() == "favourites") {
+                            s.isFavorite = true
+                            s.favoriteOrder = index
+                        } else if (getSaveId() == "history") {
+                            s.lastPlayed = System.currentTimeMillis() - (index * 1000L)
                         }
+                        stationDao.insertOrUpdate(s)
                     }
                 }
                 prefs.edit().remove(getSaveId()).apply()
             }
 
             // Load directly from Room
-            val fromDb = runBlocking(Dispatchers.IO) {
-                if (getSaveId() == "favourites") {
-                    stationDao.getFavoriteStationsList()
-                } else if (getSaveId() == "history") {
-                    stationDao.getHistoryStationsList()
-                } else {
-                    emptyList()
-                }
+            val fromDb = if (getSaveId() == "favourites") {
+                stationDao.getFavoriteStationsList()
+            } else if (getSaveId() == "history") {
+                stationDao.getHistoryStationsList()
+            } else {
+                emptyList()
             }
-            listStations = fromDb.toMutableList()
-            if (hasInvalidUuids() && Utils.hasAnyConnection(context)) refreshStationsFromServer()
+            withContext(Dispatchers.Main) {
+                listStations = fromDb.toMutableList()
+                notifyObservers()
+                if (hasInvalidUuids() && Utils.hasAnyConnection(context)) refreshStationsFromServer()
+            }
         } else {
             if (legacyJson != null) {
                 val arr = DataRadioStation.DecodeJson(legacyJson)
-                listStations.addAll(arr)
+                withContext(Dispatchers.Main) {
+                    listStations.clear()
+                    listStations.addAll(arr)
+                    notifyObservers()
+                }
             }
+        }
+    }
+
+    open internal fun Load() {
+        coroutineScope.launch {
+            loadInternal()
         }
     }
 
@@ -287,27 +311,28 @@ open class StationSaveManager(
         }
     }
 
-    @Suppress("DEPRECATION")
     fun SaveM3U(filePath: String, fileName: String) {
         Toast.makeText(context, context.resources.getString(R.string.notify_save_playlist_now, filePath, fileName), Toast.LENGTH_LONG).show()
-        object : AsyncTask<Void, Void, Boolean>() {
-            override fun doInBackground(vararg p: Void?) = SaveM3UInternal(filePath, fileName)
-            override fun onPostExecute(result: Boolean) {
+        coroutineScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                SaveM3UInternal(filePath, fileName)
+            }
+            withContext(Dispatchers.Main) {
                 if (result) Toast.makeText(context, context.resources.getString(R.string.notify_save_playlist_ok, filePath, fileName), Toast.LENGTH_LONG).show()
                 else Toast.makeText(context, context.resources.getString(R.string.notify_save_playlist_nok, filePath, fileName), Toast.LENGTH_LONG).show()
             }
-        }.execute()
+        }
     }
 
-    @Suppress("DEPRECATION")
     fun SaveM3USimple(filePath: String, fileName: String) = SaveM3U(filePath, fileName)
 
-    @Suppress("DEPRECATION")
     fun LoadM3U(filePath: String, fileName: String) {
         Toast.makeText(context, context.resources.getString(R.string.notify_load_playlist_now, filePath, fileName), Toast.LENGTH_LONG).show()
-        object : AsyncTask<Void, Void, List<DataRadioStation>?>() {
-            override fun doInBackground(vararg p: Void?) = LoadM3UInternal(filePath, fileName)
-            override fun onPostExecute(result: List<DataRadioStation>?) {
+        coroutineScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                LoadM3UInternal(filePath, fileName)
+            }
+            withContext(Dispatchers.Main) {
                 if (result != null) {
                     Log.i("LOAD", "Loaded ${result.size} stations")
                     addMultiple(result)
@@ -318,15 +343,16 @@ open class StationSaveManager(
                 }
                 notifyObservers()
             }
-        }.execute()
+        }
     }
 
-    @Suppress("DEPRECATION")
     fun LoadM3USimple(reader: Reader) {
         Toast.makeText(context, context.resources.getString(R.string.notify_load_playlist_now, "", ""), Toast.LENGTH_LONG).show()
-        object : AsyncTask<Void, Void, List<DataRadioStation>?>() {
-            override fun doInBackground(vararg p: Void?) = LoadM3UReader(reader)
-            override fun onPostExecute(result: List<DataRadioStation>?) {
+        coroutineScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                LoadM3UReader(reader)
+            }
+            withContext(Dispatchers.Main) {
                 if (result != null) {
                     Log.i("LOAD", "Loaded ${result.size} stations")
                     addMultiple(result)
@@ -337,7 +363,7 @@ open class StationSaveManager(
                 }
                 notifyObservers()
             }
-        }.execute()
+        }
     }
 
     protected val M3U_PREFIX = "#RADIOBROWSERUUID:"

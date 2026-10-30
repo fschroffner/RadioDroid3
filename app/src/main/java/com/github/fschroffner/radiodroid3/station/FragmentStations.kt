@@ -17,16 +17,14 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.google.android.material.button.MaterialButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
-
 import com.github.fschroffner.radiodroid3.StationSaveManager
 import com.github.fschroffner.radiodroid3.Utils
+import com.github.fschroffner.radiodroid3.databinding.FragmentStationsRemoteBinding
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentRefreshable
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentSearchable
 import com.github.fschroffner.radiodroid3.utils.CustomFilter
@@ -49,10 +47,8 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
 
     private val stationsViewModel: StationsViewModel by viewModels()
 
-    private lateinit var rvStations: RecyclerView
-    private lateinit var layoutError: ViewGroup
-    private lateinit var btnRetry: MaterialButton
-    private var swipeRefreshLayout: SwipeRefreshLayout? = null
+    private var _binding: FragmentStationsRemoteBinding? = null
+    private val binding get() = _binding!!
 
     private var relativeUrl: String = ""
     private var searchEnabled = false
@@ -62,7 +58,6 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
     private lateinit var queue: StationSaveManager
 
     private fun onStationClick(theStation: DataRadioStation, pos: Int) {
-
         Utils.showPlaySelection(requireContext(), theStation, requireActivity().supportFragmentManager)
     }
 
@@ -71,7 +66,7 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
         !PreferenceManager.getDefaultSharedPreferences(requireContext()).getBoolean("show_broken", false)
 
     private fun renderStations(stations: List<DataRadioStation>) {
-        if (!::rvStations.isInitialized) return
+        val b = _binding ?: return
         if (BuildConfig.DEBUG) Log.d(TAG, "rendering ${stations.size} stations.")
 
         val showBroken = !hideBroken()
@@ -79,7 +74,7 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
         queue.addAll(stations)
 
         val filtered = stations.filter { showBroken || it.Working }
-        val adapter = rvStations.adapter as? ItemAdapterStation ?: return
+        val adapter = b.recyclerViewStations.adapter as? ItemAdapterStation ?: return
         adapter.updateList(null, filtered)
         if (searchEnabled) stationsFilter?.filter("")
     }
@@ -97,47 +92,50 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 stationsViewModel.uiState.collect { state ->
+                    val b = _binding ?: return@collect
                     when (state) {
+                        is StationsUiState.Idle -> {
+                            b.layoutError.visibility = View.GONE
+                            b.swiperefresh.isRefreshing = false
+                        }
+                        is StationsUiState.Loading -> {
+                            b.layoutError.visibility = View.GONE
+                            b.swiperefresh.isRefreshing = true
+                        }
                         is StationsUiState.Success -> {
+                            b.layoutError.visibility = View.GONE
+                            b.swiperefresh.isRefreshing = false
+                            dismissLoadingIndicator()
                             renderStations(state.stations)
-                            onLoadFinished()
                         }
                         is StationsUiState.Error -> {
-                            try {
-                                android.widget.Toast.makeText(
-                                    context, resources.getText(R.string.error_list_update),
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
-                            } catch (e: Exception) {
-                                Log.e(TAG, "$e")
-                            }
-                            onLoadFinished()
+                            b.layoutError.visibility = View.VISIBLE
+                            b.swiperefresh.isRefreshing = false
+                            dismissLoadingIndicator()
                         }
-                        StationsUiState.Loading, StationsUiState.Idle -> {}
                     }
                 }
             }
         }
     }
 
-    private fun onLoadFinished() {
-        swipeRefreshLayout?.isRefreshing = false
+    private fun dismissLoadingIndicator() {
         if (context != null) {
             LocalBroadcastManager.getInstance(requireContext())
                 .sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         Log.d("STATIONS", "onCreateView()")
         queue = StationSaveManager(requireContext())
         relativeUrl = arguments?.getString("url") ?: ""
         searchEnabled = arguments?.getBoolean(KEY_SEARCH_ENABLED, false) ?: false
 
-        val view = inflater.inflate(R.layout.fragment_stations_remote, container, false)
-        rvStations = view.findViewById(R.id.recyclerViewStations)
-        layoutError = view.findViewById(R.id.layoutError)
-        btnRetry = view.findViewById(R.id.btnRefresh)
+        _binding = FragmentStationsRemoteBinding.inflate(inflater, container, false)
+        val rvStations = binding.recyclerViewStations
+        val layoutError = binding.layoutError
+        val btnRetry = binding.btnRefresh
 
         val adapter = ItemAdapterStation(requireActivity(), R.layout.list_item_station, StationsFilter.FilterType.GLOBAL)
         adapter.setStationActionsListener(object : ItemAdapterStation.StationActionsListener {
@@ -161,9 +159,10 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
                 }
             })
             adapter.setFilterListener { searchStatus ->
-                layoutError.visibility = if (searchStatus == StationsFilter.SearchStatus.ERROR) View.VISIBLE else View.GONE
+                val currentBinding = _binding ?: return@setFilterListener
+                currentBinding.layoutError.visibility = if (searchStatus == StationsFilter.SearchStatus.ERROR) View.VISIBLE else View.GONE
                 LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
-                swipeRefreshLayout?.isRefreshing = false
+                currentBinding.swiperefresh.isRefreshing = false
             }
             btnRetry.setOnClickListener { Search(lastSearchStyle, lastQuery) }
         }
@@ -173,8 +172,7 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
         rvStations.adapter = adapter
         rvStations.addItemDecoration(DividerItemDecoration(rvStations.context, llm.orientation))
 
-        swipeRefreshLayout = view.findViewById(R.id.swiperefresh)
-        swipeRefreshLayout!!.setOnRefreshListener {
+        binding.swiperefresh.setOnRefreshListener {
             if (relativeUrl.isNotEmpty()) {
                 loadBrowse(true)
             } else if (searchEnabled) {
@@ -195,12 +193,13 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
             Search(lastSearchStyle, lastQuery)
         }
 
-        return view
+        return binding.root
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        rvStations.adapter = null
+        _binding?.recyclerViewStations?.adapter = null
+        _binding = null
     }
 
     override fun Search(searchStyle: StationsFilter.SearchStyle, query: String) {
@@ -208,7 +207,7 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
         lastQuery = query
         lastSearchStyle = searchStyle
 
-        if (::rvStations.isInitialized && searchEnabled) {
+        if (_binding != null && searchEnabled) {
             Log.d("STATIONS", "query a = $query")
             if (!TextUtils.isEmpty(query)) {
                 LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))

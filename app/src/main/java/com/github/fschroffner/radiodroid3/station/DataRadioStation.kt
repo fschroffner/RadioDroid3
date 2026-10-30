@@ -1,16 +1,18 @@
 package com.github.fschroffner.radiodroid3.station
 
-import android.os.Parcel
 import android.os.Parcelable
 import android.text.TextUtils
 import android.util.Log
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
+@Parcelize
 @Entity(tableName = "radio_stations")
 class DataRadioStation() : Parcelable {
     @PrimaryKey
@@ -40,10 +42,12 @@ class DataRadioStation() : Parcelable {
     var lastPlayed: Long? = null
 
     @Ignore
+    @IgnoredOnParcel
     var playableUrl: String? = null
 
     @Deprecated("Use StationUuid instead")
     @Ignore
+    @IgnoredOnParcel
     var StationId: String = ""
 
     fun hasIcon(): Boolean = !TextUtils.isEmpty(IconUrl)
@@ -112,72 +116,12 @@ class DataRadioStation() : Parcelable {
         }
     }
 
-    override fun describeContents() = 0
-
-    override fun writeToParcel(dest: Parcel, flags: Int) {
-        dest.writeString(Name)
-        dest.writeString(StationUuid)
-        dest.writeString(ChangeUuid)
-        dest.writeString(StreamUrl)
-        dest.writeString(HomePageUrl)
-        dest.writeString(IconUrl)
-        dest.writeString(Country)
-        dest.writeString(CountryCode)
-        dest.writeString(State)
-        dest.writeString(TagsAll)
-        dest.writeString(Language)
-        dest.writeInt(ClickCount)
-        dest.writeInt(ClickTrend)
-        dest.writeInt(Votes)
-        dest.writeInt(Bitrate)
-        dest.writeString(Codec)
-        dest.writeByte(if (Working) 1 else 0)
-        dest.writeByte(if (Hls) 1 else 0)
-        dest.writeString(playableUrl)
-        @Suppress("DEPRECATION") dest.writeString(StationId)
-        dest.writeByte(if (isFavorite) 1 else 0)
-        dest.writeInt(favoriteOrder)
-        dest.writeValue(lastPlayed)
-    }
-
-    @Ignore
-    private constructor(parcel: Parcel) : this() {
-        Name = parcel.readString() ?: ""
-        StationUuid = parcel.readString() ?: ""
-        ChangeUuid = parcel.readString() ?: ""
-        StreamUrl = parcel.readString() ?: ""
-        HomePageUrl = parcel.readString() ?: ""
-        IconUrl = parcel.readString() ?: ""
-        Country = parcel.readString() ?: ""
-        CountryCode = parcel.readString()
-        State = parcel.readString() ?: ""
-        TagsAll = parcel.readString() ?: ""
-        Language = parcel.readString() ?: ""
-        ClickCount = parcel.readInt()
-        ClickTrend = parcel.readInt()
-        Votes = parcel.readInt()
-        Bitrate = parcel.readInt()
-        Codec = parcel.readString()
-        Working = parcel.readByte() != 0.toByte()
-        Hls = parcel.readByte() != 0.toByte()
-        playableUrl = parcel.readString()
-        @Suppress("DEPRECATION") StationId = parcel.readString() ?: ""
-        isFavorite = parcel.readByte() != 0.toByte()
-        favoriteOrder = parcel.readInt()
-        lastPlayed = parcel.readValue(Long::class.java.classLoader) as? Long
-    }
-
     companion object {
         private const val TAG = "DATAStation"
         const val MAX_REFRESH_RETRIES = 16
         const val RADIO_STATION_LOCAL_INFO_CHAGED = "com.github.fschroffner.radiodroid3.radiostation.changed"
+        const val RADIO_STATION_LOCAL_INFO_CHANGED = RADIO_STATION_LOCAL_INFO_CHAGED
         const val RADIO_STATION_UUID = "UUID"
-
-        @JvmField
-        val CREATOR = object : Parcelable.Creator<DataRadioStation> {
-            override fun createFromParcel(source: Parcel) = DataRadioStation(source)
-            override fun newArray(size: Int) = arrayOfNulls<DataRadioStation>(size)
-        }
 
         @JvmStatic
         fun DecodeJson(result: String?): List<DataRadioStation> {

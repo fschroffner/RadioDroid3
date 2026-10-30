@@ -116,14 +116,6 @@
   <string name="alert_delete_favorites">Er du sikker på at du vil sletta alle favorittane?</string>
   <string name="yes">Ja</string>
   <string name="no">Nei</string>
-  <string name="alert_select_mpd_server">Kva tenar?</string>
-  <string name="alert_select_mpd_server_name">Tenarnamn</string>
-  <!--<string name="alert_select_mpd_server_hostname">Vertsnamn</string>-->
-  <!--<string name="alert_select_mpd_server_port">Port</string>-->
-  <string name="alert_select_mpd_server_add">Legg til</string>
-  <string name="alert_select_mpd_server_save">Lagra</string>
-  <string name="alert_select_mpd_server_remove">Fjern</string>
-  <string name="alert_add_or_edit_mpd_server">Skriv inn informasjon om ein tenar</string>
   <string name="alert_press_back_to_exit">Trykk «Tilbake» igjen for å avslutta</string>
   <string name="error_stream_url">Feil ved straumingsadresse</string>
   <string name="error_caching_stream">Feil ved bufring av radiostraum</string>
@@ -156,11 +148,6 @@
   <string name="icon_click_trend_stable">Stabil popularitet</string>
   <string name="media_route_menu_title">GoogleCast</string>
   <string name="app_id">5A97BAE4</string>
-  <string name="settings_mpd">Musikkavspelingsteneste</string>
-  <string name="settings_view_mpd_servers">Tenarane dine</string>
-  <string name="action_mpd_nok">MPD ikkje kopla til</string>
-  <string name="action_mpd_ok">MPD kopla til</string>
-  <string name="action_mpd_connected">Kopla til tenar: %1$s</string>
   <string name="settings_other">Anna</string>
   <string name="settings_statistics">Statistikk</string>
   <string name="settings_about">Om RadioDroid</string>
@@ -176,6 +163,5 @@
   <string name="notify_stream_url_copied">Adressa til radiostraumen er no kopiert</string>
   <string name="nav_item_statistics">Statistikk</string>
   <string name="nav_item_about">Om</string>
-  <string name="settings_mpd_port">MPD-port</string>
   <string name="refresh">Oppdater</string>
 </resources>

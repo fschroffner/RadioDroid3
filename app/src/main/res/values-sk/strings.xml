@@ -148,16 +148,8 @@
     <string name="alert_delete_favorites">Naozaj chcete vymazať všetky obľúbené?</string>
     <string name="yes">Áno</string>
     <string name="no">Nie</string>
-
-    <string name="alert_select_mpd_server">Ktorý server?</string>
-    <string name="alert_select_mpd_server_name">Názouv servera</string>
     <string name="hostname">Názov hostiteľa</string>
     <string name="port">Port</string>
-
-    <string name="alert_select_mpd_server_add">Pridať</string>
-    <string name="alert_select_mpd_server_save">Uložiť</string>
-    <string name="alert_select_mpd_server_remove">Odstrániť</string>
-    <string name="alert_add_or_edit_mpd_server">Zadajte podrobnosti servera</string>
 
     <string name="alert_press_back_to_exit">Ukončíte opätovným stlačením tlačidla Späť</string>
 
@@ -196,12 +188,6 @@
     <string name="icon_click_trend_decreasing">Klesajúca popularita</string>
     <string name="icon_click_trend_increasing">Stúpajúca popularita</string>
     <string name="icon_click_trend_stable">Stabilná popularita</string>
-
-
-    <string name="settings_view_mpd_servers">Vaše servery</string>
-    <string name="action_mpd_nok">Nepripojené ku MPD</string>
-    <string name="action_mpd_ok">Pripojené ku MPD</string>
-    <string name="action_mpd_connected">Pripojené k serveru: %1$s</string>
 
     <string name="settings_other">Ostatné</string>
     <string name="settings_statistics">Štatistika</string>

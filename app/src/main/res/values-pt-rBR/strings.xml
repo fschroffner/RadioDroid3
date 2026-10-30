@@ -210,17 +210,8 @@
     <string name="alert_delete_favorites">Deseja excluir todos os favoritos?</string>
     <string name="yes">Sim</string>
     <string name="no">Não</string>
-
-    <string name="alert_select_mpd_server">Favor selecione um servidor</string>
-    <string name="alert_select_mpd_server_name">Nome do servidor</string>
-    <string name="alert_select_mpd_server_password">Senha do servidor</string>
     <string name="hostname">Hostname</string>
     <string name="port">Porto</string>
-
-    <string name="alert_select_mpd_server_add">Adicionar</string>
-    <string name="alert_select_mpd_server_save">Salvar</string>
-    <string name="alert_select_mpd_server_remove">Remover</string>
-    <string name="alert_add_or_edit_mpd_server">Digite os detalhes sobre um servidor</string>
     <string name="alert_alarm_working">Hora do despertador</string>
     <string name="alert_alarm_not_working">Não há informações suficientes para alarme</string>
     <string name="alert_select_external_alarm_app">Escolha o reprodutor de áudio</string>
@@ -272,18 +263,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Daemon de reprodutor da música</string>
-    <string name="settings_mpd_port">MPD porto</string>
-    <string name="settings_view_mpd_servers">Seus servidores</string>
-    <string name="action_mpd_nok">MPD não conectado</string>
-    <string name="action_mpd_ok">MPD conectado</string>
-    <string name="action_mpd_connected">Conectado ao servidor: %1$s</string>
-
-    <string name="mpd_no_connection">Sem conexão</string>
-    <string name="action_enable_mpd">Ativar o MPD</string>
-    <string name="action_disable_mpd">Desativar o MPD</string>
-    <string name="action_add_mpd_server">Adicionar servidor MPD</string>
 
     <string name="action_play_in_external">Reproduzir no aplicativo externo</string>
     <string name="action_choose_external_player">Escolha um aplicativo externo</string>

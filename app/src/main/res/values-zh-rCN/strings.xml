@@ -216,17 +216,8 @@
     <string name="alert_delete_favorites">您真要删除全部收藏吗？</string>
     <string name="yes">确认</string>
     <string name="no">取消</string>
-
-    <string name="alert_select_mpd_server">请选择服务器</string>
-    <string name="alert_select_mpd_server_name">服务器名</string>
-    <string name="alert_select_mpd_server_password">服务器密码</string>
     <string name="hostname">主机名</string>
     <string name="port">端口</string>
-
-    <string name="alert_select_mpd_server_add">添加</string>
-    <string name="alert_select_mpd_server_save">保存</string>
-    <string name="alert_select_mpd_server_remove">移除</string>
-    <string name="alert_add_or_edit_mpd_server">输入服务器详情</string>
     <string name="alert_alarm_working">闹钟时间到</string>
     <string name="alert_alarm_not_working">无足够信息启动闹钟</string>
     <string name="alert_select_external_alarm_app">选择音频播放器</string>
@@ -279,18 +270,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">睿卓</string>
-
-    <string name="settings_mpd">Music Player Daemon</string>
-    <string name="settings_mpd_port">MPD 端口</string>
-    <string name="settings_view_mpd_servers">您的服务器</string>
-    <string name="action_mpd_nok">MPD 未连接</string>
-    <string name="action_mpd_ok">MPD 已连接</string>
-    <string name="action_mpd_connected">已连接到服务器：%1$s</string>
-
-    <string name="mpd_no_connection">未连接</string>
-    <string name="action_enable_mpd">启用 MPD</string>
-    <string name="action_disable_mpd">停用 MPD</string>
-    <string name="action_add_mpd_server">添加 MPD 服务器</string>
     
     <string name="action_play_in_external">使用外部播放器播放</string>
     <string name="action_choose_external_player">选择外部播放器</string>

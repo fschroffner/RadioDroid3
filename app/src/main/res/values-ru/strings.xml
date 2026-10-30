@@ -130,16 +130,8 @@
     <string name="alert_delete_favorites">Вы действительно хотите очистить избранное?</string>
     <string name="yes">Да</string>
     <string name="no">Нет</string>
-
-    <string name="alert_select_mpd_server">Выберите сервер</string>
-    <string name="alert_select_mpd_server_name">Имя сервера</string>
     <string name="hostname">Имя хоста</string>
     <string name="port">Порт</string>
-
-    <string name="alert_select_mpd_server_add">Добавить</string>
-    <string name="alert_select_mpd_server_save">Сохранить</string>
-    <string name="alert_select_mpd_server_remove">Удалить</string>
-    <string name="alert_add_or_edit_mpd_server">Введите настройки сервера</string>
 
     <string name="alert_press_back_to_exit">Нажмите назад еще раз, чтобы выйти</string>
 
@@ -163,12 +155,6 @@
     <string name="image_button_record">Запись</string>
     <string name="image_button_delete">Удалить будильник</string>
     <string name="image_button_more">Больше</string>
-
-    <string name="settings_mpd">Music Player Daemon</string>
-    <string name="settings_view_mpd_servers">Ваши сервера</string>
-    <string name="action_mpd_nok">MPD не подключен</string>
-    <string name="action_mpd_ok">MPD подключен</string>
-    <string name="action_mpd_connected">Подключен к серверу: %1$s</string>
 
     <string name="settings_other">Другое</string>
     <string name="settings_statistics">Статистика</string>

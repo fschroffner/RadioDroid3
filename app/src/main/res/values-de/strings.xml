@@ -125,14 +125,6 @@
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
 
-    <string name="alert_select_mpd_server">Welcher Server?</string>
-    <string name="alert_select_mpd_server_name">Servername</string>
-
-    <string name="alert_select_mpd_server_add">Hinzufügen</string>
-    <string name="alert_select_mpd_server_save">Speichern</string>
-    <string name="alert_select_mpd_server_remove">Löschen</string>
-    <string name="alert_add_or_edit_mpd_server">Gib Details über den Server an</string>
-
     <string name="alert_press_back_to_exit">Drücke noch einmal, um die App zu beenden</string>
 
     <string name="error_stream_url">Es gibt ein Problem mit der Sender-Stream-Url.</string>
@@ -160,10 +152,6 @@
     <string name="image_button_record">Aufnahme starten</string>
     <string name="image_button_delete">Sleeptimer löschen</string>
     <string name="image_button_more">Mehr</string>
-
-    <string name="action_mpd_nok">MPD nicht verbunden</string>
-    <string name="action_mpd_ok">MPD verbunden</string>
-    <string name="action_mpd_connected">Verbunden mit Server: %1$s</string>
 
     <string name="settings_other">Anderes</string>
     <string-array name="weekdays">
@@ -242,5 +230,4 @@
     <string name="settings_retry_delay">Wiederverbindungsverzögerung</string>
     <string name="settings_retry_timeout">Zeitüberschreitung für Wiederverbindungsversuche</string>
     <string name="settings_seconds_format">%d Sekunden</string>
-    <string name="settings_view_mpd_servers">Ihre Server</string>
 </resources>

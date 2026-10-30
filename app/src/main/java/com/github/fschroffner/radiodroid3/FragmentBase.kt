@@ -2,14 +2,18 @@ package com.github.fschroffner.radiodroid3
 
 import android.content.Context
 import android.content.Intent
-import android.os.AsyncTask
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 open class FragmentBase : Fragment() {
     private val TAG = "FragmentBase"
@@ -17,7 +21,7 @@ open class FragmentBase : Fragment() {
     private var relativeUrl: String? = null
     protected var urlResult: String? = null
     private var isCreated = false
-    private var task: AsyncTask<*, *, *>? = null
+    protected var downloadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,7 +31,7 @@ open class FragmentBase : Fragment() {
     }
 
     override fun onDestroy() {
-        task?.cancel(true)
+        downloadJob?.cancel()
         super.onDestroy()
     }
 
@@ -35,11 +39,10 @@ open class FragmentBase : Fragment() {
 
     fun DownloadUrl(forceUpdate: Boolean) = DownloadUrl(forceUpdate, true)
 
-    @Suppress("DEPRECATION")
     fun DownloadUrl(forceUpdate: Boolean, displayProgress: Boolean) {
         if (!isCreated) return
-        task?.cancel(true)
-        task = null
+        downloadJob?.cancel()
+        downloadJob = null
 
         val showBroken = PreferenceManager.getDefaultSharedPreferences(requireContext()).getBoolean("show_broken", false)
 
@@ -54,29 +57,28 @@ open class FragmentBase : Fragment() {
 
                 val httpClient = dagger.hilt.EntryPoints.get(requireContext().applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).okHttpClient()
 
-                task = object : AsyncTask<Void, Void, String?>() {
-                    override fun doInBackground(vararg params: Void?): String? {
-                        val p = hashMapOf("hidebroken" to "${!showBroken}")
-                        return Utils.downloadFeedRelative(httpClient, requireActivity(), relativeUrl!!, forceUpdate, p)
+                downloadJob = lifecycleScope.launch {
+                    val p = hashMapOf("hidebroken" to "${!showBroken}")
+                    val result = withContext(Dispatchers.IO) {
+                        Utils.downloadFeedRelative(httpClient, requireActivity(), relativeUrl!!, forceUpdate, p)
                     }
-                    override fun onPostExecute(result: String?) {
-                        DownloadFinished()
-                        if (context != null)
-                            LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
-                        if (BuildConfig.DEBUG) Log.d(TAG, "Download relativeUrl finished:$relativeUrl")
-                        if (result != null) {
-                            if (BuildConfig.DEBUG) Log.d(TAG, "Download relativeUrl OK:$relativeUrl")
-                            urlResult = result
-                            RefreshListGui()
-                        } else {
-                            try {
-                                Toast.makeText(context, resources.getText(R.string.error_list_update), Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) {
-                                Log.e("ERR", e.toString())
-                            }
+                    DownloadFinished()
+                    if (context != null) {
+                        LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+                    }
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Download relativeUrl finished:$relativeUrl")
+                    if (result != null) {
+                        if (BuildConfig.DEBUG) Log.d(TAG, "Download relativeUrl OK:$relativeUrl")
+                        urlResult = result
+                        RefreshListGui()
+                    } else {
+                        try {
+                            Toast.makeText(context, resources.getText(R.string.error_list_update), Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Log.e("ERR", e.toString())
                         }
                     }
-                }.execute()
+                }
             } else {
                 urlResult = cache
                 DownloadFinished()

@@ -2,9 +2,7 @@ package com.github.fschroffner.radiodroid3.proxy
 
 import android.app.Dialog
 import android.content.Context
-import okhttp3.OkHttpClient
 import android.content.DialogInterface
-import android.os.AsyncTask
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
@@ -13,15 +11,19 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.R
-
 import com.github.fschroffner.radiodroid3.Utils.parseIntWithDefault
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.Call
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
-import java.lang.ref.WeakReference
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
@@ -34,8 +36,7 @@ class ProxySettingsDialog : DialogFragment() {
     private lateinit var textProxyTestResult: TextView
     private lateinit var proxyTypeAdapter: ArrayAdapter<Proxy.Type>
 
-    @Suppress("DEPRECATION")
-    private var proxyTestTask: AsyncTask<*, *, *>? = null
+    private var proxyTestJob: Job? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val builder = AlertDialog.Builder(requireActivity())
@@ -47,41 +48,42 @@ class ProxySettingsDialog : DialogFragment() {
         spinnerProxyType = layout.findViewById(R.id.spinner_proxy_type)
         editLogin = layout.findViewById(R.id.edit_proxy_login)
         editProxyPassword = layout.findViewById(R.id.edit_proxy_password)
-        textProxyTestResult = layout.findViewById(R.id.text_test_proxy_result)
+        textProxyTestResult = layout.findViewById(R.id.text_proxy_test_result)
 
-        proxyTypeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, arrayOf(Proxy.Type.DIRECT, Proxy.Type.HTTP, Proxy.Type.SOCKS))
-        spinnerProxyType.adapter = proxyTypeAdapter
+        val context = requireContext().applicationContext
+        val settings = ProxySettings().apply { readFromPreferences(PreferenceManager.getDefaultSharedPreferences(context)) }
 
-        val entryPoint = dagger.hilt.EntryPoints.get(requireContext().applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
-        val initialProxy = entryPoint.appPreferencesDataStore().getProxySettings() ?: ProxySettings.fromPreferences(PreferenceManager.getDefaultSharedPreferences(requireContext()))
-        initialProxy?.let { ps ->
-            editProxyHost.setText(ps.host)
-            editProxyPort.setText(ps.port.toString())
-            editLogin.setText(ps.login)
-            editProxyPassword.setText(ps.password)
-            spinnerProxyType.setSelection(proxyTypeAdapter.getPosition(ps.type))
+        editProxyHost.setText(settings.host)
+        editProxyPort.setText(settings.port.toString())
+        editLogin.setText(settings.login)
+        editProxyPassword.setText(settings.password)
+
+        proxyTypeAdapter = ArrayAdapter(requireActivity(), android.R.layout.simple_spinner_item, arrayOf(Proxy.Type.DIRECT, Proxy.Type.HTTP, Proxy.Type.SOCKS)).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
+        spinnerProxyType.adapter = proxyTypeAdapter
+        spinnerProxyType.setSelection(proxyTypeAdapter.getPosition(settings.type))
 
-        val dialog = builder.setView(layout)
-            .setPositiveButton(R.string.action_ok) { _, _ ->
-                val proxy = createProxySettings()
-                entryPoint.appPreferencesDataStore().putStringAsync("proxySettings", com.google.gson.Gson().toJson(proxy))
-                val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-                proxy.toPreferences(prefs.edit().also { it.apply() })
+        builder.setView(layout)
+            .setPositiveButton(R.string.action_save) { _, _ ->
+                createProxySettings().saveToPreferences(PreferenceManager.getDefaultSharedPreferences(context))
             }
-            .setNegativeButton(R.string.action_cancel) { d, _ -> d.cancel() }
-            .setNeutralButton(R.string.settings_proxy_action_test, null)
-            .create()
+            .setNeutralButton(R.string.action_test, null)
+            .setNegativeButton(android.R.string.cancel) { _, _ -> }
 
+        val dialog = builder.create()
         dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener { testProxy(createProxySettings()) }
+            val button = (it as AlertDialog).getButton(AlertDialog.BUTTON_NEUTRAL)
+            button.setOnClickListener {
+                testProxy(createProxySettings())
+            }
         }
         return dialog
     }
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        proxyTestTask?.cancel(true)
+        proxyTestJob?.cancel()
     }
 
     private fun createProxySettings() = ProxySettings().apply {
@@ -92,61 +94,51 @@ class ProxySettingsDialog : DialogFragment() {
         type = proxyTypeAdapter.getItem(spinnerProxyType.selectedItemPosition)
     }
 
-    @Suppress("DEPRECATION")
     private fun testProxy(proxySettings: ProxySettings) {
-        proxyTestTask?.cancel(true)
+        proxyTestJob?.cancel()
+        textProxyTestResult.text = ""
+
         val context = requireContext().applicationContext
-        proxyTestTask = ConnectionTesterTask(context, textProxyTestResult, proxySettings)
-        proxyTestTask!!.execute()
-    }
+        val successStr = context.getString(R.string.settings_proxy_working, TEST_ADDRESS)
+        val failedStr = context.getString(R.string.settings_proxy_not_working)
+        val invalidStr = context.getString(R.string.settings_proxy_invalid)
 
-    @Suppress("DEPRECATION")
-    private class ConnectionTesterTask(
-        context: Context,
-        textView: TextView,
-        proxySettings: ProxySettings
-    ) : AsyncTask<Void, Void, Void>() {
-        private val textRef = WeakReference(textView)
-        private var call: Call? = null
-        private var okHttpClient: okhttp3.OkHttpClient? = null
-        private val successStr = context.getString(R.string.settings_proxy_working, TEST_ADDRESS)
-        private val failedStr = context.getString(R.string.settings_proxy_not_working)
-        private val invalidStr = context.getString(R.string.settings_proxy_invalid)
-        private var requestSucceeded = false
-        private var errorStr: String? = null
-
-        init {
-            textView.text = ""
+        proxyTestJob = lifecycleScope.launch {
             val builder = OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
-            if (com.github.fschroffner.radiodroid3.Utils.setOkHttpProxy(builder, proxySettings)) {
-                okHttpClient = com.github.fschroffner.radiodroid3.Utils.enableTls12OnPreLollipop(builder).build()
+
+            val okHttpClient = if (com.github.fschroffner.radiodroid3.Utils.setOkHttpProxy(builder, proxySettings)) {
+                com.github.fschroffner.radiodroid3.Utils.enableTls12OnPreLollipop(builder).build()
+            } else {
+                null
             }
-        }
 
-        override fun onPreExecute() {
-            okHttpClient ?: return
-            call = okHttpClient!!.newCall(Request.Builder().url(TEST_ADDRESS).build())
-        }
+            if (okHttpClient == null) {
+                textProxyTestResult.text = invalidStr
+                return@launch
+            }
 
-        override fun doInBackground(vararg params: Void?): Void? {
-            okHttpClient ?: return null
-            try {
-                val response: Response = call!!.execute()
-                requestSucceeded = response.isSuccessful
-                if (!requestSucceeded) errorStr = response.message
-            } catch (e: IOException) { requestSucceeded = false; errorStr = e.message }
-            return null
-        }
+            var requestSucceeded = false
+            var errorStr: String? = null
 
-        override fun onPostExecute(v: Void?) {
-            val textResult = textRef.get() ?: return
-            textResult.text = when {
-                okHttpClient == null -> invalidStr
-                requestSucceeded -> successStr
-                else -> String.format(failedStr, TEST_ADDRESS, errorStr)
+            withContext(Dispatchers.IO) {
+                try {
+                    val call = okHttpClient.newCall(Request.Builder().url(TEST_ADDRESS).build())
+                    val response: Response = call.execute()
+                    requestSucceeded = response.isSuccessful
+                    if (!requestSucceeded) errorStr = response.message
+                } catch (e: IOException) {
+                    requestSucceeded = false
+                    errorStr = e.message
+                }
+            }
+
+            textProxyTestResult.text = if (requestSucceeded) {
+                successStr
+            } else {
+                String.format(failedStr, TEST_ADDRESS, errorStr)
             }
         }
     }

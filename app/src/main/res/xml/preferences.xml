@@ -169,15 +169,6 @@
             android:title="@string/settings_equalizer" />
     </PreferenceScreen>
 
-
-    <PreferenceScreen android:title="@string/settings_mpd"
-        search:ignore="true"
-        android:key="pref_category_mpd">
-        <Preference
-            android:key="mpd_servers_viewer"
-            android:title="@string/settings_view_mpd_servers" />
-    </PreferenceScreen>
-
     <PreferenceScreen
         search:ignore="true"
         android:key="pref_category_connectivity"

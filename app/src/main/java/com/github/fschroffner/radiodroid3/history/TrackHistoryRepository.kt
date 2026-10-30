@@ -1,11 +1,14 @@
 package com.github.fschroffner.radiodroid3.history
 
 import android.app.Application
-import androidx.lifecycle.LiveData
-import androidx.paging.LivePagedListBuilder
-import androidx.paging.PagedList
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.asPagingSourceFactory
 import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryEntry.Companion.MAX_HISTORY_ITEMS_IN_TABLE
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import java.util.Date
 import java.util.concurrent.Executor
 import javax.inject.Inject
@@ -22,19 +25,15 @@ class TrackHistoryRepository @Inject constructor(
     }
 
     private val queryExecutor: Executor = database.historyQueryExecutor
-    val allHistoryPaged: LiveData<PagedList<TrackHistoryEntry>>
+    val allHistoryFlow: Flow<PagingData<TrackHistoryEntry>> = Pager(
+        config = PagingConfig(
+            pageSize = HISTORY_PAGE_SIZE,
+            enablePlaceholders = true
+        ),
+        pagingSourceFactory = dao.getAllHistoryPositional().asPagingSourceFactory(Dispatchers.IO)
+    ).flow
 
     private var insertsToTruncateLeft = 0
-
-    init {
-        allHistoryPaged = LivePagedListBuilder(
-            dao.getAllHistoryPositional(),
-            PagedList.Config.Builder()
-                .setPageSize(HISTORY_PAGE_SIZE)
-                .setEnablePlaceholders(true)
-                .build()
-        ).build()
-    }
 
     constructor(application: Application) : this(
         RadioDroidDatabase.getDatabase(application),

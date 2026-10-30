@@ -57,7 +57,6 @@ class FragmentSettings : PreferenceFragmentCompat(),
         findPreference<Preference>("pref_category_interaction")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon.cmd_gesture_tap)
         findPreference<Preference>("pref_category_player")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_play)
         findPreference<Preference>("pref_category_connectivity")?.icon = Utils.IconicsIcon(requireContext(),GoogleMaterial.Icon.gmd_import_export)
-        findPreference<Preference>("pref_category_mpd")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_speaker_wireless)
         findPreference<Preference>("pref_category_other")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_information_outline)
     }
 
@@ -126,13 +125,6 @@ class FragmentSettings : PreferenceFragmentCompat(),
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
                     findPreference<Preference>("settings_retry_timeout")?.isVisible = false
                     findPreference<Preference>("settings_retry_delay")?.isVisible = false
-                }
-            }
-            "pref_category_mpd" -> {
-                findPreference<Preference>("mpd_servers_viewer")?.setOnPreferenceClickListener {
-
-                    Utils.showMpdServersDialog(requireContext(), requireActivity().supportFragmentManager, null)
-                    false
                 }
             }
             "pref_category_other" -> {

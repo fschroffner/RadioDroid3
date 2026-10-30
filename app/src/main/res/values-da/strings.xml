@@ -211,17 +211,8 @@
     <string name="alert_delete_favorites">Slet alle favoritter?</string>
     <string name="yes">Ja</string>
     <string name="no">Nej</string>
-
-    <string name="alert_select_mpd_server">Vælg server</string>
-    <string name="alert_select_mpd_server_name">Server navn</string>
-    <string name="alert_select_mpd_server_password">Server adgangskode</string>
     <string name="hostname">Værtsnavn</string>
     <string name="port">Port</string>
-
-    <string name="alert_select_mpd_server_add">Tilføj</string>
-    <string name="alert_select_mpd_server_save">Gem</string>
-    <string name="alert_select_mpd_server_remove">Fjern</string>
-    <string name="alert_add_or_edit_mpd_server">Indtast server oplysninger</string>
     <string name="alert_alarm_working">Alarm tid nu</string>
     <string name="alert_alarm_not_working">Ikke nok alarm oplysning</string>
     <string name="alert_select_external_alarm_app">Vælg lyd afspiller</string>
@@ -274,18 +265,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Musik afspiller tjeneste</string>
-    <string name="settings_mpd_port">MPD port</string>
-    <string name="settings_view_mpd_servers">Servere</string>
-    <string name="action_mpd_nok">MPD ikke forbundet</string>
-    <string name="action_mpd_ok">MPD forbundet</string>
-    <string name="action_mpd_connected">Forbundet til server: %1$s</string>
-
-    <string name="mpd_no_connection">Ingen forbindelse</string>
-    <string name="action_enable_mpd">Aktivere MPD</string>
-    <string name="action_disable_mpd">Deaktivere MPD</string>
-    <string name="action_add_mpd_server">Tilføje MPD server</string>
 
     <string name="action_play_in_external">Afspil i ekstern afspiller</string>
     <string name="action_choose_external_player">Vælg ekstern afspiller</string>

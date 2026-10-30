@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.github.fschroffner.radiodroid3.databinding.FragmentStationsBinding
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.FavoritesViewModel
 import com.github.fschroffner.radiodroid3.station.ItemAdapterIconOnlyStation
@@ -34,22 +34,21 @@ class FragmentStarred : Fragment() {
 
     private val favoritesViewModel: FavoritesViewModel by viewModels()
 
-    private lateinit var rvStations: RecyclerView
-    private var swipeRefreshLayout: SwipeRefreshLayout? = null
+    private var _binding: FragmentStationsBinding? = null
+    private val binding get() = _binding!!
 
     private fun onStationClick(station: DataRadioStation) {
         Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
     }
 
     fun RefreshListGui() {
-        if (!::rvStations.isInitialized) return
-        val adapter = rvStations.adapter as? ItemAdapterStation ?: return
+        val adapter = _binding?.recyclerViewStations?.adapter as? ItemAdapterStation ?: return
         adapter.updateList(null, favoritesViewModel.uiState.value.stations)
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater.inflate(R.layout.fragment_stations, container, false)
-        rvStations = view.findViewById(R.id.recyclerViewStations)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentStationsBinding.inflate(inflater, container, false)
+        val rvStations = binding.recyclerViewStations
 
         val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         val adapter: ItemAdapterStation
@@ -76,7 +75,7 @@ class FragmentStarred : Fragment() {
                 this@FragmentStarred.onStationClick(station)
             }
             override fun onStationSwiped(station: DataRadioStation) {
-                StationActions.removeFromFavourites(requireContext(), view, station)
+                StationActions.removeFromFavourites(requireContext(), binding.root, station)
             }
             override fun onStationMoved(from: Int, to: Int) {
                 favoritesViewModel.moveStation(from, to)
@@ -88,13 +87,17 @@ class FragmentStarred : Fragment() {
             }
         })
 
-        swipeRefreshLayout = view.findViewById(R.id.swiperefresh)
-        swipeRefreshLayout?.setOnRefreshListener {
+        binding.swiperefresh.setOnRefreshListener {
             if (BuildConfig.DEBUG) Log.d(TAG, "onRefresh called from SwipeRefreshLayout")
             favoritesViewModel.refresh()
         }
 
-        return view
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -102,11 +105,11 @@ class FragmentStarred : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 favoritesViewModel.uiState.collect { state ->
-                    swipeRefreshLayout?.isRefreshing = state.isRefreshing
+                    _binding?.swiperefresh?.isRefreshing = state.isRefreshing
                     if (state.errorMessage != null && context != null) {
                         Toast.makeText(context, state.errorMessage, Toast.LENGTH_SHORT).show()
                     }
-                    val adapter = rvStations.adapter as? ItemAdapterStation ?: return@collect
+                    val adapter = _binding?.recyclerViewStations?.adapter as? ItemAdapterStation ?: return@collect
                     adapter.updateList(null, state.stations)
                 }
             }

@@ -169,16 +169,8 @@
     <string name="alert_delete_favorites">Czy na pewno chcesz usunąć wszystkie ulubione?</string>
     <string name="yes">Tak</string>
     <string name="no">Nie</string>
-
-    <string name="alert_select_mpd_server">Wybierz serwer</string>
-    <string name="alert_select_mpd_server_name">Nazwa serwera</string>
     <string name="hostname">Nazwa hosta</string>
     <string name="port">Port</string>
-
-    <string name="alert_select_mpd_server_add">Dodaj</string>
-    <string name="alert_select_mpd_server_save">Zapisz</string>
-    <string name="alert_select_mpd_server_remove">Usuń</string>
-    <string name="alert_add_or_edit_mpd_server">Wprowadź informacje o serwerze</string>
     <string name="alert_alarm_working">Czas alarmu teraz</string>
     <string name="alert_alarm_not_working">Brak wystarczających informacji o alarmie</string>
     <string name="alert_select_external_alarm_app">Wybierz odtwarzacz audio</string>
@@ -224,13 +216,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Music Player Daemon</string>
-    <string name="settings_mpd_port">Port MPD</string>
-    <string name="settings_view_mpd_servers">Twoje serwery</string>
-    <string name="action_mpd_nok">MPD nie jest podłączony</string>
-    <string name="action_mpd_ok">MPD podłączony</string>
-    <string name="action_mpd_connected">Połączono z serwerem: %1$s</string>
 
     <string name="settings_other">Inne</string>
     <string name="settings_statistics">Statystyki</string>

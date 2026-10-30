@@ -13,9 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
+import com.github.fschroffner.radiodroid3.databinding.FragmentStationsBinding
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.HistoryViewModel
 import com.github.fschroffner.radiodroid3.station.ItemAdapterStation
@@ -29,21 +28,21 @@ class FragmentHistory : Fragment() {
 
     private val historyViewModel: HistoryViewModel by viewModels()
 
-    private lateinit var rvStations: RecyclerView
-    private var swipeRefreshLayout: SwipeRefreshLayout? = null
+    private var _binding: FragmentStationsBinding? = null
+    private val binding get() = _binding!!
 
     private fun onStationClick(station: DataRadioStation) {
         Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
-        rvStations.smoothScrollToPosition(0)
+        _binding?.recyclerViewStations?.smoothScrollToPosition(0)
     }
 
     fun RefreshListGui() {
-        if (!::rvStations.isInitialized) return
-        val adapter = rvStations.adapter as? ItemAdapterStation ?: return
+        val adapter = _binding?.recyclerViewStations?.adapter as? ItemAdapterStation ?: return
         adapter.updateList(null, historyViewModel.uiState.value.stations)
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentStationsBinding.inflate(inflater, container, false)
         val adapter = ItemAdapterStation(requireActivity(), R.layout.list_item_station, StationsFilter.FilterType.LOCAL)
         adapter.setStationActionsListener(object : ItemAdapterStation.StationActionsListener {
             override fun onStationClick(station: DataRadioStation, pos: Int) {
@@ -66,21 +65,18 @@ class FragmentHistory : Fragment() {
             override fun onStationMoveFinished() {}
         })
 
-        val view = inflater.inflate(R.layout.fragment_stations, container, false)
         val llm = LinearLayoutManager(context).apply { orientation = LinearLayoutManager.VERTICAL }
-        rvStations = view.findViewById(R.id.recyclerViewStations)
-        rvStations.adapter = adapter
-        rvStations.layoutManager = llm
-        rvStations.addItemDecoration(DividerItemDecoration(rvStations.context, llm.orientation))
-        adapter.enableItemRemoval(rvStations)
+        binding.recyclerViewStations.adapter = adapter
+        binding.recyclerViewStations.layoutManager = llm
+        binding.recyclerViewStations.addItemDecoration(DividerItemDecoration(binding.recyclerViewStations.context, llm.orientation))
+        adapter.enableItemRemoval(binding.recyclerViewStations)
 
-        swipeRefreshLayout = view.findViewById(R.id.swiperefresh)
-        swipeRefreshLayout?.setOnRefreshListener {
+        binding.swiperefresh.setOnRefreshListener {
             if (BuildConfig.DEBUG) Log.d(TAG, "onRefresh called from SwipeRefreshLayout")
             historyViewModel.refresh()
         }
 
-        return view
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -88,14 +84,19 @@ class FragmentHistory : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 historyViewModel.uiState.collect { state ->
-                    swipeRefreshLayout?.isRefreshing = state.isRefreshing
+                    _binding?.swiperefresh?.isRefreshing = state.isRefreshing
                     if (state.errorMessage != null && context != null) {
                         Toast.makeText(context, state.errorMessage, Toast.LENGTH_SHORT).show()
                     }
-                    val adapter = rvStations.adapter as? ItemAdapterStation ?: return@collect
+                    val adapter = _binding?.recyclerViewStations?.adapter as? ItemAdapterStation ?: return@collect
                     adapter.updateList(null, state.stations)
                 }
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

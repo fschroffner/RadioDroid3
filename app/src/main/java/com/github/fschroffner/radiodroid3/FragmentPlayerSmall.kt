@@ -6,10 +6,8 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.PopupMenu
-import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -18,10 +16,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
+import com.github.fschroffner.radiodroid3.databinding.LayoutPlayerSmallBinding
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.player.PlayerUiState
 import com.github.fschroffner.radiodroid3.player.PlayerViewModel
-import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationActions
 import dagger.hilt.android.AndroidEntryPoint
@@ -38,30 +36,22 @@ class FragmentPlayerSmall : Fragment() {
     }
 
     @Inject lateinit var trackHistoryRepository: TrackHistoryRepository
-    @Inject lateinit var mpdClient: MPDClient
 
     private val viewModel: PlayerViewModel by activityViewModels()
     private var callback: Callback? = null
     private var role = Role.PLAYER
 
-    private lateinit var textViewStationName: TextView
-    private lateinit var textViewLiveInfo: TextView
-    private lateinit var textViewLiveInfoBig: TextView
-    private lateinit var imageViewIcon: ImageView
-    private lateinit var buttonPlay: ImageButton
-    private lateinit var buttonMore: ImageButton
+    private var _binding: LayoutPlayerSmallBinding? = null
+    private val binding get() = _binding!!
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val view = inflater.inflate(R.layout.layout_player_small, container, false)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = LayoutPlayerSmallBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
-        textViewStationName = view.findViewById(R.id.textViewStationName)
-        textViewLiveInfo = view.findViewById(R.id.textViewLiveInfo)
-        textViewLiveInfoBig = view.findViewById(R.id.textViewLiveInfoBig)
-        imageViewIcon = view.findViewById(R.id.playerRadioImage)
-        buttonPlay = view.findViewById(R.id.buttonPlay)
-        buttonMore = view.findViewById(R.id.buttonMore)
-
-        return view
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -73,13 +63,13 @@ class FragmentPlayerSmall : Fragment() {
             }
         })
 
-        buttonPlay.setOnClickListener {
+        binding.buttonPlay.setOnClickListener {
             viewModel.playPause { station ->
                 Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
             }
         }
 
-        buttonMore.setOnClickListener {
+        binding.buttonMore.setOnClickListener {
             val station = viewModel.uiState.value.station ?: Utils.getCurrentOrLastStation(requireContext()) ?: return@setOnClickListener
             showPlayerMenu(station, viewModel.uiState.value.isFavorite)
         }
@@ -124,69 +114,71 @@ class FragmentPlayerSmall : Fragment() {
     }
 
     private fun setupStationIcon() {
+        val b = _binding ?: return
         val useCircularIcons = PreferenceManager.getDefaultSharedPreferences(requireContext().applicationContext).getBoolean("circular_icons", false)
         if (useCircularIcons) {
-            @Suppress("DEPRECATION")
-            imageViewIcon.setBackgroundColor(requireContext().resources.getColor(android.R.color.black))
+            b.playerRadioImage.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.black))
         }
-        requireView().findViewById<ImageView>(R.id.transparentCircle).visibility = if (useCircularIcons) View.VISIBLE else View.GONE
+        b.transparentCircle.visibility = if (useCircularIcons) View.VISIBLE else View.GONE
     }
 
     private fun fullUpdate(state: PlayerUiState) {
+        val b = _binding ?: return
         if (state.isPlaying) {
-            buttonPlay.setImageResource(R.drawable.ic_pause_circle)
-            buttonPlay.contentDescription = resources.getString(R.string.detail_pause)
+            b.buttonPlay.setImageResource(R.drawable.ic_pause_circle)
+            b.buttonPlay.contentDescription = resources.getString(R.string.detail_pause)
         } else {
-            buttonPlay.setImageResource(R.drawable.ic_play_circle)
-            buttonPlay.contentDescription = resources.getString(R.string.detail_play)
+            b.buttonPlay.setImageResource(R.drawable.ic_play_circle)
+            b.buttonPlay.contentDescription = resources.getString(R.string.detail_play)
         }
 
         val station = state.station
         val stationName = station?.Name ?: ""
-        textViewStationName.text = stationName
+        b.textViewStationName.text = stationName
 
         val liveInfo = state.streamLiveInfo
         val streamTitle = liveInfo.title
         if (!TextUtils.isEmpty(streamTitle)) {
-            textViewLiveInfo.visibility = View.VISIBLE
-            textViewLiveInfo.text = streamTitle
-            textViewStationName.gravity = Gravity.BOTTOM
+            b.textViewLiveInfo.visibility = View.VISIBLE
+            b.textViewLiveInfo.text = streamTitle
+            b.textViewStationName.gravity = Gravity.BOTTOM
         } else {
-            textViewLiveInfo.visibility = View.GONE
-            textViewStationName.gravity = Gravity.CENTER_VERTICAL
+            b.textViewLiveInfo.visibility = View.GONE
+            b.textViewStationName.gravity = Gravity.CENTER_VERTICAL
         }
 
-        textViewLiveInfoBig.text = stationName
+        b.textViewLiveInfoBig.text = stationName
 
         if (!Utils.shouldLoadIcons(context)) {
-            imageViewIcon.visibility = View.GONE
+            b.playerRadioImage.visibility = View.GONE
         } else if (station != null && station.hasIcon()) {
-            imageViewIcon.visibility = View.VISIBLE
-            Utils.loadStationIcon(imageViewIcon, station.IconUrl)
+            b.playerRadioImage.visibility = View.VISIBLE
+            Utils.loadStationIcon(b.playerRadioImage, station.IconUrl)
         } else {
-            imageViewIcon.visibility = View.VISIBLE
-            imageViewIcon.setImageResource(R.drawable.ic_launcher)
+            b.playerRadioImage.visibility = View.VISIBLE
+            b.playerRadioImage.setImageResource(R.drawable.ic_launcher)
         }
 
         when (role) {
             Role.PLAYER -> {
-                buttonPlay.visibility = View.VISIBLE
-                buttonMore.visibility = View.GONE
-                textViewStationName.visibility = View.VISIBLE
-                textViewLiveInfoBig.visibility = View.GONE
+                b.buttonPlay.visibility = View.VISIBLE
+                b.buttonMore.visibility = View.GONE
+                b.textViewStationName.visibility = View.VISIBLE
+                b.textViewLiveInfoBig.visibility = View.GONE
             }
             Role.HEADER -> {
-                buttonPlay.visibility = View.GONE
-                buttonMore.visibility = View.VISIBLE
-                textViewLiveInfo.visibility = View.GONE
-                textViewStationName.visibility = View.GONE
-                textViewLiveInfoBig.visibility = View.VISIBLE
+                b.buttonPlay.visibility = View.GONE
+                b.buttonMore.visibility = View.VISIBLE
+                b.textViewLiveInfo.visibility = View.GONE
+                b.textViewStationName.visibility = View.GONE
+                b.textViewLiveInfoBig.visibility = View.VISIBLE
             }
         }
     }
 
     private fun showPlayerMenu(currentStation: DataRadioStation, stationIsInFavourites: Boolean) {
-        val dropDownMenu = PopupMenu(context, buttonMore)
+        val anchor = _binding?.buttonMore ?: return
+        val dropDownMenu = PopupMenu(context, anchor)
         dropDownMenu.menuInflater.inflate(R.menu.menu_player, dropDownMenu.menu)
         dropDownMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {

@@ -152,16 +152,8 @@
     <string name="alert_delete_favorites">Weet je zeker dat je alle favorieten wilt verwijderen?</string>
     <string name="yes">Ja</string>
     <string name="no">Nee</string>
-
-    <string name="alert_select_mpd_server">Welke server?</string>
-    <string name="alert_select_mpd_server_name">Servernaam</string>
     <string name="hostname">Hostnaam</string>
     <string name="port">Poort</string>
-
-    <string name="alert_select_mpd_server_add">Toegevoegd</string>
-    <string name="alert_select_mpd_server_save">Opslaan</string>
-    <string name="alert_select_mpd_server_remove">Verwijderen</string>
-    <string name="alert_add_or_edit_mpd_server">Voer de servergegevens in</string>
 
     <string name="alert_press_back_to_exit">Druk nogmaals op terug om af te sluiten</string>
 
@@ -203,12 +195,6 @@
     <string name="media_route_menu_title">Chromecast</string>
     <string name="app_id">5A97BAE4</string>
 
-    <string name="settings_mpd">Music Player Daemon</string>
-    <string name="settings_view_mpd_servers">Jouw servers</string>
-    <string name="action_mpd_nok">MPD is niet verbonden</string>
-    <string name="action_mpd_ok">MPD is verbonden</string>
-    <string name="action_mpd_connected">Verbonden met server: %1$s</string>
-
     <string name="settings_other">Overig</string>
     <string name="settings_statistics">Statistieken</string>
     <string name="settings_about">Over RadioDroid</string>
@@ -227,6 +213,5 @@
 
     <string name="nav_item_statistics">Statistieken</string>
     <string name="nav_item_about">Over</string>
-    <string name="settings_mpd_port">MPD-poort</string>
     <string name="refresh">Verversen</string>
 </resources>

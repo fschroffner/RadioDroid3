@@ -1,9 +1,9 @@
 package com.github.fschroffner.radiodroid3
 
+import android.app.Application
 import android.app.UiModeManager
 import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.multidex.MultiDexApplication
 import dagger.hilt.android.HiltAndroidApp
 import com.squareup.picasso.OkHttp3Downloader
 import com.squareup.picasso.Picasso
@@ -14,7 +14,7 @@ import java.io.File
 import javax.inject.Inject
 
 @HiltAndroidApp
-class RadioDroidApp : MultiDexApplication() {
+class RadioDroidApp : Application() {
 
     @Inject
     lateinit var okHttpClient: OkHttpClient

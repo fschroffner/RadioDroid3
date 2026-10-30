@@ -1,5 +1,7 @@
 package com.github.fschroffner.radiodroid3
 
+import com.github.fschroffner.radiodroid3.utils.ThemeUtils
+import com.github.fschroffner.radiodroid3.utils.NetworkUtils
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.content.res.AppCompatResources
@@ -312,12 +314,11 @@ object Utils {
     }
 
     @JvmStatic
-    fun showMpdServersDialog(context: Context, fragmentManager: FragmentManager, station: DataRadioStation?) {
+    fun showPlayerSelectorDialog(context: Context, fragmentManager: FragmentManager, station: DataRadioStation?) {
         val oldFragment = fragmentManager.findFragmentByTag(PlayerSelectorDialog.FRAGMENT_TAG)
         if (oldFragment != null && oldFragment.isVisible) return
 
-        val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
-        val playerSelectorDialogFragment = PlayerSelectorDialog(entryPoint.mpdClient(), station)
+        val playerSelectorDialogFragment = PlayerSelectorDialog(station)
         playerSelectorDialogFragment.show(fragmentManager, PlayerSelectorDialog.FRAGMENT_TAG)
     }
 
@@ -328,14 +329,13 @@ object Utils {
         val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
         val castHandler = entryPoint.castHandler()
         val castAvailable = castHandler.isCastSessionAvailable
-        val mpdAvailable = entryPoint.mpdClient().isMpdEnabled
 
-        if (castAvailable && !externalAvailable && !mpdAvailable) {
+        if (castAvailable && !externalAvailable) {
             PlayStationTask(station, context.applicationContext,
                 { url -> castHandler.playRemote(station.Name, url, station.IconUrl) },
                 null).execute()
-        } else if (externalAvailable || mpdAvailable) {
-            showMpdServersDialog(context, fragmentManager, station)
+        } else if (externalAvailable) {
+            showPlayerSelectorDialog(context, fragmentManager, station)
         } else {
             playAndWarnIfMetered(context, station, PlayerType.RADIODROID) { play(station) }
         }
@@ -442,103 +442,19 @@ object Utils {
     }
 
     @JvmStatic
-    fun getTheme(context: Context): String {
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
-        val spTheme = sharedPref.getString("theme_name", null)
-        if (!spTheme.isNullOrBlank()) {
-            return spTheme
-        }
-        try {
-            val entryPoint = dagger.hilt.EntryPoints.get(
-                context.applicationContext,
-                com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java
-            )
-            val dsTheme = entryPoint.appPreferencesDataStore().getString("theme_name", null)
-            if (!dsTheme.isNullOrBlank()) {
-                sharedPref.edit().putString("theme_name", dsTheme).commit()
-                return dsTheme
-            }
-        } catch (_: Exception) {}
-        return context.resources.getString(R.string.theme_light)
-    }
-
-    private fun isSystemDarkMode(context: Context): Boolean {
-        val nightMode = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-        return nightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES
-    }
+    fun getTheme(context: Context): String = ThemeUtils.getTheme(context)
 
     @JvmStatic
-    fun getThemeResId(context: Context): Int {
-        val theme = getTheme(context)
-        val themeValues = try { context.resources.getStringArray(R.array.theme_values) } catch (_: Exception) { emptyArray() }
-        val themeEntries = try { context.resources.getStringArray(R.array.theme_entries) } catch (_: Exception) { emptyArray() }
-
-        val darkVal = if (themeValues.size > 1) themeValues[1] else ""
-        val darkEntry = if (themeEntries.size > 1) themeEntries[1] else ""
-        val oledVal = if (themeValues.size > 2) themeValues[2] else ""
-        val oledEntry = if (themeEntries.size > 2) themeEntries[2] else ""
-        val sysVal = if (themeValues.size > 3) themeValues[3] else ""
-        val sysEntry = if (themeEntries.size > 3) themeEntries[3] else ""
-
-        return when {
-            theme.equals("dark", ignoreCase = true) ||
-            theme.equals("dunkel", ignoreCase = true) ||
-            theme.equals(darkVal, ignoreCase = true) ||
-            theme.equals(darkEntry, ignoreCase = true) ||
-            theme.equals(context.resources.getString(R.string.theme_dark), ignoreCase = true) -> R.style.MyMaterialTheme_Dark
-
-            theme.equals("oled", ignoreCase = true) ||
-            theme.contains("oled", ignoreCase = true) ||
-            theme.equals(oledVal, ignoreCase = true) ||
-            theme.equals(oledEntry, ignoreCase = true) ||
-            theme.equals(context.resources.getString(R.string.theme_oled), ignoreCase = true) -> R.style.MyMaterialTheme_Oled
-
-            theme.equals("system", ignoreCase = true) ||
-            theme.startsWith("system", ignoreCase = true) ||
-            theme.equals(sysVal, ignoreCase = true) ||
-            theme.equals(sysEntry, ignoreCase = true) ||
-            theme.equals(context.resources.getString(R.string.theme_system), ignoreCase = true) ->
-                if (isSystemDarkMode(context)) R.style.MyMaterialTheme_Dark else R.style.MyMaterialTheme
-
-            else -> R.style.MyMaterialTheme
-        }
-    }
+    fun getThemeResId(context: Context): Int = ThemeUtils.getThemeResId(context)
 
     @JvmStatic
-    fun applyTheme(activity: Activity) {
-        val themeResId = getThemeResId(activity)
-        activity.setTheme(themeResId)
-
-        val nightMode = when (themeResId) {
-            R.style.MyMaterialTheme_Dark, R.style.MyMaterialTheme_Oled -> AppCompatDelegate.MODE_NIGHT_YES
-            else -> {
-                val theme = getTheme(activity)
-                if (theme.contains("system", ignoreCase = true)) {
-                    AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                } else {
-                    AppCompatDelegate.MODE_NIGHT_NO
-                }
-            }
-        }
-        if (AppCompatDelegate.getDefaultNightMode() != nightMode) {
-            AppCompatDelegate.setDefaultNightMode(nightMode)
-        }
-    }
+    fun applyTheme(activity: Activity) = ThemeUtils.applyTheme(activity)
 
     @JvmStatic
-    fun isDarkTheme(context: Context): Boolean {
-        val themeId = getThemeResId(context)
-        return themeId == R.style.MyMaterialTheme_Dark || themeId == R.style.MyMaterialTheme_Oled
-    }
+    fun isDarkTheme(context: Context): Boolean = ThemeUtils.isDarkTheme(context)
 
     @JvmStatic
-    fun getTimePickerThemeResId(context: Context): Int {
-        return when (getThemeResId(context)) {
-            R.style.MyMaterialTheme_Dark -> R.style.DialogTheme_Dark
-            R.style.MyMaterialTheme_Oled -> R.style.DialogTheme_Oled
-            else -> R.style.DialogTheme
-        }
-    }
+    fun getTimePickerThemeResId(context: Context): Int = ThemeUtils.getTimePickerThemeResId(context)
 
     @JvmStatic
     fun useCircularIcons(context: Context): Boolean {
@@ -585,20 +501,10 @@ object Utils {
         str.replace(Regex("\\W+"), "_").replace(Regex("^_+"), "").replace(Regex("_+$"), "")
 
     @JvmStatic
-    @Suppress("DEPRECATION")
-    fun hasWifiConnection(context: Context): Boolean {
-        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
-        return mWifi!!.isConnected
-    }
+    fun hasWifiConnection(context: Context): Boolean = NetworkUtils.hasWifiConnection(context)
 
     @JvmStatic
-    @Suppress("DEPRECATION")
-    fun hasAnyConnection(context: Context): Boolean {
-        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val netInfo = connManager.activeNetworkInfo
-        return netInfo != null && netInfo.isConnected
-    }
+    fun hasAnyConnection(context: Context): Boolean = NetworkUtils.hasAnyConnection(context)
 
     @JvmStatic
     fun bottomNavigationEnabled(context: Context): Boolean {
@@ -623,22 +529,14 @@ object Utils {
     }
 
     @JvmStatic
-    fun themeAttributeToColor(themeAttributeId: Int, context: Context, fallbackColorId: Int): Int {
-        val outValue = TypedValue()
-        val theme = context.theme
-        val wasResolved = theme.resolveAttribute(themeAttributeId, outValue, true)
-        return if (wasResolved) {
-            if (outValue.resourceId == 0) outValue.data else ContextCompat.getColor(context, outValue.resourceId)
-        } else {
-            fallbackColorId
-        }
-    }
+    fun themeAttributeToColor(themeAttributeId: Int, context: Context, fallbackColorId: Int): Int =
+        ThemeUtils.themeAttributeToColor(themeAttributeId, context, fallbackColorId)
 
     @JvmStatic
-    fun getIconColor(context: Context): Int = themeAttributeToColor(R.attr.menuTextColorDefault, context, Color.LTGRAY)
+    fun getIconColor(context: Context): Int = ThemeUtils.getIconColor(context)
 
     @JvmStatic
-    fun getAccentColor(context: Context): Int = themeAttributeToColor(R.attr.colorAccent, context, Color.LTGRAY)
+    fun getAccentColor(context: Context): Int = ThemeUtils.getAccentColor(context)
 
     @JvmStatic
     fun setOkHttpProxy(builder: OkHttpClient.Builder, proxySettings: ProxySettings): Boolean {

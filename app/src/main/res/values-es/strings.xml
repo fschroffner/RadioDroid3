@@ -210,17 +210,8 @@
     <string name="alert_delete_favorites">¿Realmente quieres eliminar todos los favoritos?</string>
     <string name="yes">Sí</string>
     <string name="no">No</string>
-
-    <string name="alert_select_mpd_server">Por favor selecciona un servidor</string>
-    <string name="alert_select_mpd_server_name">Nombre del servidor</string>
-    <string name="alert_select_mpd_server_password">Contraseña del servidor</string>
     <string name="hostname">Nombre del host</string>
     <string name="port">Puerto</string>
-
-    <string name="alert_select_mpd_server_add">Agregar</string>
-    <string name="alert_select_mpd_server_save">Guardar</string>
-    <string name="alert_select_mpd_server_remove">Quitar</string>
-    <string name="alert_add_or_edit_mpd_server">Escribir detalles sobre un servidor</string>
     <string name="alert_alarm_working">Tiempo de alarma ahora</string>
     <string name="alert_alarm_not_working">No hay suficiente información para la alarma</string>
     <string name="alert_select_external_alarm_app">Elegir reproductor de audio</string>
@@ -271,18 +262,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Demonio de reproductor de música (Music Player Daemon, MPD)</string>
-    <string name="settings_mpd_port">Puerto del MPD</string>
-    <string name="settings_view_mpd_servers">Tus servidores</string>
-    <string name="action_mpd_nok">MPD no conectado</string>
-    <string name="action_mpd_ok">MPD conectado</string>
-    <string name="action_mpd_connected">Conectado al servidor: %1$s</string>
-
-    <string name="mpd_no_connection">Sin conexión</string>
-    <string name="action_enable_mpd">Habilitar MPD</string>
-    <string name="action_disable_mpd">Deshabilitar MPD</string>
-    <string name="action_add_mpd_server">Agregar servidor MPD</string>
 
     <string name="action_play_in_external">Reproducir en reproductor externo</string>
     <string name="action_choose_external_player">Elegir reproductor externo</string>

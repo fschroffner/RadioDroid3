@@ -139,16 +139,8 @@
     <string name="alert_delete_favorites">Tüm beğenilenleri gerçekten silmek istiyor musunuz?</string>
     <string name="yes">Evet</string>
     <string name="no">Hayır</string>
-
-    <string name="alert_select_mpd_server">Hangi sunucu?</string>
-    <string name="alert_select_mpd_server_name">Sunucu adı</string>
     <string name="hostname">Alan adı</string>
     <string name="port">Port</string>
-
-    <string name="alert_select_mpd_server_add">Ekle</string>
-    <string name="alert_select_mpd_server_save">Kaydet</string>
-    <string name="alert_select_mpd_server_remove">Kaldır</string>
-    <string name="alert_add_or_edit_mpd_server">Bir sunucu için ayrıntıları gir</string>
 
     <string name="alert_press_back_to_exit">Çıkmak için geriye bir daha basın</string>
 
@@ -190,12 +182,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
 
-    <string name="settings_mpd">Music Player Daemon</string>
-    <string name="settings_view_mpd_servers">Sunucularınız</string>
-    <string name="action_mpd_nok">MPD bağlanmadı</string>
-    <string name="action_mpd_ok">MPD bağlandı</string>
-    <string name="action_mpd_connected">Bağlanılan sunucu: %1$s</string>
-
     <string name="settings_other">Diğer</string>
     <string name="settings_statistics">İstatistikler</string>
     <string name="settings_about">RadioDroid Hakkında</string>
@@ -214,6 +200,5 @@
 
     <string name="nav_item_statistics">İstatistikler</string>
     <string name="nav_item_about">Hakkında</string>
-    <string name="settings_mpd_port">MPD portu</string>
     <string name="refresh">Yenile</string>
 </resources>

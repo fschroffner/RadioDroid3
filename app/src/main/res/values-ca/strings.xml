@@ -154,16 +154,8 @@
     <string name="alert_delete_favorites">Segur que voleu eliminar totes les preferides?</string>
     <string name="yes">Sí</string>
     <string name="no">No</string>
-
-    <string name="alert_select_mpd_server">Seleccioneu un servidor</string>
-    <string name="alert_select_mpd_server_name">Nom del servidor</string>
     <string name="hostname">Nom d\'amfitrió</string>
     <string name="port">Port</string>
-
-    <string name="alert_select_mpd_server_add">Afegeix</string>
-    <string name="alert_select_mpd_server_save">Desa</string>
-    <string name="alert_select_mpd_server_remove">Elimina</string>
-    <string name="alert_add_or_edit_mpd_server">Introduïu detalls sobre un servidor</string>
     <string name="alert_alarm_working">Hora d\'alarma</string>
     <string name="alert_alarm_not_working">No hi ha informació suficient per l\'alarma</string>
     <string name="alert_select_external_alarm_app">Trieu el reproductor d\'àudio</string>
@@ -209,13 +201,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Music Player Daemon</string>
-    <string name="settings_mpd_port">Port MPD</string>
-    <string name="settings_view_mpd_servers">Els vostres servidors</string>
-    <string name="action_mpd_nok">MPD no connectat</string>
-    <string name="action_mpd_ok">Connexió MPD</string>
-    <string name="action_mpd_connected">Connectat al servidor: %1$s</string>
 
     <string name="settings_other">Altres</string>
     <string name="settings_statistics">Estadístiques</string>

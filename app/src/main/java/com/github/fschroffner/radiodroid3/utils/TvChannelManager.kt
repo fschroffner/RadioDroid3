@@ -14,8 +14,8 @@ import androidx.tvprovider.media.tv.*
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.R
+import com.github.fschroffner.radiodroid3.StationSaveManager
 import java.io.IOException
-import java.util.*
 
 private const val INVALID_CONTENT_ID: Long = -1
 
@@ -37,7 +37,7 @@ fun <T : BaseProgram> Cursor.asSequence(fromCursor: (Cursor) -> T): Sequence<T> 
 class TvChannelManager(
     val context: Context,
     val favouriteManager: FavouriteManager
-) : Observer {
+) : StationSaveManager.DataChangeListener {
     private val helper = PreviewChannelHelper(context)
     private var channelId = INVALID_CONTENT_ID
 
@@ -131,7 +131,7 @@ class TvChannelManager(
         }
     }
 
-    override fun update(p0: Observable?, p1: Any?) {
+    override fun onDataChanged() {
         publishStarred()
     }
 

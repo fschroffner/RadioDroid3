@@ -10,36 +10,38 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.fragment.app.FragmentActivity
-import androidx.paging.PagedList
-import androidx.paging.PagedListAdapter
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.Utils
+import com.github.fschroffner.radiodroid3.databinding.ListItemHistoryTrackItemBinding
 
 class TrackHistoryAdapter(private val activity: FragmentActivity) :
-    PagedListAdapter<TrackHistoryEntry, TrackHistoryAdapter.TrackHistoryItemViewHolder>(DIFF_CALLBACK) {
+    PagingDataAdapter<TrackHistoryEntry, TrackHistoryAdapter.TrackHistoryItemViewHolder>(DIFF_CALLBACK) {
 
-    inner class TrackHistoryItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val rootview: View = itemView
-        val imageViewStationIcon: ImageView = itemView.findViewById(R.id.imageViewStationIcon)
-        val textViewTrackName: TextView = itemView.findViewById(R.id.textViewTrackName)
-        val textViewTrackArtist: TextView = itemView.findViewById(R.id.textViewTrackArtist)
+    inner class TrackHistoryItemViewHolder(val binding: ListItemHistoryTrackItemBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        val rootview: View = binding.root
+        val imageViewStationIcon: ImageView = binding.imageViewStationIcon
+        val textViewTrackName: TextView = binding.textViewTrackName
+        val textViewTrackArtist: TextView = binding.textViewTrackArtist
     }
 
     private val context: Context = activity
-    private val inflater = LayoutInflater.from(context)
-    private var shouldLoadIcons = false
     private val stationImagePlaceholder: Drawable? = AppCompatResources.getDrawable(context, R.drawable.ic_photo_24dp)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackHistoryItemViewHolder {
-        return TrackHistoryItemViewHolder(inflater.inflate(R.layout.list_item_history_track_item, parent, false))
+        val binding = ListItemHistoryTrackItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return TrackHistoryItemViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: TrackHistoryItemViewHolder, position: Int) {
         val historyEntry = getItem(position) ?: return
+        val shouldLoadIcons = Utils.shouldLoadIcons(context)
 
         if (shouldLoadIcons) {
+            holder.imageViewStationIcon.visibility = View.VISIBLE
             if (!TextUtils.isEmpty(historyEntry.stationIconUrl)) {
                 Utils.loadStationIcon(holder.imageViewStationIcon, historyEntry.stationIconUrl)
             } else {
@@ -54,11 +56,6 @@ class TrackHistoryAdapter(private val activity: FragmentActivity) :
         holder.textViewTrackName.isSelected = true
         holder.textViewTrackArtist.isSelected = true
         holder.rootview.setOnClickListener { showTrackInfoDialog(historyEntry) }
-    }
-
-    override fun submitList(pagedList: PagedList<TrackHistoryEntry>?) {
-        shouldLoadIcons = Utils.shouldLoadIcons(context)
-        super.submitList(pagedList)
     }
 
     private fun showTrackInfoDialog(historyEntry: TrackHistoryEntry) {

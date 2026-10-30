@@ -9,25 +9,15 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-class HistoryManager(
-    ctx: Context,
-    stationDao: RadioStationDao? = null
+class HistoryManager @Inject constructor(
+    @ApplicationContext ctx: Context,
+    stationDao: RadioStationDao
 ) : StationSaveManager(ctx, stationDao) {
 
     override fun getSaveId() = "history"
 
     override val stationsFlow: Flow<List<DataRadioStation>>
-        get() = stationDao?.getHistoryStations() ?: emptyFlow()
-
-    @Inject
-    constructor(@ApplicationContext ctx: Context) : this(
-        ctx,
-        try {
-            dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).radioStationDao()
-        } catch (e: Exception) {
-            null
-        }
-    )
+        get() = stationDao.getHistoryStations()
 
     override fun add(station: DataRadioStation) {
         station.lastPlayed = System.currentTimeMillis()

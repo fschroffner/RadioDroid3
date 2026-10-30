@@ -8,7 +8,7 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.AsyncTask
+
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
@@ -54,15 +54,15 @@ import com.rustamg.filedialogs.SaveFileDialog
 import com.github.fschroffner.radiodroid3.cast.CastAwareActivity
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentSearchable
 import com.github.fschroffner.radiodroid3.players.PlayStationTask
-import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
-import com.github.fschroffner.radiodroid3.players.mpd.MPDServersRepository
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.service.PlayerService
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationsFilter
 import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
@@ -86,7 +86,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     @Inject lateinit var historyManager: HistoryManager
     @Inject lateinit var favouriteManager: FavouriteManager
     @Inject lateinit var castHandler: CastHandler
-    @Inject lateinit var mpdClient: MPDClient
     @Inject lateinit var fallbackStationsManager: FallbackStationsManager
     @Inject lateinit var okHttpClient: OkHttpClient
     @Inject lateinit var appPreferencesDataStore: AppPreferencesDataStore
@@ -177,7 +176,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     var menuItemLoad: MenuItem? = null
     var menuItemIconsView: MenuItem? = null
     var menuItemListView: MenuItem? = null
-    var menuItemMpd: MenuItem? = null
 
     private lateinit var sharedPref: SharedPreferences
     private var selectedMenuItem = -1
@@ -533,24 +531,19 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
             val httpClient = okHttpClient
 
-            @Suppress("DEPRECATION")
-            object : AsyncTask<Void, Void, DataRadioStation?>() {
-                override fun doInBackground(vararg params: Void): DataRadioStation? =
+            lifecycleScope.launch {
+                val station = withContext(Dispatchers.IO) {
                     Utils.getStationByUuid(httpClient, context, stationUUID!!)
+                }
+                if (!isFinishing && station != null) {
+                    Utils.showPlaySelection(this@ActivityMain, station, supportFragmentManager)
 
-                override fun onPostExecute(station: DataRadioStation?) {
-                    if (!isFinishing) {
-                        if (station != null) {
-                            Utils.showPlaySelection(this@ActivityMain, station, supportFragmentManager)
-
-                            val currentFragment = mFragmentManager.fragments.last()
-                            if (currentFragment is FragmentHistory) {
-                                currentFragment.RefreshListGui()
-                            }
-                        }
+                    val currentFragment = mFragmentManager.fragments.lastOrNull()
+                    if (currentFragment is FragmentHistory) {
+                        currentFragment.RefreshListGui()
                     }
                 }
-            }.execute()
+            }
         } else {
             val searchTag = extras.getString(EXTRA_SEARCH_TAG)
             Log.d("MAIN", "received search request for tag 1: $searchTag")
@@ -596,7 +589,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         menuItemLoad = menu.findItem(R.id.action_load)
         menuItemListView = menu.findItem(R.id.action_list_view)
         menuItemIconsView = menu.findItem(R.id.action_icons_view)
-        menuItemMpd = menu.findItem(R.id.action_mpd)
         mSearchView = MenuItemCompat.getActionView(menuItemSearch) as SearchView
         mSearchView!!.setOnQueryTextListener(this)
         mSearchView!!.setOnQueryTextFocusChangeListener(object : View.OnFocusChangeListener {
@@ -622,9 +614,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         menuItemListView!!.isVisible = false
         menuItemIconsView!!.isVisible = false
 
-        val repository: MPDServersRepository = mpdClient.mpdServersRepository
-        val mpd_is_visible = !repository.isEmpty()
-        menuItemMpd!!.isVisible = mpd_is_visible
 
         when (selectedMenuItem) {
             R.id.nav_item_stations -> {
@@ -749,7 +738,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                 return true
             }
             R.id.action_set_sleep_timer -> { changeTimer(); return true }
-            R.id.action_mpd -> { selectMPDServer(); return true }
             R.id.action_delete -> {
                 if (selectedMenuItem == R.id.nav_item_history) {
                     AlertDialog.Builder(this)
@@ -949,10 +937,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
 
         seekDialog.create()
         seekDialog.show()
-    }
-
-    private fun selectMPDServer() {
-        Utils.showMpdServersDialog(this, supportFragmentManager, null)
     }
 
     fun getToolbar(): Toolbar? = findViewById(R.id.my_awesome_toolbar)

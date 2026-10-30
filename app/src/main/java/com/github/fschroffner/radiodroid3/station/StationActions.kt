@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.AsyncTask
 import android.text.TextUtils
 import android.util.Log
 import android.view.View
@@ -21,10 +20,16 @@ import com.github.fschroffner.radiodroid3.di.AppEntryPoint
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.views.ItemListDialog
 import dagger.hilt.EntryPoints
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 
 object StationActions {
     private const val TAG = "StationActions"
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private fun entryPoint(context: Context): AppEntryPoint =
         EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
@@ -52,32 +57,29 @@ object StationActions {
         }
     }
 
-    @Suppress("DEPRECATION")
     private fun retrieveAndCopyStreamUrlToClipboard(context: Context, station: DataRadioStation) {
         LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
         val contextRef = WeakReference(context)
-        object : AsyncTask<Void, Void, String?>() {
-            override fun doInBackground(vararg params: Void?): String? {
-                val ctx = contextRef.get() ?: return null
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                val ctx = contextRef.get() ?: return@withContext null
                 val httpClient = entryPoint(ctx).okHttpClient()
-                return Utils.getRealStationLink(httpClient, ctx, station.StationUuid)
+                Utils.getRealStationLink(httpClient, ctx, station.StationUuid)
             }
-            override fun onPostExecute(result: String?) {
-                val ctx = contextRef.get() ?: return
-                LocalBroadcastManager.getInstance(ctx).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
-                if (result != null) {
-                    val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                    if (clipboard != null) {
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Stream Url", result))
-                        Toast.makeText(ctx.applicationContext, ctx.resources.getText(R.string.notify_stream_url_copied), Toast.LENGTH_SHORT).show()
-                    } else {
-                        Log.e(TAG, "Clipboard is NULL!")
-                    }
+            val ctx = contextRef.get() ?: return@launch
+            LocalBroadcastManager.getInstance(ctx).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+            if (result != null) {
+                val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                if (clipboard != null) {
+                    clipboard.setPrimaryClip(ClipData.newPlainText("Stream Url", result))
+                    Toast.makeText(ctx.applicationContext, ctx.resources.getText(R.string.notify_stream_url_copied), Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(ctx.applicationContext, ctx.resources.getText(R.string.error_station_load), Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "Clipboard is NULL!")
                 }
+            } else {
+                Toast.makeText(ctx.applicationContext, ctx.resources.getText(R.string.error_station_load), Toast.LENGTH_SHORT).show()
             }
-        }.execute()
+        }
     }
 
     @JvmStatic
@@ -104,31 +106,28 @@ object StationActions {
     }
 
     @JvmStatic
-    @Suppress("DEPRECATION")
     fun share(context: Context, station: DataRadioStation) {
         LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
         val contextRef = WeakReference(context)
-        object : AsyncTask<Void, Void, String?>() {
-            override fun doInBackground(vararg params: Void?): String? {
-                val ctx = contextRef.get() ?: return null
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                val ctx = contextRef.get() ?: return@withContext null
                 val httpClient = entryPoint(ctx).okHttpClient()
-                return Utils.getRealStationLink(httpClient, ctx, station.StationUuid)
+                Utils.getRealStationLink(httpClient, ctx, station.StationUuid)
             }
-            override fun onPostExecute(result: String?) {
-                val ctx = contextRef.get() ?: return
-                LocalBroadcastManager.getInstance(ctx).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
-                if (result != null) {
-                    val share = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_SUBJECT, station.Name)
-                        putExtra(Intent.EXTRA_TEXT, result)
-                    }
-                    ctx.startActivity(Intent.createChooser(share, ctx.resources.getString(R.string.share_action)))
-                } else {
-                    Toast.makeText(ctx.applicationContext, ctx.resources.getText(R.string.error_station_load), Toast.LENGTH_SHORT).show()
+            val ctx = contextRef.get() ?: return@launch
+            LocalBroadcastManager.getInstance(ctx).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+            if (result != null) {
+                val share = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, station.Name)
+                    putExtra(Intent.EXTRA_TEXT, result)
                 }
+                ctx.startActivity(Intent.createChooser(share, ctx.resources.getString(R.string.share_action)))
+            } else {
+                Toast.makeText(ctx.applicationContext, ctx.resources.getText(R.string.error_station_load), Toast.LENGTH_SHORT).show()
             }
-        }.execute()
+        }
     }
 
     @JvmStatic
@@ -136,16 +135,14 @@ object StationActions {
         Utils.playAndWarnIfMetered(context, station, PlayerType.RADIODROID) { Utils.play(station) }
     }
 
-    @Suppress("DEPRECATION")
     private fun vote(context: Context, station: DataRadioStation) {
         val contextRef = WeakReference(context)
-        object : AsyncTask<Void, Void, String?>() {
-            override fun doInBackground(vararg params: Void?): String? {
-                val ctx = contextRef.get() ?: return null
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                val ctx = contextRef.get() ?: return@withContext
                 val httpClient = entryPoint(ctx).okHttpClient()
-                return Utils.downloadFeedRelative(httpClient, ctx, "json/vote/${station.StationUuid}", true, null)
+                Utils.downloadFeedRelative(httpClient, ctx, "json/vote/${station.StationUuid}", true, null)
             }
-            override fun onPostExecute(result: String?) {}
-        }.execute()
+        }
     }
 }

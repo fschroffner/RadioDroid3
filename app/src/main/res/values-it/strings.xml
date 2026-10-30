@@ -210,17 +210,8 @@
     <string name="alert_delete_favorites">Vuoi davvero cancellare i preferiti?</string>
     <string name="yes">Sì</string>
     <string name="no">No</string>
-
-    <string name="alert_select_mpd_server">Per favore scegli un server</string>
-    <string name="alert_select_mpd_server_name">Nome del server</string>
-    <string name="alert_select_mpd_server_password">Password del server</string>
     <string name="hostname">Nome dell\'host</string>
     <string name="port">Porta</string>
-
-    <string name="alert_select_mpd_server_add">Aggiungi</string>
-    <string name="alert_select_mpd_server_save">Salva</string>
-    <string name="alert_select_mpd_server_remove">Remove</string>
-    <string name="alert_add_or_edit_mpd_server">Inserisci i dettagli del server</string>
     <string name="alert_alarm_working">Tempo della sveglia ora</string>
     <string name="alert_alarm_not_working">Non ci sono abbastanza informazioni per la sveglia</string>
     <string name="alert_select_external_alarm_app">Scegli riproduttore audio</string>
@@ -272,18 +263,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Music Player Daemon</string>
-    <string name="settings_mpd_port">Porta di MPD</string>
-    <string name="settings_view_mpd_servers">I tuoi server</string>
-    <string name="action_mpd_nok">MPD non connesso</string>
-    <string name="action_mpd_ok">MPD connesso</string>
-    <string name="action_mpd_connected">Connesso al server: %1$s</string>
-
-    <string name="mpd_no_connection">Nessuna connessione</string>
-    <string name="action_enable_mpd">Abilita MPD</string>
-    <string name="action_disable_mpd">Disabilita MPD</string>
-    <string name="action_add_mpd_server">Aggiungi server MPD</string>
 
     <string name="action_play_in_external">Riproduci in riproduttore esterno</string>
     <string name="action_choose_external_player">Scegli riproduttore esterno</string>

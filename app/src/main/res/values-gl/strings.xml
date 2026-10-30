@@ -216,17 +216,8 @@
     <string name="alert_delete_favorites">Tes a certeza de querer eliminar tódalas favoritas?</string>
     <string name="yes">Si</string>
     <string name="no">Non</string>
-
-    <string name="alert_select_mpd_server">Elixe un servidor</string>
-    <string name="alert_select_mpd_server_name">Nome do servidor</string>
-    <string name="alert_select_mpd_server_password">Contrasinal do servidor</string>
     <string name="hostname">Servidor</string>
     <string name="port">Porto</string>
-
-    <string name="alert_select_mpd_server_add">Engadir</string>
-    <string name="alert_select_mpd_server_save">Gardar</string>
-    <string name="alert_select_mpd_server_remove">Eliminar</string>
-    <string name="alert_add_or_edit_mpd_server">Escribe información acerca do servidor</string>
     <string name="alert_alarm_working">Está acontecendo unha alarma</string>
     <string name="alert_alarm_not_working">Sen info suficiente da alarma</string>
     <string name="alert_select_external_alarm_app">Elexir reprodutor de audio</string>
@@ -279,18 +270,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Music Player Daemon</string>
-    <string name="settings_mpd_port">Porto MPD</string>
-    <string name="settings_view_mpd_servers">Os teus servidores</string>
-    <string name="action_mpd_nok">MPD non conectado</string>
-    <string name="action_mpd_ok">MPD conectado</string>
-    <string name="action_mpd_connected">Conectado ao servidor: %1$s</string>
-
-    <string name="mpd_no_connection">Sen conexión</string>
-    <string name="action_enable_mpd">Activar MPD</string>
-    <string name="action_disable_mpd">Desactivar MPD</string>
-    <string name="action_add_mpd_server">Engadir servidor MPD</string>
 
     <string name="action_play_in_external">Reproducir en reprodutor externo</string>
     <string name="action_choose_external_player">Elexir reprodutor externo</string>

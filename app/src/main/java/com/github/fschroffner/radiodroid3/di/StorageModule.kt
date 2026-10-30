@@ -14,7 +14,6 @@ import com.github.fschroffner.radiodroid3.data.datastore.DataStorePreferenceBrid
 import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryDao
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
-import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import com.github.fschroffner.radiodroid3.station.live.metadata.TrackMetadataSearcher
 import dagger.Module
@@ -80,12 +79,6 @@ object StorageModule {
         database: RadioDroidDatabase,
         dao: TrackHistoryDao
     ): TrackHistoryRepository = TrackHistoryRepository(database, dao)
-
-    @Provides
-    @Singleton
-    fun provideMPDClient(
-        @ApplicationContext context: Context
-    ): MPDClient = MPDClient(context)
 
     @Provides
     @Singleton

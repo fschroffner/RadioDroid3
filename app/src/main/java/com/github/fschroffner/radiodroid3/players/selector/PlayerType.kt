@@ -4,7 +4,7 @@ import android.os.Parcel
 import android.os.Parcelable
 
 enum class PlayerType(val value: Int) : Parcelable {
-    MPD_SERVER(0), RADIODROID(1), EXTERNAL(2), CAST(3);
+    RADIODROID(0), EXTERNAL(1), CAST(2);
 
     override fun writeToParcel(dest: Parcel, flags: Int) = dest.writeInt(ordinal)
     override fun describeContents() = 0

@@ -13,31 +13,22 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.Nullable
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.appcompat.widget.AppCompatButton
-import androidx.appcompat.widget.AppCompatImageView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.squareup.picasso.Picasso
 import com.github.fschroffner.radiodroid3.R
+import com.github.fschroffner.radiodroid3.databinding.DialogTrackHistoryDetailsBinding
 import java.text.DateFormat
 
 class TrackHistoryInfoDialog(private val historyEntry: TrackHistoryEntry) : BottomSheetDialogFragment() {
 
-    @Nullable
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        retainInstance = true
+    private var _binding: DialogTrackHistoryDetailsBinding? = null
+    private val binding get() = _binding!!
 
-        val view = inflater.inflate(R.layout.dialog_track_history_details, container, false)
-
-        val imageViewTrackArt = view.findViewById<AppCompatImageView>(R.id.imageViewTrackArt)
-        val textViewDate = view.findViewById<TextView>(R.id.textViewDate)
-        val textViewDuration = view.findViewById<TextView>(R.id.textViewDuration)
-        val btnLyrics = view.findViewById<AppCompatButton>(R.id.btnViewLyrics)
-        val btnCopyInfo = view.findViewById<AppCompatButton>(R.id.btnCopyTrackInfo)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = DialogTrackHistoryDetailsBinding.inflate(inflater, container, false)
 
         val resource = requireContext().resources
         val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 200f, resource.displayMetrics).toInt()
@@ -45,17 +36,17 @@ class TrackHistoryInfoDialog(private val historyEntry: TrackHistoryEntry) : Bott
             .load(historyEntry.artUrl)
             .placeholder(AppCompatResources.getDrawable(requireContext(), R.drawable.ic_photo_24dp)!!)
             .resize(px, 0)
-            .into(imageViewTrackArt)
+            .into(binding.imageViewTrackArt)
 
-        textViewDate.text = DateFormat.getDateInstance().format(historyEntry.startTime)
+        binding.textViewDate.text = DateFormat.getDateInstance().format(historyEntry.startTime)
 
         if (historyEntry.endTime.after(historyEntry.startTime)) {
-            textViewDuration.text = DateUtils.formatElapsedTime((historyEntry.endTime.time - historyEntry.startTime.time) / 1000)
+            binding.textViewDuration.text = DateUtils.formatElapsedTime((historyEntry.endTime.time - historyEntry.startTime.time) / 1000)
         } else {
-            textViewDuration.text = ""
+            binding.textViewDuration.text = ""
         }
 
-        btnLyrics.setOnClickListener {
+        binding.btnViewLyrics.setOnClickListener {
             if (isQuickLyricInstalled()) {
                 requireContext().startActivity(Intent("com.geecko.QuickLyric.getLyrics")
                     .putExtra("TAGS", arrayOf(historyEntry.artist, historyEntry.track)))
@@ -79,7 +70,7 @@ class TrackHistoryInfoDialog(private val historyEntry: TrackHistoryEntry) : Bott
             }
         }
 
-        btnCopyInfo.setOnClickListener {
+        binding.btnCopyTrackInfo.setOnClickListener {
             val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             if (clipboard != null) {
                 clipboard.setPrimaryClip(ClipData.newPlainText("Track info", "${historyEntry.artist} ${historyEntry.track}"))
@@ -87,7 +78,12 @@ class TrackHistoryInfoDialog(private val historyEntry: TrackHistoryEntry) : Bott
             }
         }
 
-        return view
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun isQuickLyricInstalled(): Boolean {

@@ -210,17 +210,8 @@
     <string name="alert_delete_favorites">Apakah anda yakin ingin menghapus semua favorit?</string>
     <string name="yes">Iya</string>
     <string name="no">Tidak</string>
-
-    <string name="alert_select_mpd_server">Silakan pilih server</string>
-    <string name="alert_select_mpd_server_name">Nama server</string>
-    <string name="alert_select_mpd_server_password">Sandi server</string>
     <string name="hostname">Nama hos</string>
     <string name="port">Porta</string>
-
-    <string name="alert_select_mpd_server_add">Tambah</string>
-    <string name="alert_select_mpd_server_save">Simpan</string>
-    <string name="alert_select_mpd_server_remove">Hapus</string>
-    <string name="alert_add_or_edit_mpd_server">Masukkan detail tentang server</string>
     <string name="alert_alarm_working">Waktu alarm sekarang</string>
     <string name="alert_alarm_not_working">Tidak cukup info untuk alarm</string>
     <string name="alert_select_external_alarm_app">Pilih pemutar audio</string>
@@ -272,18 +263,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
     <string name="app_name">RadioDroid</string>
-
-    <string name="settings_mpd">Daemon Pemutar Musik</string>
-    <string name="settings_mpd_port">Porta MPD</string>
-    <string name="settings_view_mpd_servers">Server anda</string>
-    <string name="action_mpd_nok">MPD tidak tersambung</string>
-    <string name="action_mpd_ok">MPD tersambung</string>
-    <string name="action_mpd_connected">Tersambung ke server: %1$s</string>
-
-    <string name="mpd_no_connection">Tidak ada koneksi</string>
-    <string name="action_enable_mpd">Aktifkan MPD</string>
-    <string name="action_disable_mpd">Nonaktifkan MPD</string>
-    <string name="action_add_mpd_server">Tambah server MPD</string>
 
     <string name="action_play_in_external">Putar di pemutar eksternal</string>
     <string name="action_choose_external_player">Pilih pemutar eksternal</string>

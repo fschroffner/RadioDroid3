@@ -145,16 +145,6 @@
     <string name="yes">Igen</string>
     <string name="no">Nem</string>
 
-    <string name="alert_select_mpd_server">Melyik kiszolgáló?</string>
-    <string name="alert_select_mpd_server_name">Kiszolgálónév</string>
-    <!--<string name="alert_select_mpd_server_hostname">Gépnév</string>-->
-    <!--<string name="alert_select_mpd_server_port">Port</string>-->
-
-    <string name="alert_select_mpd_server_add">Hozzáadás</string>
-    <string name="alert_select_mpd_server_save">Mentés</string>
-    <string name="alert_select_mpd_server_remove">Eltávolítás</string>
-    <string name="alert_add_or_edit_mpd_server">Adja meg a kiszolgáló részleteit</string>
-
     <string name="alert_press_back_to_exit">A kilépéshez nyomja meg még egyszer a vissza gombot</string>
 
     <string name="error_stream_url">Adatfolyam url probléma</string>
@@ -195,12 +185,6 @@
     <string name="media_route_menu_title">GoogleCast</string>
     <string name="app_id">5A97BAE4</string>
 
-    <string name="settings_mpd">Zenelejátszó démon</string>
-    <string name="settings_view_mpd_servers">Saját kiszolgálók</string>
-    <string name="action_mpd_nok">MPD nincs csatlakoztatva</string>
-    <string name="action_mpd_ok">MPD csatlakoztatva</string>
-    <string name="action_mpd_connected">Kapcsolódva a kiszolgálóhoz: %1$s</string>
-
     <string name="settings_other">Egyéb</string>
     <string name="settings_statistics">Statisztika</string>
     <string name="settings_about">Az RadioDroid névjegye</string>
@@ -219,6 +203,5 @@
 
     <string name="nav_item_statistics">Statisztika</string>
     <string name="nav_item_about">Névjegy</string>
-    <string name="settings_mpd_port">MPD port</string>
     <string name="refresh">Frissítés</string>
 </resources>

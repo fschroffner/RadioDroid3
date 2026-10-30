@@ -43,7 +43,7 @@ class HeadsetConnectionReceiver : BroadcastReceiver() {
 
         if (play) {
             val lastStation = entryPoint.historyManager().getFirst()
-            if (lastStation != null && !entryPoint.mediaControllerRepository().isPlaying() && !entryPoint.mpdClient().isMpdEnabled) {
+            if (lastStation != null && !entryPoint.mediaControllerRepository().isPlaying()) {
                 Utils.playAndWarnIfMetered(context, lastStation, PlayerType.RADIODROID) { Utils.play(context, lastStation) }
             }
         }
