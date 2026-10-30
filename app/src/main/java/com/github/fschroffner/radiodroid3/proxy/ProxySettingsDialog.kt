@@ -1,25 +1,23 @@
 package com.github.fschroffner.radiodroid3.proxy
 
 import android.app.Dialog
-import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
-import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.R
+import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.Utils.parseIntWithDefault
+import com.github.fschroffner.radiodroid3.databinding.DialogProxySettingsBinding
+import com.google.gson.Gson
+import dagger.hilt.EntryPoints
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -28,52 +26,52 @@ import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
 class ProxySettingsDialog : DialogFragment() {
-    private lateinit var editProxyHost: EditText
-    private lateinit var editProxyPort: EditText
-    private lateinit var spinnerProxyType: AppCompatSpinner
-    private lateinit var editLogin: EditText
-    private lateinit var editProxyPassword: EditText
-    private lateinit var textProxyTestResult: TextView
-    private lateinit var proxyTypeAdapter: ArrayAdapter<Proxy.Type>
+    private var _binding: DialogProxySettingsBinding? = null
+    private val binding get() = _binding!!
 
+    private lateinit var proxyTypeAdapter: ArrayAdapter<Proxy.Type>
     private var proxyTestJob: Job? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val builder = AlertDialog.Builder(requireActivity())
-        val inflater = requireActivity().layoutInflater
-        val layout = inflater.inflate(R.layout.dialog_proxy_settings, null)
-
-        editProxyHost = layout.findViewById(R.id.edit_proxy_host)
-        editProxyPort = layout.findViewById(R.id.edit_proxy_port)
-        spinnerProxyType = layout.findViewById(R.id.spinner_proxy_type)
-        editLogin = layout.findViewById(R.id.edit_proxy_login)
-        editProxyPassword = layout.findViewById(R.id.edit_proxy_password)
-        textProxyTestResult = layout.findViewById(R.id.text_proxy_test_result)
+        _binding = DialogProxySettingsBinding.inflate(requireActivity().layoutInflater)
 
         val context = requireContext().applicationContext
-        val settings = ProxySettings().apply { readFromPreferences(PreferenceManager.getDefaultSharedPreferences(context)) }
+        val entryPoint = EntryPoints.get(context, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
 
-        editProxyHost.setText(settings.host)
-        editProxyPort.setText(settings.port.toString())
-        editLogin.setText(settings.login)
-        editProxyPassword.setText(settings.password)
-
-        proxyTypeAdapter = ArrayAdapter(requireActivity(), android.R.layout.simple_spinner_item, arrayOf(Proxy.Type.DIRECT, Proxy.Type.HTTP, Proxy.Type.SOCKS)).apply {
+        proxyTypeAdapter = ArrayAdapter(
+            requireActivity(),
+            android.R.layout.simple_spinner_item,
+            arrayOf(Proxy.Type.DIRECT, Proxy.Type.HTTP, Proxy.Type.SOCKS)
+        ).apply {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
-        spinnerProxyType.adapter = proxyTypeAdapter
-        spinnerProxyType.setSelection(proxyTypeAdapter.getPosition(settings.type))
+        binding.spinnerProxyType.adapter = proxyTypeAdapter
 
-        builder.setView(layout)
-            .setPositiveButton(R.string.action_save) { _, _ ->
-                createProxySettings().saveToPreferences(PreferenceManager.getDefaultSharedPreferences(context))
+        val initialProxy = entryPoint.appPreferencesDataStore().getProxySettings()
+            ?: ProxySettings.fromPreferences(PreferenceManager.getDefaultSharedPreferences(requireContext()))
+
+        initialProxy?.let { ps ->
+            binding.editProxyHost.setText(ps.host)
+            binding.editProxyPort.setText(ps.port.toString())
+            binding.editProxyLogin.setText(ps.login)
+            binding.editProxyPassword.setText(ps.password)
+            binding.spinnerProxyType.setSelection(proxyTypeAdapter.getPosition(ps.type))
+        }
+
+        val dialog = builder.setView(binding.root)
+            .setPositiveButton(R.string.action_ok) { _, _ ->
+                val proxy = createProxySettings()
+                entryPoint.appPreferencesDataStore().putStringAsync("proxySettings", Gson().toJson(proxy))
+                val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+                proxy.toPreferences(prefs.edit().also { it.apply() })
             }
-            .setNeutralButton(R.string.action_test, null)
+            .setNeutralButton(R.string.settings_proxy_action_test, null)
             .setNegativeButton(android.R.string.cancel) { _, _ -> }
+            .create()
 
-        val dialog = builder.create()
         dialog.setOnShowListener {
-            val button = (it as AlertDialog).getButton(AlertDialog.BUTTON_NEUTRAL)
+            val button = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
             button.setOnClickListener {
                 testProxy(createProxySettings())
             }
@@ -86,17 +84,23 @@ class ProxySettingsDialog : DialogFragment() {
         proxyTestJob?.cancel()
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
     private fun createProxySettings() = ProxySettings().apply {
-        host = editProxyHost.text.toString()
-        port = parseIntWithDefault(editProxyPort.text.toString(), 0)
-        login = editLogin.text.toString()
-        password = editProxyPassword.text.toString()
-        type = proxyTypeAdapter.getItem(spinnerProxyType.selectedItemPosition)
+        val b = _binding ?: return@apply
+        host = b.editProxyHost.text.toString()
+        port = parseIntWithDefault(b.editProxyPort.text.toString(), 0)
+        login = b.editProxyLogin.text.toString()
+        password = b.editProxyPassword.text.toString()
+        type = proxyTypeAdapter.getItem(b.spinnerProxyType.selectedItemPosition)
     }
 
     private fun testProxy(proxySettings: ProxySettings) {
         proxyTestJob?.cancel()
-        textProxyTestResult.text = ""
+        _binding?.textTestProxyResult?.text = ""
 
         val context = requireContext().applicationContext
         val successStr = context.getString(R.string.settings_proxy_working, TEST_ADDRESS)
@@ -109,14 +113,14 @@ class ProxySettingsDialog : DialogFragment() {
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
 
-            val okHttpClient = if (com.github.fschroffner.radiodroid3.Utils.setOkHttpProxy(builder, proxySettings)) {
-                com.github.fschroffner.radiodroid3.Utils.enableTls12OnPreLollipop(builder).build()
+            val okHttpClient = if (Utils.setOkHttpProxy(builder, proxySettings)) {
+                Utils.enableTls12OnPreLollipop(builder).build()
             } else {
                 null
             }
 
             if (okHttpClient == null) {
-                textProxyTestResult.text = invalidStr
+                _binding?.textTestProxyResult?.text = invalidStr
                 return@launch
             }
 
@@ -135,7 +139,7 @@ class ProxySettingsDialog : DialogFragment() {
                 }
             }
 
-            textProxyTestResult.text = if (requestSucceeded) {
+            _binding?.textTestProxyResult?.text = if (requestSucceeded) {
                 successStr
             } else {
                 String.format(failedStr, TEST_ADDRESS, errorStr)

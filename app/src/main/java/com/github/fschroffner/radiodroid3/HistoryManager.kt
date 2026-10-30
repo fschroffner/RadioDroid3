@@ -17,7 +17,7 @@ class HistoryManager @Inject constructor(
     override fun getSaveId() = "history"
 
     override val stationsFlow: Flow<List<DataRadioStation>>
-        get() = stationDao.getHistoryStations()
+        get() = stationDao?.getHistoryStations() ?: emptyFlow()
 
     override fun add(station: DataRadioStation) {
         station.lastPlayed = System.currentTimeMillis()

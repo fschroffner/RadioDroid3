@@ -26,7 +26,7 @@ class FavouriteManager @Inject constructor(
     override fun getSaveId() = "favourites"
 
     override val stationsFlow: Flow<List<DataRadioStation>>
-        get() = stationDao.getFavoriteStations()
+        get() = stationDao?.getFavoriteStations() ?: emptyFlow()
 
     init {
         setStationStatusListener(object : StationStatusListener {

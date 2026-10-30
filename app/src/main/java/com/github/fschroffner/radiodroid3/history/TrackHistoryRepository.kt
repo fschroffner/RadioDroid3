@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import androidx.paging.asPagingSourceFactory
 import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryEntry.Companion.MAX_HISTORY_ITEMS_IN_TABLE
 import kotlinx.coroutines.Dispatchers
