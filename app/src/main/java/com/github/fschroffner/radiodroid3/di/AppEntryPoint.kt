@@ -13,7 +13,6 @@ import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
 import com.github.fschroffner.radiodroid3.player.RadioPlayerController
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
-import com.github.fschroffner.radiodroid3.recording.RecordingsManager
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import com.github.fschroffner.radiodroid3.station.live.metadata.TrackMetadataSearcher
 import dagger.hilt.EntryPoint
@@ -33,7 +32,6 @@ interface AppEntryPoint {
     fun historyManager(): HistoryManager
     fun favouriteManager(): FavouriteManager
     fun fallbackStationsManager(): FallbackStationsManager
-    fun recordingsManager(): RecordingsManager
     fun radioAlarmManager(): RadioAlarmManager
     fun trackHistoryRepository(): TrackHistoryRepository
     fun mpdClient(): MPDClient

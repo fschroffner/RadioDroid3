@@ -120,7 +120,6 @@ class PlayerSelectorAdapter(
                 }
                 holder.btnPlay.setOnClickListener {
                     if (repo.isPlaying()) {
-                        if (repo.playbackState.value.isRecording) repo.stopRecording()
                         repo.pause(PauseReason.USER)
                     } else {
                         Utils.playAndWarnIfMetered(context, stationToPlay!!, PlayerType.RADIODROID) {

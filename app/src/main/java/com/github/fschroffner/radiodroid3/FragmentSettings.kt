@@ -61,7 +61,6 @@ class FragmentSettings : PreferenceFragmentCompat(),
         findPreference<Preference>("pref_category_player")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_play)
         findPreference<Preference>("pref_category_alarm")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon.cmd_clock_outline)
         findPreference<Preference>("pref_category_connectivity")?.icon = Utils.IconicsIcon(requireContext(),GoogleMaterial.Icon.gmd_import_export)
-        findPreference<Preference>("pref_category_recordings")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_record_rec)
         findPreference<Preference>("pref_category_mpd")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_speaker_wireless)
         findPreference<Preference>("pref_category_other")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_information_outline)
     }

@@ -17,14 +17,12 @@ import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.players.exoplayer.ExoPlayerWrapper
 import com.github.fschroffner.radiodroid3.players.mediaplayer.MediaPlayerWrapper
-import com.github.fschroffner.radiodroid3.recording.Recordable
-import com.github.fschroffner.radiodroid3.recording.RecordableListener
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
 import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
 import java.util.concurrent.TimeUnit
 
-class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener, Recordable {
+class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener {
 
     private val TAG = "RadioPlayer"
 
@@ -154,30 +152,6 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
     fun getMedia3Player(): Player? = (currentPlayer as? ExoPlayerWrapper)?.getMedia3Player()
 
     fun setVolume(volume: Float) = currentPlayer.setVolume(volume)
-
-    override fun canRecord() = currentPlayer.canRecord()
-
-    override fun startRecording(recordableListener: RecordableListener) = currentPlayer.startRecording(recordableListener)
-
-    override fun stopRecording() = currentPlayer.stopRecording()
-
-    override fun isRecording() = currentPlayer.isRecording()
-
-    override fun getRecordNameFormattingArgs(): Map<String, String> {
-        return buildMap {
-            put("station", Utils.sanitizeName(streamName))
-            val info = lastLiveInfo
-            if (info != null) {
-                put("artist", Utils.sanitizeName(info.artist))
-                put("track", Utils.sanitizeName(info.track))
-            } else {
-                put("artist", "-")
-                put("track", "-")
-            }
-        }
-    }
-
-    override fun getExtension() = currentPlayer.getExtension()
 
     fun runInPlayerThread(runnable: Runnable) = playerThreadHandler.post(runnable)
 

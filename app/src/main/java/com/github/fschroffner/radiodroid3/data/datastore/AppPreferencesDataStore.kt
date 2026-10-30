@@ -76,7 +76,6 @@ class AppPreferencesDataStore @Inject constructor(
         val AUTO_RESUME_WIRED_HEADSET = booleanPreferencesKey("auto_resume_on_wired_headset_connection")
         val AUTO_RESUME_BLUETOOTH = booleanPreferencesKey("auto_resume_on_bluetooth_a2dp_connection")
         val ALARM_TIMEOUT = stringPreferencesKey("alarm_timeout")
-        val RECORD_NAME_FORMATTING = stringPreferencesKey("record_name_formatting")
         val STREAM_CONNECT_TIMEOUT = intPreferencesKey("stream_connect_timeout")
         val STREAM_READ_TIMEOUT = intPreferencesKey("stream_read_timeout")
         val SETTINGS_RETRY_TIMEOUT = intPreferencesKey("settings_retry_timeout")

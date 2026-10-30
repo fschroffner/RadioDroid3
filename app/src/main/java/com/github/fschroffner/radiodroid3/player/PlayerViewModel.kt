@@ -7,9 +7,6 @@ import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.HistoryManager
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
-import com.github.fschroffner.radiodroid3.recording.DataRecording
-import com.github.fschroffner.radiodroid3.recording.RecordingsManager
-import com.github.fschroffner.radiodroid3.recording.RunningRecordingInfo
 import com.github.fschroffner.radiodroid3.service.PauseReason
 import com.github.fschroffner.radiodroid3.players.PlayState
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
@@ -36,8 +33,6 @@ data class PlayerUiState(
     val isPlaying: Boolean = false,
     val playState: PlayState = PlayState.Idle,
     val isConnected: Boolean = false,
-    val isRecording: Boolean = false,
-    val runningRecordingInfo: RunningRecordingInfo? = null,
     val streamLiveInfo: StreamLiveInfo = StreamLiveInfo(emptyMap()),
     val shoutcastInfo: ShoutcastInfo? = null,
     val isFavorite: Boolean = false,
@@ -45,7 +40,6 @@ data class PlayerUiState(
     val transferredBytes: Long = 0L,
     val lastPlayStartTime: Long = 0L,
     val sleepTimerSeconds: Long = 0L,
-    val savedRecordings: List<DataRecording> = emptyList(),
     val albumArtUrl: String? = null
 )
 
@@ -57,7 +51,6 @@ class PlayerViewModel @Inject constructor(
     val mediaControllerRepository: MediaControllerRepository,
     val favouriteManager: FavouriteManager,
     val historyManager: HistoryManager,
-    val recordingsManager: RecordingsManager,
     val trackHistoryRepository: TrackHistoryRepository,
     val trackMetadataSearcher: TrackMetadataSearcher,
     @ApplicationContext private val context: Context
@@ -70,23 +63,17 @@ class PlayerViewModel @Inject constructor(
     val uiState: StateFlow<PlayerUiState> = combine(
         mediaControllerRepository.playbackState,
         favouriteManager.stationsFlow,
-        recordingsManager.recordingsFlow,
         _albumArtUrl
-    ) { playbackState, favorites, savedRecordings, artUrl ->
+    ) { playbackState, favorites, artUrl ->
         val currentStation = playbackState.station ?: historyManager.getFirst()
         val favList = if (favorites.isNotEmpty()) favorites else favouriteManager.listStations
         val isFav = currentStation != null && (favList.any { it.StationUuid == currentStation.StationUuid } || favouriteManager.has(currentStation.StationUuid))
-        val runningRecording = if (playbackState.isRecording) {
-            recordingsManager.getRunningRecordings().values.firstOrNull()
-        } else null
 
         PlayerUiState(
             station = currentStation,
             isPlaying = playbackState.isPlaying,
             playState = playbackState.playState,
             isConnected = playbackState.isConnected,
-            isRecording = playbackState.isRecording,
-            runningRecordingInfo = runningRecording,
             streamLiveInfo = playbackState.streamLiveInfo,
             shoutcastInfo = playbackState.shoutcastInfo,
             isFavorite = isFav,
@@ -94,7 +81,6 @@ class PlayerViewModel @Inject constructor(
             transferredBytes = playbackState.transferredBytes,
             lastPlayStartTime = playbackState.lastPlayStartTime,
             sleepTimerSeconds = playbackState.sleepTimerSeconds,
-            savedRecordings = if (savedRecordings.isNotEmpty()) savedRecordings else recordingsManager.getSavedRecordings(),
             albumArtUrl = artUrl ?: currentStation?.IconUrl
         )
     }.stateIn(
@@ -170,9 +156,6 @@ class PlayerViewModel @Inject constructor(
 
     fun playPause(onRequirePlaySelection: (DataRadioStation) -> Unit) {
         if (mediaControllerRepository.isPlaying()) {
-            if (mediaControllerRepository.playbackState.value.isRecording) {
-                mediaControllerRepository.stopRecording()
-            }
             mediaControllerRepository.pause(PauseReason.USER)
         } else {
             val station = getCurrentOrLastStation()
@@ -183,9 +166,6 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun pause() {
-        if (mediaControllerRepository.playbackState.value.isRecording) {
-            mediaControllerRepository.stopRecording()
-        }
         mediaControllerRepository.pause(PauseReason.USER)
     }
 
@@ -195,24 +175,6 @@ class PlayerViewModel @Inject constructor(
 
     fun skipToNext() {
         mediaControllerRepository.skipToNext()
-    }
-
-    fun toggleRecording(hasPermission: Boolean): Boolean {
-        if (!mediaControllerRepository.isPlaying()) return false
-        if (mediaControllerRepository.playbackState.value.isRecording) {
-            mediaControllerRepository.stopRecording()
-            return true
-        } else {
-            if (hasPermission) {
-                mediaControllerRepository.startRecording()
-                return true
-            }
-            return false
-        }
-    }
-
-    fun stopRecording() {
-        mediaControllerRepository.stopRecording()
     }
 
     fun toggleFavorite(currentStation: DataRadioStation? = null) {

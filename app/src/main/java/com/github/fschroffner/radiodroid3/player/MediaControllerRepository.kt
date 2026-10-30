@@ -242,8 +242,6 @@ class MediaControllerRepository @Inject constructor(
         val shoutcast = BundleCompat.getParcelable(extras, PlayerService.STATE_SHOUTCAST_INFO, ShoutcastInfo::class.java)
             ?: _playbackState.value.shoutcastInfo
         val isHls = extras.getBoolean(PlayerService.STATE_IS_HLS, _playbackState.value.isHls)
-        val isRecording = extras.getBoolean(PlayerService.STATE_IS_RECORDING, _playbackState.value.isRecording)
-        val recordFileName = extras.getString(PlayerService.STATE_RECORD_FILE_NAME)
         val transferredBytes = extras.getLong(PlayerService.STATE_TRANSFERRED_BYTES, _playbackState.value.transferredBytes)
         val bufferedSeconds = extras.getLong(PlayerService.STATE_BUFFERED_SECONDS, _playbackState.value.bufferedSeconds)
         val lastPlayStartTime = extras.getLong(PlayerService.STATE_LAST_PLAY_START_TIME, _playbackState.value.lastPlayStartTime)
@@ -259,8 +257,6 @@ class MediaControllerRepository @Inject constructor(
                 streamLiveInfo = liveInfo,
                 shoutcastInfo = shoutcast,
                 isHls = isHls,
-                isRecording = isRecording,
-                recordFileName = recordFileName,
                 transferredBytes = transferredBytes,
                 bufferedSeconds = bufferedSeconds,
                 sleepTimerSeconds = timerSeconds,
@@ -313,14 +309,6 @@ class MediaControllerRepository @Inject constructor(
 
     fun skipToPrevious() {
         withController { it.seekToPreviousMediaItem() }
-    }
-
-    fun startRecording() {
-        sendCustomCommand(PlayerService.CUSTOM_COMMAND_START_RECORDING)
-    }
-
-    fun stopRecording() {
-        sendCustomCommand(PlayerService.CUSTOM_COMMAND_STOP_RECORDING)
     }
 
     fun addTimer(secondsAdd: Int) {

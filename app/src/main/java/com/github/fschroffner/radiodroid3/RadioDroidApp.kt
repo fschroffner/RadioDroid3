@@ -7,7 +7,6 @@ import androidx.multidex.MultiDexApplication
 import dagger.hilt.android.HiltAndroidApp
 import com.squareup.picasso.OkHttp3Downloader
 import com.squareup.picasso.Picasso
-import com.github.fschroffner.radiodroid3.recording.RecordingsManager
 import com.github.fschroffner.radiodroid3.utils.TvChannelManager
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -22,9 +21,6 @@ class RadioDroidApp : MultiDexApplication() {
 
     @Inject
     lateinit var favouriteManager: FavouriteManager
-
-    @Inject
-    lateinit var recordingsManager: RecordingsManager
 
     private var tvChannelManager: TvChannelManager? = null
 
@@ -73,7 +69,5 @@ class RadioDroidApp : MultiDexApplication() {
             tvChannelManager = TvChannelManager(this, favouriteManager)
             favouriteManager.addObserver(tvChannelManager)
         }
-
-        recordingsManager.updateRecordingsList()
     }
 }

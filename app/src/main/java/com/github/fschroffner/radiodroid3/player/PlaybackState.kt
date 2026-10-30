@@ -13,8 +13,6 @@ data class PlaybackState(
     val streamLiveInfo: StreamLiveInfo = StreamLiveInfo(null),
     val shoutcastInfo: ShoutcastInfo? = null,
     val isHls: Boolean = false,
-    val isRecording: Boolean = false,
-    val recordFileName: String? = null,
     val transferredBytes: Long = 0L,
     val bufferedSeconds: Long = 0L,
     val sleepTimerSeconds: Long = 0L,

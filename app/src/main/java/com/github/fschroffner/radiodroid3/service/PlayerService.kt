@@ -55,7 +55,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.HistoryManager
-import com.github.fschroffner.radiodroid3.recording.RecordingsManager
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.players.PlayState
@@ -71,7 +70,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
     @Inject lateinit var favouriteManager: FavouriteManager
     @Inject lateinit var historyManager: HistoryManager
-    @Inject lateinit var recordingsManager: RecordingsManager
     @Inject lateinit var injectedTrackHistoryRepository: TrackHistoryRepository
     @Inject lateinit var appPreferencesDataStore: AppPreferencesDataStore
 
@@ -95,8 +93,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         const val CUSTOM_COMMAND_RESUME = "com.github.fschroffner.radiodroid3.RESUME"
         const val CUSTOM_COMMAND_ADD_TIMER = "com.github.fschroffner.radiodroid3.ADD_TIMER"
         const val CUSTOM_COMMAND_CLEAR_TIMER = "com.github.fschroffner.radiodroid3.CLEAR_TIMER"
-        const val CUSTOM_COMMAND_START_RECORDING = "com.github.fschroffner.radiodroid3.START_RECORDING"
-        const val CUSTOM_COMMAND_STOP_RECORDING = "com.github.fschroffner.radiodroid3.STOP_RECORDING"
         const val CUSTOM_COMMAND_WARN_METERED = "com.github.fschroffner.radiodroid3.WARN_METERED"
 
         const val CMD_ARG_STATION = "station"
@@ -113,8 +109,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         const val STATE_STATION_ID = "state_station_id"
         const val STATE_SHOUTCAST_INFO = "state_shoutcast_info"
         const val STATE_IS_HLS = "state_is_hls"
-        const val STATE_IS_RECORDING = "state_is_recording"
-        const val STATE_RECORD_FILE_NAME = "state_record_file_name"
         const val STATE_TRANSFERRED_BYTES = "state_transferred_bytes"
         const val STATE_BUFFERED_SECONDS = "state_buffered_seconds"
         const val STATE_LAST_PLAY_START_TIME = "state_last_play_start_time"
@@ -151,7 +145,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     private lateinit var playbackLocks: PlaybackLocks
     private lateinit var audioWarning: AudioWarning
     private lateinit var trackHistoryUpdater: TrackHistoryUpdater
-    private lateinit var recordingController: RecordingController
 
     private val becomingNoisyReceiver = BecomingNoisyReceiver()
     private val headsetConnectionReceiver = HeadsetConnectionReceiver()
@@ -193,8 +186,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
                     .add(SessionCommand(CUSTOM_COMMAND_RESUME, Bundle.EMPTY))
                     .add(SessionCommand(CUSTOM_COMMAND_ADD_TIMER, Bundle.EMPTY))
                     .add(SessionCommand(CUSTOM_COMMAND_CLEAR_TIMER, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_START_RECORDING, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_STOP_RECORDING, Bundle.EMPTY))
                     .add(SessionCommand(CUSTOM_COMMAND_WARN_METERED, Bundle.EMPTY))
                     .build()
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
@@ -279,8 +270,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
                 CUSTOM_COMMAND_RESUME -> resume()
                 CUSTOM_COMMAND_ADD_TIMER -> addTimer(args.getInt(CMD_ARG_TIMER_SECONDS, 0))
                 CUSTOM_COMMAND_CLEAR_TIMER -> clearTimer()
-                CUSTOM_COMMAND_START_RECORDING -> startRecording()
-                CUSTOM_COMMAND_STOP_RECORDING -> stopRecording()
                 CUSTOM_COMMAND_WARN_METERED ->
                     BundleCompat.getParcelable(args, CMD_ARG_PLAYER_TYPE, PlayerType::class.java)
                         ?.let { warnAboutMeteredConnection(it) }
@@ -367,7 +356,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
         radioPlayer = RadioPlayer(this)
         radioPlayer.setPlayerListener(this)
-        recordingController = RecordingController(this, recordingsManager, radioPlayer)
 
         browseTree = RadioBrowseTree(this, favouriteManager, historyManager)
 
@@ -595,23 +583,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         stopMeteredConnectionListener()
     }
 
-    private fun startRecording() {
-        if (!::recordingController.isInitialized) return
-        recordingController.start()
-        publishSessionState()
-    }
-
-    private fun stopRecording() {
-        if (!::recordingController.isInitialized) return
-        recordingController.stop()
-        publishSessionState()
-    }
-
-    private fun isRecording(): Boolean = ::recordingController.isInitialized && recordingController.isRecording()
-
-    private fun currentRecordFileName(): String? =
-        if (::recordingController.isInitialized) recordingController.currentFileName() else null
-
     private fun registerBecomingNoisy() {
         if (!becomingNoisyRegistered) {
             if (BuildConfig.DEBUG) Log.d(TAG, "registering becoming-noisy receiver.")
@@ -667,8 +638,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
             putString(STATE_STATION_ID, station?.StationUuid)
             putParcelable(STATE_SHOUTCAST_INFO, streamInfo)
             putBoolean(STATE_IS_HLS, isHls)
-            putBoolean(STATE_IS_RECORDING, isRecording())
-            putString(STATE_RECORD_FILE_NAME, currentRecordFileName())
             putLong(STATE_TRANSFERRED_BYTES, if (playerInitialized) radioPlayer.getCurrentPlaybackTransferredBytes() else 0L)
             putLong(STATE_BUFFERED_SECONDS, if (playerInitialized) radioPlayer.getBufferedSeconds() else 0L)
             putLong(STATE_LAST_PLAY_START_TIME, lastPlayStartTime)

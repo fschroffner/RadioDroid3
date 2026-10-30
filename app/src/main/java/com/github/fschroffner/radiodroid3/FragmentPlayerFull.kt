@@ -1,7 +1,6 @@
 package com.github.fschroffner.radiodroid3
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
@@ -10,12 +9,9 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AnimationUtils
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
-import androidx.constraintlayout.widget.Group
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -34,8 +30,6 @@ import com.github.fschroffner.radiodroid3.history.TrackHistoryEntry
 import com.github.fschroffner.radiodroid3.history.TrackHistoryViewModel
 import com.github.fschroffner.radiodroid3.player.PlayerUiState
 import com.github.fschroffner.radiodroid3.player.PlayerViewModel
-import com.github.fschroffner.radiodroid3.recording.RecordingsAdapter
-import com.github.fschroffner.radiodroid3.recording.RunningRecordingInfo
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.views.RecyclerAwareNestedScrollView
 import com.github.fschroffner.radiodroid3.views.TagsView
@@ -47,8 +41,6 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class FragmentPlayerFull : Fragment() {
 
-    private val PERM_REQ_STORAGE_RECORD = 1001
-
     interface TouchInterceptListener {
         fun requestDisallowInterceptTouchEvent(disallow: Boolean)
     }
@@ -57,9 +49,6 @@ class FragmentPlayerFull : Fragment() {
     private val playerViewModel: PlayerViewModel by activityViewModels()
 
     private lateinit var trackHistoryAdapter: TrackHistoryAdapter
-    private lateinit var recordingsAdapter: RecordingsAdapter
-
-    private var storagePermissionsDenied = false
 
     private lateinit var scrollViewContent: RecyclerAwareNestedScrollView
     private lateinit var pagerArtAndInfo: ViewPager
@@ -68,26 +57,21 @@ class FragmentPlayerFull : Fragment() {
     private lateinit var textViewTimePlayed: TextView
     private lateinit var textViewNetworkUsageInfo: TextView
     private lateinit var textViewTimeCached: TextView
-    private lateinit var groupRecordings: Group
-    private lateinit var imgRecordingIcon: ImageView
-    private lateinit var textViewRecordingSize: TextView
-    private lateinit var textViewRecordingName: TextView
-    private lateinit var pagerHistoryAndRecordings: ViewPager
-    private lateinit var historyAndRecordsPagerAdapter: HistoryAndRecordsPagerAdapter
+    private lateinit var pagerHistory: ViewPager
+    private lateinit var historyPagerAdapter: HistoryPagerAdapter
     private lateinit var trackHistoryViewModel: TrackHistoryViewModel
     private lateinit var btnPlay: ImageButton
     private lateinit var btnPrev: ImageButton
     private lateinit var btnNext: ImageButton
-    private lateinit var btnRecord: ImageButton
     private lateinit var btnFavourite: ImageButton
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         trackHistoryAdapter = TrackHistoryAdapter(requireActivity())
         trackHistoryAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                val lm = historyAndRecordsPagerAdapter.recyclerViewSongHistory.layoutManager as LinearLayoutManager
+                val lm = historyPagerAdapter.recyclerViewSongHistory.layoutManager as LinearLayoutManager
                 if (lm.findFirstVisibleItemPosition() < 2) {
-                    historyAndRecordsPagerAdapter.recyclerViewSongHistory.scrollToPosition(0)
+                    historyPagerAdapter.recyclerViewSongHistory.scrollToPosition(0)
                 }
             }
         })
@@ -132,54 +116,35 @@ class FragmentPlayerFull : Fragment() {
         textViewTimePlayed = view.findViewById(R.id.textViewTimePlayed)
         textViewNetworkUsageInfo = view.findViewById(R.id.textViewNetworkUsageInfo)
         textViewTimeCached = view.findViewById(R.id.textViewTimeCached)
-        groupRecordings = view.findViewById(R.id.group_recording_info)
-        imgRecordingIcon = view.findViewById(R.id.imgRecordingIcon)
-        textViewRecordingSize = view.findViewById(R.id.textViewRecordingSize)
-        textViewRecordingName = view.findViewById(R.id.textViewRecordingName)
 
-        pagerHistoryAndRecordings = view.findViewById(R.id.pagerHistoryAndRecordings)
-        historyAndRecordsPagerAdapter = HistoryAndRecordsPagerAdapter(requireContext(), pagerHistoryAndRecordings)
-        pagerHistoryAndRecordings.adapter = historyAndRecordsPagerAdapter
+        pagerHistory = view.findViewById(R.id.pagerHistory)
+        historyPagerAdapter = HistoryPagerAdapter(requireContext(), pagerHistory)
+        pagerHistory.adapter = historyPagerAdapter
 
         btnPlay = view.findViewById(R.id.buttonPlay)
         btnPrev = view.findViewById(R.id.buttonPrev)
         btnNext = view.findViewById(R.id.buttonNext)
-        btnRecord = view.findViewById(R.id.buttonRecord)
         btnFavourite = view.findViewById(R.id.buttonFavorite)
 
-        historyAndRecordsPagerAdapter.recyclerViewSongHistory.adapter = trackHistoryAdapter
+        historyPagerAdapter.recyclerViewSongHistory.adapter = trackHistoryAdapter
         val llmHistory = LinearLayoutManager(context).apply { orientation = RecyclerView.VERTICAL }
-        historyAndRecordsPagerAdapter.recyclerViewSongHistory.layoutManager = llmHistory
-        val divider = DividerItemDecoration(historyAndRecordsPagerAdapter.recyclerViewSongHistory.context, llmHistory.orientation)
-        historyAndRecordsPagerAdapter.recyclerViewSongHistory.addItemDecoration(divider)
+        historyPagerAdapter.recyclerViewSongHistory.layoutManager = llmHistory
+        val divider = DividerItemDecoration(historyPagerAdapter.recyclerViewSongHistory.context, llmHistory.orientation)
+        historyPagerAdapter.recyclerViewSongHistory.addItemDecoration(divider)
 
         trackHistoryViewModel = ViewModelProvider(this).get(TrackHistoryViewModel::class.java)
         trackHistoryViewModel.getAllHistoryPaged().observe(viewLifecycleOwner) { entries: PagedList<TrackHistoryEntry>? ->
             trackHistoryAdapter.submitList(entries)
         }
 
-        recordingsAdapter = RecordingsAdapter(requireContext())
-        recordingsAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
-            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                val lm = historyAndRecordsPagerAdapter.recyclerViewRecordings.layoutManager as LinearLayoutManager
-                if (lm.findFirstVisibleItemPosition() < 2) {
-                    historyAndRecordsPagerAdapter.recyclerViewRecordings.scrollToPosition(0)
-                }
-            }
-        })
-        historyAndRecordsPagerAdapter.recyclerViewRecordings.adapter = recordingsAdapter
-        val llmRecordings = LinearLayoutManager(context).apply { orientation = RecyclerView.VERTICAL }
-        historyAndRecordsPagerAdapter.recyclerViewRecordings.layoutManager = llmRecordings
-        historyAndRecordsPagerAdapter.recyclerViewRecordings.addItemDecoration(divider)
-
-        val vto = pagerHistoryAndRecordings.viewTreeObserver
+        val vto = pagerHistory.viewTreeObserver
         if (vto.isAlive) {
             vto.addOnGlobalLayoutListener {
-                val lp = pagerHistoryAndRecordings.layoutParams
+                val lp = pagerHistory.layoutParams
                 val newHeight = scrollViewContent.height
                 if (newHeight != lp.height) {
                     lp.height = newHeight
-                    pagerHistoryAndRecordings.layoutParams = lp
+                    pagerHistory.layoutParams = lp
                 }
             }
         }
@@ -199,17 +164,6 @@ class FragmentPlayerFull : Fragment() {
         btnPrev.setOnClickListener { playerViewModel.skipToPrevious() }
         btnNext.setOnClickListener { playerViewModel.skipToNext() }
 
-        btnRecord.setOnClickListener {
-            if (playerViewModel.uiState.value.isPlaying) {
-                val startedOrStopped = playerViewModel.toggleRecording(
-                    Utils.verifyStoragePermissions(this, PERM_REQ_STORAGE_RECORD)
-                )
-                if (startedOrStopped) {
-                    pagerHistoryAndRecordings.setCurrentItem(1, true)
-                }
-            }
-        }
-
         btnFavourite.setOnClickListener {
             playerViewModel.toggleFavorite()
         }
@@ -226,7 +180,6 @@ class FragmentPlayerFull : Fragment() {
                         val state = playerViewModel.uiState.value
                         if (state.isPlaying) {
                             updateMetrics(state)
-                            updateRunningRecording(state.isRecording, state.runningRecordingInfo)
                         }
                         delay(1000)
                     }
@@ -243,8 +196,7 @@ class FragmentPlayerFull : Fragment() {
 
     fun resetScroll() {
         scrollViewContent.scrollTo(0, 0)
-        historyAndRecordsPagerAdapter.recyclerViewSongHistory.scrollToPosition(0)
-        historyAndRecordsPagerAdapter.recyclerViewRecordings.scrollToPosition(0)
+        historyPagerAdapter.recyclerViewSongHistory.scrollToPosition(0)
     }
 
     fun isScrolled() = scrollViewContent.scrollY > 0
@@ -273,9 +225,7 @@ class FragmentPlayerFull : Fragment() {
         }
 
         updateAlbumArt(state)
-        recordingsAdapter.setRecordings(state.savedRecordings)
-        updateRunningRecording(state.isRecording, state.runningRecordingInfo)
-        updatePlaybackButtons(state.isPlaying, state.isRecording)
+        updatePlayButton(state.isPlaying)
         updateFavouriteButton(state.isFavorite)
         updateMetrics(state)
     }
@@ -292,11 +242,6 @@ class FragmentPlayerFull : Fragment() {
         }
     }
 
-    private fun updatePlaybackButtons(playing: Boolean, recording: Boolean) {
-        updatePlayButton(playing)
-        updateRecordButton(playing, recording)
-    }
-
     private fun updatePlayButton(playing: Boolean) {
         if (playing) {
             btnPlay.setImageResource(R.drawable.ic_pause_circle)
@@ -304,31 +249,6 @@ class FragmentPlayerFull : Fragment() {
         } else {
             btnPlay.setImageResource(R.drawable.ic_play_circle)
             btnPlay.contentDescription = resources.getString(R.string.detail_play)
-        }
-    }
-
-    private fun updateRecordButton(playing: Boolean, recording: Boolean) {
-        btnRecord.isEnabled = playing
-        if (recording) {
-            btnRecord.setImageResource(R.drawable.ic_stop_recording)
-            btnRecord.contentDescription = resources.getString(R.string.detail_stop)
-        } else {
-            btnRecord.setImageResource(R.drawable.ic_start_recording)
-            btnRecord.contentDescription = resources.getString(
-                if (!storagePermissionsDenied) R.string.image_button_record else R.string.image_button_record_request_permission
-            )
-        }
-    }
-
-    private fun updateRunningRecording(isRecording: Boolean, recordingInfo: RunningRecordingInfo?) {
-        if (isRecording && recordingInfo != null) {
-            groupRecordings.visibility = View.VISIBLE
-            imgRecordingIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.blink_recording))
-            textViewRecordingSize.text = Utils.getReadableBytes(recordingInfo.bytesWritten.toDouble())
-            textViewRecordingName.text = recordingInfo.fileName
-        } else {
-            groupRecordings.visibility = View.GONE
-            imgRecordingIcon.clearAnimation()
         }
     }
 
@@ -388,44 +308,27 @@ class FragmentPlayerFull : Fragment() {
         override fun getPageTitle(position: Int): CharSequence = titles[position]
     }
 
-    private inner class HistoryAndRecordsPagerAdapter(context: Context, parent: ViewGroup) : PagerAdapter() {
+    private inner class HistoryPagerAdapter(context: Context, parent: ViewGroup) : PagerAdapter() {
         private val layoutSongHistory: ViewGroup
-        private val layoutRecordings: ViewGroup
         private val titles: Array<String>
 
         val recyclerViewSongHistory: RecyclerView
-        val recyclerViewRecordings: RecyclerView
 
         init {
             val inflater = LayoutInflater.from(context)
             layoutSongHistory = inflater.inflate(R.layout.page_player_history, parent, false) as ViewGroup
-            layoutRecordings = inflater.inflate(R.layout.page_player_recordings, parent, false) as ViewGroup
-            titles = arrayOf(resources.getString(R.string.tab_player_history), resources.getString(R.string.tab_player_recordings))
+            titles = arrayOf(resources.getString(R.string.tab_player_history))
             recyclerViewSongHistory = layoutSongHistory.findViewById(R.id.recyclerViewSongHistory)
-            recyclerViewRecordings = layoutRecordings.findViewById(R.id.recyclerViewRecordings)
         }
 
         override fun instantiateItem(collection: ViewGroup, position: Int): Any {
-            val layout = if (position == 0) layoutSongHistory else layoutRecordings
-            collection.addView(layout)
-            return layout
+            collection.addView(layoutSongHistory)
+            return layoutSongHistory
         }
 
         override fun destroyItem(container: ViewGroup, position: Int, obj: Any) { container.removeView(obj as View) }
-        override fun getCount() = 2
+        override fun getCount() = 1
         override fun isViewFromObject(view: View, obj: Any) = view == obj
         override fun getPageTitle(position: Int): CharSequence = titles[position]
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        if (requestCode == PERM_REQ_STORAGE_RECORD) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                storagePermissionsDenied = false
-                playerViewModel.toggleRecording(true)
-            } else {
-                storagePermissionsDenied = true
-                Toast.makeText(activity, resources.getString(R.string.error_record_needs_write), Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 }

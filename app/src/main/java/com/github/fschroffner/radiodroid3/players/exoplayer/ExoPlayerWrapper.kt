@@ -36,7 +36,6 @@ import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.players.PlayState
 import com.github.fschroffner.radiodroid3.players.PlayerWrapper
-import com.github.fschroffner.radiodroid3.recording.RecordableListener
 import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
 import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
 import okhttp3.OkHttpClient
@@ -51,7 +50,6 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
 
     private var streamUrl: String? = null
     private var bandwidthMeter: DefaultBandwidthMeter? = null
-    private var recordableListener: RecordableListener? = null
 
     private var totalTransferredBytes = 0L
     private var currentPlaybackTransferredBytes = 0L
@@ -166,7 +164,6 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
             it.release()
             player = null
         }
-        stopRecording()
     }
 
     /**
@@ -269,25 +266,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
     override fun onDataSourceBytesRead(buffer: ByteArray, offset: Int, length: Int) {
         totalTransferredBytes += length
         currentPlaybackTransferredBytes += length
-        recordableListener?.onBytesAvailable(buffer, offset, length)
     }
-
-    override fun canRecord() = player != null
-
-    override fun startRecording(recordableListener: RecordableListener) {
-        this.recordableListener = recordableListener
-    }
-
-    override fun stopRecording() {
-        recordableListener?.onRecordingEnded()
-        recordableListener = null
-    }
-
-    override fun isRecording() = recordableListener != null
-
-    override fun getRecordNameFormattingArgs(): Map<String, String> = emptyMap()
-
-    override fun getExtension() = if (isHls) "ts" else "mp3"
 
     private fun unregisterNetworkReceiver() {
         if (isReceiverRegistered) {

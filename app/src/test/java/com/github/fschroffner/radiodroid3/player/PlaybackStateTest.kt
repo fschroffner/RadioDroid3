@@ -21,7 +21,6 @@ class PlaybackStateTest {
         assertEquals(0L, state.transferredBytes)
         assertEquals(0L, state.bufferedSeconds)
         assertEquals(0L, state.sleepTimerSeconds)
-        assertFalse(state.isRecording)
         assertFalse(state.isConnected)
     }
 

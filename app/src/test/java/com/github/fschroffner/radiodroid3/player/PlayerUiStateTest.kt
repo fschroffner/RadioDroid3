@@ -1,7 +1,6 @@
 package com.github.fschroffner.radiodroid3.player
 
 import com.github.fschroffner.radiodroid3.players.PlayState
-import com.github.fschroffner.radiodroid3.recording.DataRecording
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.FavoritesUiState
 import com.github.fschroffner.radiodroid3.station.HistoryUiState
@@ -19,13 +18,11 @@ class PlayerUiStateTest {
         assertFalse(state.isPlaying)
         assertEquals(PlayState.Idle, state.playState)
         assertNull(state.station)
-        assertFalse(state.isRecording)
         assertFalse(state.isFavorite)
         assertFalse(state.isConnected)
         assertEquals(0L, state.bufferedSeconds)
         assertEquals(0L, state.transferredBytes)
         assertEquals(0L, state.sleepTimerSeconds)
-        assertTrue(state.savedRecordings.isEmpty())
         assertNull(state.albumArtUrl)
     }
 
@@ -36,30 +33,22 @@ class PlayerUiStateTest {
             Name = "Jazz FM"
             IconUrl = "https://example.com/icon.png"
         }
-        val recording = DataRecording().apply {
-            Name = "jazz_recording.mp3"
-        }
 
         val state = PlayerUiState(
             station = station,
             isPlaying = true,
             playState = PlayState.Playing,
             isConnected = true,
-            isRecording = true,
             isFavorite = true,
             bufferedSeconds = 12L,
             transferredBytes = 1048576L,
-            savedRecordings = listOf(recording),
             albumArtUrl = "https://example.com/album.png"
         )
 
         assertTrue(state.isPlaying)
-        assertTrue(state.isRecording)
         assertTrue(state.isFavorite)
         assertEquals("Jazz FM", state.station?.Name)
         assertEquals("https://example.com/album.png", state.albumArtUrl)
-        assertEquals(1, state.savedRecordings.size)
-        assertEquals("jazz_recording.mp3", state.savedRecordings[0].Name)
     }
 
     @Test

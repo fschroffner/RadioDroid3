@@ -197,19 +197,6 @@
 
     </PreferenceScreen>
 
-    <PreferenceScreen android:title="@string/settings_recordings"
-        search:ignore="true"
-        android:key="pref_category_recordings">
-        <ListPreference
-            android:defaultValue="@string/settings_record_name_formatting_default"
-            android:entries="@array/settings_record_name_formatting_list_display"
-            android:entryValues="@array/settings_record_name_formatting_list"
-            android:key="record_name_formatting"
-            android:summary="%s"
-            search:summary=""
-            android:title="@string/settings_record_name_formatting" />
-    </PreferenceScreen>
-
     <PreferenceScreen android:title="@string/settings_mpd"
         search:ignore="true"
         android:key="pref_category_mpd">

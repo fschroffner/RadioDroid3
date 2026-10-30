@@ -2,8 +2,6 @@ package com.github.fschroffner.radiodroid3.players.mediaplayer
 
 import android.util.Log
 import com.github.fschroffner.radiodroid3.BuildConfig
-import com.github.fschroffner.radiodroid3.recording.Recordable
-import com.github.fschroffner.radiodroid3.recording.RecordableListener
 import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
 import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
 import okhttp3.OkHttpClient
@@ -22,14 +20,13 @@ class StreamProxy(
     private val httpClient: OkHttpClient,
     private val uri: String,
     private val callback: StreamProxyListener
-) : Recordable {
+) {
 
     companion object {
         private const val TAG = "PROXY"
         private const val MAX_RETRIES = 100
     }
 
-    private var recordableListener: RecordableListener? = null
     private val readBuffer = ByteArray(256 * 16)
     @Volatile private var localAddress: String? = null
     private var isStopped = false
@@ -73,15 +70,12 @@ class StreamProxy(
                 if (streamHasMetaData) bytesUntilMetaData -= readBytes
 
                 outStream.write(readBuffer, 0, readBytes)
-                recordableListener?.onBytesAvailable(readBuffer, 0, readBytes)
                 callback.onBytesRead(readBuffer, 0, readBytes)
             } else {
                 readMetaData(inputStream)
                 bytesUntilMetaData = info!!.metadataOffset
             }
         }
-
-        stopRecording()
     }
 
     private fun readMetaData(inputStream: InputStream): Int {
@@ -225,23 +219,5 @@ class StreamProxy(
     fun stop() {
         if (BuildConfig.DEBUG) Log.d(TAG, "stopping proxy.")
         isStopped = true
-        stopRecording()
     }
-
-    override fun canRecord() = true
-
-    override fun startRecording(recordableListener: RecordableListener) {
-        this.recordableListener = recordableListener
-    }
-
-    override fun stopRecording() {
-        recordableListener?.onRecordingEnded()
-        recordableListener = null
-    }
-
-    override fun isRecording() = recordableListener != null
-
-    override fun getRecordNameFormattingArgs(): Map<String, String> = emptyMap()
-
-    override fun getExtension() = "mp3"
 }

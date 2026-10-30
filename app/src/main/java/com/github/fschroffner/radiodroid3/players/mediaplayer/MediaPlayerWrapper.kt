@@ -10,7 +10,6 @@ import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.players.PlayState
 import com.github.fschroffner.radiodroid3.players.PlayerWrapper
-import com.github.fschroffner.radiodroid3.recording.RecordableListener
 import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
 import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
 import okhttp3.OkHttpClient
@@ -140,22 +139,6 @@ class MediaPlayerWrapper(private val playerThreadHandler: Handler) : PlayerWrapp
     override fun setStateListener(listener: PlayerWrapper.PlayListener) {
         stateListener = listener
     }
-
-    override fun canRecord() = mediaPlayer != null && !isHls
-
-    override fun startRecording(recordableListener: RecordableListener) {
-        proxy?.startRecording(recordableListener)
-    }
-
-    override fun stopRecording() {
-        proxy?.stopRecording()
-    }
-
-    override fun isRecording() = proxy?.isRecording() ?: false
-
-    override fun getRecordNameFormattingArgs(): Map<String, String> = emptyMap()
-
-    override fun getExtension() = proxy!!.getExtension()
 
     override fun onFoundShoutcastStream(shoutcastInfo: ShoutcastInfo, isHls: Boolean) {
         stateListener.onDataSourceShoutcastInfo(shoutcastInfo, isHls)

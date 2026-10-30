@@ -16,7 +16,6 @@ import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryDao
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.players.mpd.MPDClient
-import com.github.fschroffner.radiodroid3.recording.RecordingsManager
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import com.github.fschroffner.radiodroid3.station.live.metadata.TrackMetadataSearcher
 import dagger.Module
@@ -75,11 +74,6 @@ object StorageModule {
     fun provideFallbackStationsManager(
         @ApplicationContext context: Context
     ): FallbackStationsManager = FallbackStationsManager(context)
-
-    @Provides
-    @Singleton
-    fun provideRecordingsManager(): RecordingsManager =
-        RecordingsManager().apply { updateRecordingsList() }
 
     @Provides
     @Singleton
