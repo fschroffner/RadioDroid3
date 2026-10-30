@@ -77,7 +77,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
         }
     }
 
-    override fun playRemote(httpClient: OkHttpClient, streamUrl: String, context: Context, isAlarm: Boolean) {
+    override fun playRemote(httpClient: OkHttpClient, streamUrl: String, context: Context) {
         if (streamUrl != this.streamUrl) currentPlaybackTransferredBytes = 0
         this.context = context
         this.streamUrl = streamUrl
@@ -92,7 +92,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
                 p.setAudioAttributes(
                     AudioAttributes.Builder()
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                        .setUsage(if (isAlarm) C.USAGE_ALARM else C.USAGE_MEDIA)
+                        .setUsage(C.USAGE_MEDIA)
                         .build(), false
                 )
                 p.addListener(this)

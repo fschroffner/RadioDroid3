@@ -66,7 +66,7 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
         currentPlayer.setStateListener(this)
     }
 
-    fun play(stationURL: String, streamName: String, isAlarm: Boolean) {
+    fun play(stationURL: String, streamName: String) {
         setState(PlayState.PrePlaying, -1)
         this.streamName = streamName
 
@@ -91,13 +91,13 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
             .retryOnConnectionFailure(true)
             .build()
 
-        playerThreadHandler.post { currentPlayer.playRemote(client, stationURL, mainContext, isAlarm) }
+        playerThreadHandler.post { currentPlayer.playRemote(client, stationURL, mainContext) }
     }
 
-    fun play(station: DataRadioStation, isAlarm: Boolean) {
+    fun play(station: DataRadioStation) {
         setState(PlayState.PrePlaying, -1)
         playStationTask = PlayStationTask(station, mainContext,
-            { url -> RadioPlayer@ this.play(url, station.Name, isAlarm) },
+            { url -> RadioPlayer@ this.play(url, station.Name) },
             { result ->
                 playStationTask = null
                 if (result == PlayStationTask.ExecutionResult.FAILURE) {

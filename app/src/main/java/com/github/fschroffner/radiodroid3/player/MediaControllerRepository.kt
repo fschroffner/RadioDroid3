@@ -273,11 +273,10 @@ class MediaControllerRepository @Inject constructor(
         }
     }
 
-    fun playStation(station: DataRadioStation, isAlarm: Boolean = false) {
+    fun playStation(station: DataRadioStation) {
         _playbackState.update { it.copy(station = station, playState = PlayState.PrePlaying, isPlaying = true) }
         val args = Bundle().apply {
             putParcelable(PlayerService.CMD_ARG_STATION, station)
-            putBoolean(PlayerService.CMD_ARG_IS_ALARM, isAlarm)
         }
         sendCustomCommand(PlayerService.CUSTOM_COMMAND_PLAY_STATION, args)
     }
@@ -323,18 +322,6 @@ class MediaControllerRepository @Inject constructor(
     fun warnAboutMeteredConnection(playerType: PlayerType) {
         val args = Bundle().apply { putParcelable(PlayerService.CMD_ARG_PLAYER_TYPE, playerType) }
         sendCustomCommand(PlayerService.CUSTOM_COMMAND_WARN_METERED, args)
-    }
-
-    fun playAlarm(
-        station: DataRadioStation,
-        timerSeconds: Int,
-        onStarted: (() -> Unit)? = null
-    ) {
-        playStation(station, isAlarm = true)
-        if (timerSeconds > 0) {
-            addTimer(timerSeconds)
-        }
-        onStarted?.invoke()
     }
 
     fun shutdownService() {

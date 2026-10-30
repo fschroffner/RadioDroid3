@@ -192,7 +192,6 @@ class FragmentPlayerSmall : Fragment() {
             when (menuItem.itemId) {
                 R.id.action_homepage -> StationActions.showWebLinks(requireActivity(), currentStation)
                 R.id.action_share -> StationActions.share(requireContext(), currentStation)
-                R.id.action_set_alarm -> StationActions.setAsAlarm(requireActivity(), currentStation)
                 R.id.action_delete_stream_history -> trackHistoryRepository.deleteHistory()
             }
             true

@@ -169,33 +169,6 @@
             android:title="@string/settings_equalizer" />
     </PreferenceScreen>
 
-    <PreferenceScreen android:title="@string/settings_alarm"
-        search:ignore="true"
-        android:key="pref_category_alarm">
-
-        <CheckBoxPreference
-            android:disableDependentsState="true"
-            android:key="alarm_external"
-            android:summaryOff="@string/settings_alarm_external_desc_off"
-            android:summaryOn="@string/settings_alarm_external_desc_on"
-            android:title="@string/settings_alarm_external" />
-
-        <Preference
-            android:enabled="false"
-            android:key="shareapp_package"
-            android:title="@string/settings_alarm_audio_player" />
-
-        <ListPreference
-            android:defaultValue="10"
-            android:dependency="alarm_external"
-            android:entries="@array/timeout_minutes"
-            android:entryValues="@array/timeout_minutes_values"
-            android:key="alarm_timeout"
-            android:summary="@string/settings_alarm_sleep_timer_desc"
-            search:summary=""
-            android:title="@string/settings_alarm_sleep_timer" />
-
-    </PreferenceScreen>
 
     <PreferenceScreen android:title="@string/settings_mpd"
         search:ignore="true"

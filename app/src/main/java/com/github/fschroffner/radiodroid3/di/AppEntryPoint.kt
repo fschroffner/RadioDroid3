@@ -5,7 +5,6 @@ import com.github.fschroffner.radiodroid3.CastHandler
 import com.github.fschroffner.radiodroid3.FallbackStationsManager
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.HistoryManager
-import com.github.fschroffner.radiodroid3.alarm.RadioAlarmManager
 import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryDao
@@ -32,7 +31,6 @@ interface AppEntryPoint {
     fun historyManager(): HistoryManager
     fun favouriteManager(): FavouriteManager
     fun fallbackStationsManager(): FallbackStationsManager
-    fun radioAlarmManager(): RadioAlarmManager
     fun trackHistoryRepository(): TrackHistoryRepository
     fun mpdClient(): MPDClient
     fun castHandler(): CastHandler

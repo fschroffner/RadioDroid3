@@ -17,7 +17,6 @@ import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.Utils
-import com.github.fschroffner.radiodroid3.alarm.TimePickerFragment
 import com.github.fschroffner.radiodroid3.di.AppEntryPoint
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.views.ItemListDialog
@@ -29,17 +28,6 @@ object StationActions {
 
     private fun entryPoint(context: Context): AppEntryPoint =
         EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
-
-    @JvmStatic
-    fun setAsAlarm(activity: FragmentActivity, station: DataRadioStation) {
-        val alarmManager = entryPoint(activity).radioAlarmManager()
-        val fragment = TimePickerFragment()
-        fragment.setCallback { _, hourOfDay, minute ->
-            Log.i(TAG, "Alarm time picked $hourOfDay:$minute")
-            alarmManager.add(station, hourOfDay, minute)
-        }
-        fragment.show(activity.supportFragmentManager, "timePicker")
-    }
 
     @JvmStatic
     fun showWebLinks(activity: FragmentActivity, station: DataRadioStation) {

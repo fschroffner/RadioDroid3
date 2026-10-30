@@ -14,7 +14,7 @@ interface PlayerWrapper {
         fun onDataSourceStreamLiveInfo(liveInfo: StreamLiveInfo)
     }
 
-    fun playRemote(httpClient: OkHttpClient, streamUrl: String, context: Context, isAlarm: Boolean)
+    fun playRemote(httpClient: OkHttpClient, streamUrl: String, context: Context)
     fun pause()
     fun stop()
     fun isPlaying(): Boolean

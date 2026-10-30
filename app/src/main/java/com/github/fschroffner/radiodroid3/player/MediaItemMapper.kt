@@ -21,13 +21,11 @@ object MediaItemMapper {
     const val EXTRA_BITRATE = "bitrate"
     const val EXTRA_CODEC = "codec"
     const val EXTRA_HLS = "hls"
-    const val EXTRA_IS_ALARM = "is_alarm"
     const val EXTRA_PLAY_IMMEDIATELY = "play_immediately"
 
     fun toMediaItem(
         station: DataRadioStation,
         playableUrl: String? = null,
-        isAlarm: Boolean = false,
         playImmediately: Boolean = true
     ): MediaItem {
         val effectivePlayableUrl = playableUrl ?: station.playableUrl
@@ -50,7 +48,6 @@ object MediaItemMapper {
             putInt(EXTRA_BITRATE, station.Bitrate)
             station.Codec?.let { putString(EXTRA_CODEC, it) }
             putBoolean(EXTRA_HLS, station.Hls)
-            putBoolean(EXTRA_IS_ALARM, isAlarm)
             putBoolean(EXTRA_PLAY_IMMEDIATELY, playImmediately)
         }
 
@@ -128,8 +125,7 @@ object MediaItemMapper {
 
 fun DataRadioStation.toMediaItem(
     playableUrl: String? = null,
-    isAlarm: Boolean = false,
     playImmediately: Boolean = true
-): MediaItem = MediaItemMapper.toMediaItem(this, playableUrl, isAlarm, playImmediately)
+): MediaItem = MediaItemMapper.toMediaItem(this, playableUrl, playImmediately)
 
 fun MediaItem.toDataRadioStation(): DataRadioStation? = MediaItemMapper.toDataRadioStation(this)

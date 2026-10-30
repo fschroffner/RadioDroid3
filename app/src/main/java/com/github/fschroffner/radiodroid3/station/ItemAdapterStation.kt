@@ -117,7 +117,6 @@ open class ItemAdapterStation(
         var buttonVisitWebsite: IconicsImageButton? = null
         var buttonBookmark: ImageButton? = null
         var buttonShare: ImageButton? = null
-        var buttonAddAlarm: ImageButton? = null
         var buttonCreateShortcut: ImageButton? = null
         var buttonPlayInternalOrExternal: ImageButton? = null
         var viewTags: TagsView? = null
@@ -314,7 +313,6 @@ open class ItemAdapterStation(
             holder.buttonVisitWebsite = holder.viewDetails!!.findViewById(R.id.buttonVisitWebsite)
             holder.buttonShare = holder.viewDetails!!.findViewById(R.id.buttonShare)
             holder.buttonBookmark = holder.viewDetails!!.findViewById(R.id.buttonBookmark)
-            holder.buttonAddAlarm = holder.viewDetails!!.findViewById(R.id.buttonAddAlarm)
             holder.buttonCreateShortcut = holder.viewDetails!!.findViewById(R.id.buttonCreateShortcut)
             holder.buttonPlayInternalOrExternal = holder.viewDetails!!.findViewById(R.id.buttonPlayInRadioDroid)
 
@@ -337,8 +335,6 @@ open class ItemAdapterStation(
             } else {
                 holder.buttonCreateShortcut!!.visibility = View.INVISIBLE
             }
-
-            holder.buttonAddAlarm!!.setOnClickListener { StationActions.setAsAlarm(activity, station) }
 
             if (prefs.getBoolean("play_external", false)) {
                 holder.buttonPlayInternalOrExternal!!.setOnClickListener { StationActions.playInRadioDroid(context, station) }

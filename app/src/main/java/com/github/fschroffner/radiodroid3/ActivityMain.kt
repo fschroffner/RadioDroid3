@@ -1,7 +1,6 @@
 package com.github.fschroffner.radiodroid3
 
 import android.Manifest
-import android.app.TimePickerDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -19,7 +18,6 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.SeekBar
 import android.widget.TextView
-import android.widget.TimePicker
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -53,8 +51,6 @@ import com.mikepenz.iconics.Iconics
 import com.rustamg.filedialogs.FileDialog
 import com.rustamg.filedialogs.OpenFileDialog
 import com.rustamg.filedialogs.SaveFileDialog
-import com.github.fschroffner.radiodroid3.alarm.FragmentAlarm
-import com.github.fschroffner.radiodroid3.alarm.TimePickerFragment
 import com.github.fschroffner.radiodroid3.cast.CastAwareActivity
 import com.github.fschroffner.radiodroid3.interfaces.IFragmentSearchable
 import com.github.fschroffner.radiodroid3.players.PlayStationTask
@@ -69,7 +65,6 @@ import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
 import kotlinx.coroutines.launch
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.StationsFilter
-import com.github.fschroffner.radiodroid3.alarm.RadioAlarmManager
 import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import okhttp3.OkHttpClient
 import javax.inject.Inject
@@ -85,7 +80,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     NavigationView.OnNavigationItemSelectedListener,
     BottomNavigationView.OnNavigationItemSelectedListener,
     FileDialog.OnFileSelectedListener,
-    TimePickerDialog.OnTimeSetListener,
     SearchPreferenceResultListener,
     CastAwareActivity {
 
@@ -93,7 +87,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     @Inject lateinit var favouriteManager: FavouriteManager
     @Inject lateinit var castHandler: CastHandler
     @Inject lateinit var mpdClient: MPDClient
-    @Inject lateinit var alarmManager: RadioAlarmManager
     @Inject lateinit var fallbackStationsManager: FallbackStationsManager
     @Inject lateinit var okHttpClient: OkHttpClient
     @Inject lateinit var appPreferencesDataStore: AppPreferencesDataStore
@@ -184,7 +177,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     var menuItemLoad: MenuItem? = null
     var menuItemIconsView: MenuItem? = null
     var menuItemListView: MenuItem? = null
-    var menuItemAddAlarm: MenuItem? = null
     var menuItemMpd: MenuItem? = null
 
     private lateinit var sharedPref: SharedPreferences
@@ -455,7 +447,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             R.id.nav_item_stations -> FragmentTabs()
             R.id.nav_item_starred -> FragmentStarred()
             R.id.nav_item_history -> FragmentHistory()
-            R.id.nav_item_alarm -> FragmentAlarm()
             R.id.nav_item_settings -> FragmentSettings()
             else -> return false
         }
@@ -605,7 +596,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         menuItemLoad = menu.findItem(R.id.action_load)
         menuItemListView = menu.findItem(R.id.action_list_view)
         menuItemIconsView = menu.findItem(R.id.action_icons_view)
-        menuItemAddAlarm = menu.findItem(R.id.action_add_alarm)
         menuItemMpd = menu.findItem(R.id.action_mpd)
         mSearchView = MenuItemCompat.getActionView(menuItemSearch) as SearchView
         mSearchView!!.setOnQueryTextListener(this)
@@ -631,7 +621,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         menuItemLoad!!.isVisible = false
         menuItemListView!!.isVisible = false
         menuItemIconsView!!.isVisible = false
-        menuItemAddAlarm!!.isVisible = false
 
         val repository: MPDServersRepository = mpdClient.mpdServersRepository
         val mpd_is_visible = !repository.isEmpty()
@@ -672,10 +661,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                     menuItemDelete!!.setTitle(R.string.action_delete_history)
                 }
                 myToolbar.setTitle(R.string.nav_item_history)
-            }
-            R.id.nav_item_alarm -> {
-                menuItemAddAlarm!!.isVisible = true
-                myToolbar.setTitle(R.string.nav_item_alarm)
             }
         }
 
@@ -794,12 +779,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             }
             R.id.action_list_view -> { appPreferencesDataStore.putBooleanAsync("icons_only_favorites_style", false); sharedPref.edit().putBoolean("icons_only_favorites_style", false).apply(); recreate(); return true }
             R.id.action_icons_view -> { appPreferencesDataStore.putBooleanAsync("icons_only_favorites_style", true); sharedPref.edit().putBoolean("icons_only_favorites_style", true).apply(); recreate(); return true }
-            R.id.action_add_alarm -> {
-                val newFragment = TimePickerFragment()
-                newFragment.setCallback(this)
-                newFragment.show(supportFragmentManager, "timePicker")
-                return true
-            }
         }
         return super.onOptionsItemSelected(menuItem)
     }
@@ -809,14 +788,6 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             playerBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
         } else {
             playerBottomSheet.state = BottomSheetBehavior.STATE_EXPANDED
-        }
-    }
-
-    override fun onTimeSet(view: TimePicker, hourOfDay: Int, minute: Int) {
-        val currentFragment = mFragmentManager.fragments[mFragmentManager.fragments.size - 2]
-        if (historyManager.size() > 0 && currentFragment is FragmentAlarm) {
-            val station = historyManager.getList()[0]
-            currentFragment.ram.add(station, hourOfDay, minute)
         }
     }
 

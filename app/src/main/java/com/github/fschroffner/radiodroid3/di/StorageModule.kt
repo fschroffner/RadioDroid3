@@ -9,7 +9,6 @@ import com.github.fschroffner.radiodroid3.CastHandler
 import com.github.fschroffner.radiodroid3.FallbackStationsManager
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.HistoryManager
-import com.github.fschroffner.radiodroid3.alarm.RadioAlarmManager
 import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import com.github.fschroffner.radiodroid3.data.datastore.DataStorePreferenceBridge
 import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
@@ -74,13 +73,6 @@ object StorageModule {
     fun provideFallbackStationsManager(
         @ApplicationContext context: Context
     ): FallbackStationsManager = FallbackStationsManager(context)
-
-    @Provides
-    @Singleton
-    fun provideRadioAlarmManager(
-        @ApplicationContext context: Context,
-        appPreferencesDataStore: AppPreferencesDataStore
-    ): RadioAlarmManager = RadioAlarmManager(context, appPreferencesDataStore)
 
     @Provides
     @Singleton

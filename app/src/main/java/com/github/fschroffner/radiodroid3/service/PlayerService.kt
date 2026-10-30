@@ -96,7 +96,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         const val CUSTOM_COMMAND_WARN_METERED = "com.github.fschroffner.radiodroid3.WARN_METERED"
 
         const val CMD_ARG_STATION = "station"
-        const val CMD_ARG_IS_ALARM = "is_alarm"
         const val CMD_ARG_PAUSE_REASON = "pause_reason"
         const val CMD_ARG_TIMER_SECONDS = "timer_seconds"
         const val CMD_ARG_PLAYER_TYPE = "player_type"
@@ -203,12 +202,11 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
                 ?: browseTree.stationForMediaId(item.mediaId)
                 ?: favouriteManager.getById(item.mediaId)
                 ?: historyManager.getById(item.mediaId)
-            val isAlarm = item.mediaMetadata.extras?.getBoolean(MediaItemMapper.EXTRA_IS_ALARM, false) == true
             val playImmediately = item.mediaMetadata.extras?.getBoolean(MediaItemMapper.EXTRA_PLAY_IMMEDIATELY, true) ?: true
             if (station != null) {
                 setStation(station)
                 if (playImmediately) {
-                    playCurrentStation(isAlarm)
+                    playCurrentStation()
                 }
             }
             return Futures.immediateFuture(mediaItems)
@@ -260,7 +258,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
                 CUSTOM_COMMAND_PLAY_STATION -> {
                     val station = BundleCompat.getParcelable(args, CMD_ARG_STATION, DataRadioStation::class.java)
                     if (station != null) setStation(station)
-                    playCurrentStation(args.getBoolean(CMD_ARG_IS_ALARM, false))
+                    playCurrentStation()
                 }
                 CUSTOM_COMMAND_PAUSE -> {
                     val reason = BundleCompat.getParcelable(args, CMD_ARG_PAUSE_REASON, PauseReason::class.java)
@@ -457,7 +455,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
 
     private fun playWithoutWarnings(station: DataRadioStation) {
         setStation(station)
-        playCurrentStation(false)
+        playCurrentStation()
     }
 
     private fun playAndWarnIfMetered(station: DataRadioStation) {
@@ -477,7 +475,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         publishSessionState()
     }
 
-    fun playCurrentStation(isAlarm: Boolean) {
+    fun playCurrentStation() {
         if (Utils.shouldLoadIcons(itsContext)) downloadRadioIcon()
 
         val result = acquireAudioFocus()
@@ -486,7 +484,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
             liveInfo = StreamLiveInfo(null)
             streamInfo = null
             playbackLocks.acquire()
-            currentStation?.let { radioPlayer.play(it, isAlarm) }
+            currentStation?.let { radioPlayer.play(it) }
         }
     }
 

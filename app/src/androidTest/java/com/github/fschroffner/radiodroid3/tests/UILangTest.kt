@@ -81,8 +81,6 @@ class UILangTest {
 
             onView(withId(R.id.nav_item_history)).perform(ViewActions.click())
 
-            onView(withId(R.id.nav_item_alarm)).perform(ViewActions.click())
-
             onView(withId(R.id.nav_item_settings)).perform(ViewActions.click())
 
             onView(withId(R.id.fragment_player_small)).perform(ViewActions.swipeUp())

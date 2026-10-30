@@ -21,13 +21,11 @@ import com.bytehamster.lib.preferencesearch.SearchConfiguration
 import com.bytehamster.lib.preferencesearch.SearchPreference
 import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
-import com.github.fschroffner.radiodroid3.interfaces.IApplicationSelected
 import com.github.fschroffner.radiodroid3.proxy.ProxySettingsDialog
 
 @dagger.hilt.android.AndroidEntryPoint
 class FragmentSettings : PreferenceFragmentCompat(),
     SharedPreferences.OnSharedPreferenceChangeListener,
-    IApplicationSelected,
     PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
 
     @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
@@ -54,12 +52,10 @@ class FragmentSettings : PreferenceFragmentCompat(),
     private fun isToplevel() = preferenceScreen == null || preferenceScreen.key == "pref_toplevel"
 
     private fun refreshToplevelIcons() {
-        findPreference<Preference>("shareapp_package")?.summary = preferenceManager.sharedPreferences?.getString("shareapp_package", "")
         findPreference<Preference>("pref_category_ui")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_monitor)
         findPreference<Preference>("pref_category_startup")?.icon = Utils.IconicsIcon(requireContext(),GoogleMaterial.Icon.gmd_flight_takeoff)
         findPreference<Preference>("pref_category_interaction")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon.cmd_gesture_tap)
         findPreference<Preference>("pref_category_player")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_play)
-        findPreference<Preference>("pref_category_alarm")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon.cmd_clock_outline)
         findPreference<Preference>("pref_category_connectivity")?.icon = Utils.IconicsIcon(requireContext(),GoogleMaterial.Icon.gmd_import_export)
         findPreference<Preference>("pref_category_mpd")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_speaker_wireless)
         findPreference<Preference>("pref_category_other")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_information_outline)
@@ -171,7 +167,6 @@ class FragmentSettings : PreferenceFragmentCompat(),
         preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
         refreshToolbar()
         if (isToplevel()) refreshToplevelIcons()
-        findPreference<Preference>("shareapp_package")?.summary = preferenceManager.sharedPreferences?.getString("shareapp_package", "")
         val batPref = preferenceScreen.findPreference<Preference>(getString(R.string.key_ignore_battery_optimization))
         if (batPref != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             updateBatteryPrefDescription(batPref)
@@ -206,12 +201,6 @@ class FragmentSettings : PreferenceFragmentCompat(),
             }
         }
         when (key) {
-            "alarm_external" -> {
-                if (sharedPreferences.getBoolean(key, false)) {
-                    ApplicationSelectorDialog().apply { setCallback(this@FragmentSettings) }
-                        .show(requireActivity().supportFragmentManager, "appPicker")
-                }
-            }
             "theme_name", "circular_icons", "bottom_navigation" -> {
                 if (key == "circular_icons") {
                     favouriteManager.updateShortcuts()
@@ -219,15 +208,5 @@ class FragmentSettings : PreferenceFragmentCompat(),
                 requireActivity().recreate()
             }
         }
-    }
-
-    override fun onAppSelected(packageName: String, activityName: String) {
-        if (BuildConfig.DEBUG) Log.d("SEL", "selected:$packageName/$activityName")
-        preferenceManager.sharedPreferences?.edit()?.apply {
-            putString("shareapp_package", packageName)
-            putString("shareapp_activity", activityName)
-            commit()
-        }
-        findPreference<Preference>("shareapp_package")?.summary = packageName
     }
 }
