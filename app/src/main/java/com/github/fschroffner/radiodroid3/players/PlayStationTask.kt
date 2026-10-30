@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.AsyncTask
+import android.util.Log
 import android.widget.Toast
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
@@ -83,13 +84,23 @@ class PlayStationTask(
         val entryPoint = EntryPoints.get(ctx.applicationContext, AppEntryPoint::class.java)
         val httpClient = entryPoint.okHttpClient()
 
-        if (!stationToPlay.hasValidUuid()) {
-            if (!Utils.refreshStation(stationToPlay, httpClient, ctx)) return null
+        var streamUrl: String? = null
+        if (stationToPlay.hasValidUuid()) {
+            try {
+                streamUrl = Utils.getRealStationLink(httpClient, ctx.applicationContext, stationToPlay.StationUuid)
+            } catch (e: Exception) {
+                Log.w("PlayStationTask", "getRealStationLink failed: $e")
+            }
+        }
+
+        if (streamUrl.isNullOrBlank()) {
+            streamUrl = stationToPlay.playableUrl?.takeIf { it.isNotBlank() }
+                ?: stationToPlay.StreamUrl.takeIf { it.isNotBlank() }
         }
 
         if (isCancelled) return null
 
-        return Utils.getRealStationLink(httpClient, ctx.applicationContext, stationToPlay.StationUuid)
+        return streamUrl?.let { Utils.resolvePlaylistIfNeeded(httpClient, it) }
     }
 
     override fun onPostExecute(result: String?) {

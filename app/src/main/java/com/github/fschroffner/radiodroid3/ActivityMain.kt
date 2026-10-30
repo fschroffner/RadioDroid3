@@ -33,6 +33,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.MenuItemCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
@@ -192,13 +194,25 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     private var meteredConnectionAlertDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this)
-        setTheme(Utils.getThemeResId(this))
+        Utils.applyTheme(this)
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false)
         Iconics.init(this)
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.layout_main)
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main_content)) { v, windowInsets ->
+            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
+            WindowInsetsCompat.Builder(windowInsets)
+                .setInsets(
+                    WindowInsetsCompat.Type.systemBars(),
+                    androidx.core.graphics.Insets.of(systemBars.left, 0, systemBars.right, systemBars.bottom)
+                )
+                .build()
+        }
+        ViewCompat.requestApplyInsets(findViewById(R.id.main_content))
 
         Log.d(TAG, "FilesDir: ${filesDir.absolutePath}")
         Log.d(TAG, "CacheDir: ${cacheDir.absolutePath}")

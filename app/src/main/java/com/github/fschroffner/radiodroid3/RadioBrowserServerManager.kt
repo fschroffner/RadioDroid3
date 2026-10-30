@@ -30,6 +30,8 @@ object RadioBrowserServerManager {
         if (listResult.isEmpty()) {
             Log.w("DNS", "Fallback to de1.api.radio-browser.info because dns call did not work.")
             listResult.add("de1.api.radio-browser.info")
+            listResult.add("nl1.api.radio-browser.info")
+            listResult.add("at1.api.radio-browser.info")
         }
         Log.d("DNS", "doDnsServerListing() Found servers: ${listResult.size}")
         return listResult.toTypedArray()

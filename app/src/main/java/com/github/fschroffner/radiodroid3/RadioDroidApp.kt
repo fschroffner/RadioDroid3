@@ -41,6 +41,19 @@ class RadioDroidApp : MultiDexApplication() {
         super.onCreate()
         instance = this
 
+        val nightMode = when (Utils.getThemeResId(this)) {
+            R.style.MyMaterialTheme_Dark, R.style.MyMaterialTheme_Oled -> AppCompatDelegate.MODE_NIGHT_YES
+            else -> {
+                val theme = Utils.getTheme(this)
+                if (theme.contains("system", ignoreCase = true)) {
+                    AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                } else {
+                    AppCompatDelegate.MODE_NIGHT_NO
+                }
+            }
+        }
+        AppCompatDelegate.setDefaultNightMode(nightMode)
+
         GoogleProviderHelper.use(baseContext)
 
         val cache = File(cacheDir, "picasso-cache").also { if (!it.exists()) it.mkdirs() }

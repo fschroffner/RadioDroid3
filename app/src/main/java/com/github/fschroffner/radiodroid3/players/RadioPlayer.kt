@@ -2,6 +2,7 @@ package com.github.fschroffner.radiodroid3.players
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.AsyncTask
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
@@ -72,13 +73,24 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
         this.streamName = streamName
 
         val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(mainContext.applicationContext)
-        val connectTimeout = prefs.getInt("stream_connect_timeout", 4)
-        val readTimeout = prefs.getInt("stream_read_timeout", 10)
+        val connectTimeout = try {
+            prefs.getInt("stream_connect_timeout", 30)
+        } catch (_: Exception) {
+            prefs.getString("stream_connect_timeout", null)?.toIntOrNull() ?: 30
+        }.coerceAtLeast(10)
+        val readTimeout = try {
+            prefs.getInt("stream_read_timeout", 30)
+        } catch (_: Exception) {
+            prefs.getString("stream_read_timeout", null)?.toIntOrNull() ?: 30
+        }.coerceAtLeast(10)
 
 
         val client = EntryPoints.get(mainContext.applicationContext, AppEntryPoint::class.java).okHttpClient().newBuilder()
             .connectTimeout(connectTimeout.toLong(), TimeUnit.SECONDS)
             .readTimeout(readTimeout.toLong(), TimeUnit.SECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .retryOnConnectionFailure(true)
             .build()
 
         playerThreadHandler.post { currentPlayer.playRemote(client, stationURL, mainContext, isAlarm) }
@@ -87,14 +99,14 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
     fun play(station: DataRadioStation, isAlarm: Boolean) {
         setState(PlayState.PrePlaying, -1)
         playStationTask = PlayStationTask(station, mainContext,
-            { RadioPlayer@ this.play(station.playableUrl!!, station.Name, isAlarm) },
+            { url -> RadioPlayer@ this.play(url, station.Name, isAlarm) },
             { result ->
                 playStationTask = null
                 if (result == PlayStationTask.ExecutionResult.FAILURE) {
                     onPlayerError(R.string.error_station_load)
                 }
             })
-        playStationTask!!.execute()
+        playStationTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
     private fun cancelStationLinkRetrieval() {

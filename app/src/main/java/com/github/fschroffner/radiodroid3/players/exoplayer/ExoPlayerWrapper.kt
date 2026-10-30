@@ -107,8 +107,16 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
         isHls = Utils.urlIndicatesHlsStream(streamUrl)
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
-        val retryTimeout = prefs.getInt("settings_retry_timeout", 10)
-        val retryDelay = prefs.getInt("settings_retry_delay", 100)
+        val retryTimeout = try {
+            prefs.getInt("settings_retry_timeout", 10)
+        } catch (_: Exception) {
+            prefs.getString("settings_retry_timeout", null)?.toIntOrNull() ?: 10
+        }
+        val retryDelay = try {
+            prefs.getInt("settings_retry_delay", 100)
+        } catch (_: Exception) {
+            prefs.getString("settings_retry_delay", null)?.toIntOrNull() ?: 100
+        }
 
         if (bandwidthMeter == null) bandwidthMeter = DefaultBandwidthMeter.Builder(context).build()
 
@@ -228,7 +236,11 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
     fun resumeWhenNetworkConnected() {
         playerThreadHandler!!.post {
             val sharedPref = PreferenceManager.getDefaultSharedPreferences(context!!)
-            val resumeWithin = sharedPref.getInt("settings_resume_within", 60)
+            val resumeWithin = try {
+                sharedPref.getInt("settings_resume_within", 60)
+            } catch (_: Exception) {
+                sharedPref.getString("settings_resume_within", null)?.toIntOrNull() ?: 60
+            }
             if (resumeWithin > 0) {
                 Log.d(TAG, "Trying to resume playback within ${resumeWithin}s.")
                 cancelStopTask()
@@ -305,10 +317,18 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
 
     inner class CustomLoadErrorHandlingPolicy : DefaultLoadErrorHandlingPolicy() {
         private val MIN_RETRY_DELAY_MS = 10
+
+        private fun getIntSetting(key: String, def: Int): Int {
+            return try {
+                sharedPrefs.getInt(key, def)
+            } catch (_: Exception) {
+                sharedPrefs.getString(key, null)?.toIntOrNull() ?: def
+            }
+        }
         private val sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context!!)
 
         private fun getSanitizedRetryDelaySettingsMs() =
-            maxOf(sharedPrefs.getInt("settings_retry_delay", 100), MIN_RETRY_DELAY_MS)
+            maxOf(getIntSetting("settings_retry_delay", 100), MIN_RETRY_DELAY_MS)
 
         override fun getRetryDelayMsFor(loadErrorInfo: LoadErrorInfo): Long {
             var retryDelay = getSanitizedRetryDelaySettingsMs()
@@ -320,7 +340,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
             }
 
             if (!Utils.hasAnyConnection(context!!)) {
-                val resumeWithinS = sharedPrefs.getInt("settings_resume_within", 60)
+                val resumeWithinS = getIntSetting("settings_resume_within", 60)
                 if (resumeWithinS > 0) {
                     resumeWhenNetworkConnected()
                     retryDelay = 1000 * resumeWithinS + retryDelay
@@ -337,7 +357,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
         }
 
         override fun getMinimumLoadableRetryCount(dataType: Int) =
-            sharedPrefs.getInt("settings_retry_timeout", 10) * 1000 / getSanitizedRetryDelaySettingsMs() + 1
+            getIntSetting("settings_retry_timeout", 10) * 1000 / getSanitizedRetryDelaySettingsMs() + 1
     }
 
     private inner class AnalyticEventListener : AnalyticsListener {
@@ -349,6 +369,10 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
                     stateListener.onStateChanged(PlayState.Playing)
                 }
                 Player.STATE_BUFFERING -> stateListener.onStateChanged(PlayState.PrePlaying)
+                Player.STATE_ENDED -> {
+                    stop()
+                    stateListener.onStateChanged(PlayState.Idle)
+                }
             }
         }
     }

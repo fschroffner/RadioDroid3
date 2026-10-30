@@ -11,7 +11,7 @@ import androidx.media3.datasource.TransferListener
 import com.github.fschroffner.radiodroid3.Utils.getMimeType
 import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
 import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.ResponseBody
@@ -42,6 +42,7 @@ class IcyDataSource(
     private var request: Request? = null
     private var responseBody: ResponseBody? = null
     private var responseHeaders: Map<String, List<String>> = emptyMap()
+    private var lastResponseCode: Int = 0
 
     var metadataBytesToSkip = 0
     var remainingUntilMetadata = Int.MAX_VALUE
@@ -54,7 +55,8 @@ class IcyDataSource(
         close()
         this.dataSpec = dataSpec
         val allowGzip = (dataSpec.flags and DataSpec.FLAG_ALLOW_GZIP) != 0
-        val url = dataSpec.uri.toString().toHttpUrl()
+        val url = dataSpec.uri.toString().toHttpUrlOrNull()
+            ?: throw HttpDataSourceException("Malformed URL: ${dataSpec.uri}", dataSpec, HttpDataSourceException.TYPE_OPEN)
         val builder = Request.Builder().url(url).addHeader("Icy-MetaData", "1")
         if (!allowGzip) builder.addHeader("Accept-Encoding", "identity")
         request = builder.build()
@@ -69,6 +71,7 @@ class IcyDataSource(
         }
 
         val responseCode = response.code
+        lastResponseCode = responseCode
         if (!response.isSuccessful) {
             val headers = response.headers.toMultimap()
             throw InvalidResponseCodeException(responseCode, response.message, null, headers, dataSpec, ByteArray(0))
@@ -108,6 +111,7 @@ class IcyDataSource(
             opened = false
             transferListener.onTransferEnd(this, dataSpec, true)
         }
+        lastResponseCode = 0
         try { responseBody?.close() } catch (_: Exception) {}
         responseBody = null
     }
@@ -126,6 +130,12 @@ class IcyDataSource(
     }
 
     fun sendToDataSourceListenersWithoutMetadata(buffer: ByteArray, offset: Int, bytesAvailable: Int) {
+        val info = shoutcastInfo
+        if (info == null || info.metadataOffset <= 0) {
+            dataSourceListener.onDataSourceBytesRead(buffer, offset, bytesAvailable)
+            return
+        }
+
         var off = offset
         var avail = bytesAvailable
         val canSkip = minOf(metadataBytesToSkip, avail)
@@ -140,7 +150,7 @@ class IcyDataSource(
                     avail -= remainingUntilMetadata
                 }
                 metadataBytesToSkip = buffer[off] * 16 + 1
-                remainingUntilMetadata = shoutcastInfo!!.metadataOffset + metadataBytesToSkip
+                remainingUntilMetadata = info.metadataOffset + metadataBytesToSkip
             }
             val bytesLeft = minOf(avail, remainingUntilMetadata)
             if (bytesLeft > metadataBytesToSkip) {
@@ -173,6 +183,6 @@ class IcyDataSource(
     override fun clearRequestProperty(name: String) {}
     override fun clearAllRequestProperties() {}
     override fun getResponseHeaders(): Map<String, List<String>> = responseHeaders
-    override fun getResponseCode(): Int = 0
+    override fun getResponseCode(): Int = lastResponseCode
     override fun addTransferListener(transferListener: TransferListener) {}
 }

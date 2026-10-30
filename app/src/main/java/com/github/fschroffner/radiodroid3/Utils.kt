@@ -1,6 +1,7 @@
 package com.github.fschroffner.radiodroid3
 
 import android.widget.ImageView
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.content.res.AppCompatResources
 import com.squareup.picasso.Callback
 import com.squareup.picasso.NetworkPolicy
@@ -355,6 +356,45 @@ object Utils {
         return p.matches(streamUrl)
     }
 
+    @JvmStatic
+    fun resolvePlaylistIfNeeded(httpClient: OkHttpClient, streamUrl: String): String {
+        val trimmed = streamUrl.trim()
+        val lower = trimmed.lowercase()
+        if (lower.contains(".m3u8")) return trimmed
+
+        val isM3u = lower.endsWith(".m3u") || lower.contains(".m3u?")
+        val isPls = lower.endsWith(".pls") || lower.contains(".pls?")
+
+        if (!isM3u && !isPls) return trimmed
+
+        try {
+            val request = Request.Builder().url(trimmed).build()
+            val response = httpClient.newCall(request).execute()
+            if (!response.isSuccessful) return trimmed
+            val body = response.body?.string() ?: return trimmed
+
+            if (isPls || body.startsWith("[playlist]", ignoreCase = true)) {
+                val fileLine = body.lineSequence().firstOrNull { it.trim().startsWith("File", ignoreCase = true) && it.contains("=") }
+                if (fileLine != null) {
+                    val url = fileLine.substringAfter("=").trim()
+                    if (url.startsWith("http://", ignoreCase = true) || url.startsWith("https://", ignoreCase = true)) {
+                        return url
+                    }
+                }
+            } else {
+                val urlLine = body.lineSequence()
+                    .map { it.trim() }
+                    .firstOrNull { !it.startsWith("#") && (it.startsWith("http://", ignoreCase = true) || it.startsWith("https://", ignoreCase = true)) }
+                if (urlLine != null) {
+                    return urlLine
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("UTIL", "Could not resolve playlist $streamUrl: $e")
+        }
+        return trimmed
+    }
+
     fun interface MeteredWarningCallback {
         fun warn(station: DataRadioStation, playerType: PlayerType)
     }
@@ -404,7 +444,22 @@ object Utils {
     @JvmStatic
     fun getTheme(context: Context): String {
         val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
-        return sharedPref.getString("theme_name", context.resources.getString(R.string.theme_light))!!
+        val spTheme = sharedPref.getString("theme_name", null)
+        if (!spTheme.isNullOrBlank()) {
+            return spTheme
+        }
+        try {
+            val entryPoint = dagger.hilt.EntryPoints.get(
+                context.applicationContext,
+                com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java
+            )
+            val dsTheme = entryPoint.appPreferencesDataStore().getString("theme_name", null)
+            if (!dsTheme.isNullOrBlank()) {
+                sharedPref.edit().putString("theme_name", dsTheme).commit()
+                return dsTheme
+            }
+        } catch (_: Exception) {}
+        return context.resources.getString(R.string.theme_light)
     }
 
     private fun isSystemDarkMode(context: Context): Boolean {
@@ -415,21 +470,58 @@ object Utils {
     @JvmStatic
     fun getThemeResId(context: Context): Int {
         val theme = getTheme(context)
+        val themeValues = try { context.resources.getStringArray(R.array.theme_values) } catch (_: Exception) { emptyArray() }
+        val themeEntries = try { context.resources.getStringArray(R.array.theme_entries) } catch (_: Exception) { emptyArray() }
+
+        val darkVal = if (themeValues.size > 1) themeValues[1] else ""
+        val darkEntry = if (themeEntries.size > 1) themeEntries[1] else ""
+        val oledVal = if (themeValues.size > 2) themeValues[2] else ""
+        val oledEntry = if (themeEntries.size > 2) themeEntries[2] else ""
+        val sysVal = if (themeValues.size > 3) themeValues[3] else ""
+        val sysEntry = if (themeEntries.size > 3) themeEntries[3] else ""
+
         return when {
-            theme.equals(context.resources.getString(R.string.theme_dark), ignoreCase = true) ||
             theme.equals("dark", ignoreCase = true) ||
-            theme.equals("dunkel", ignoreCase = true) -> R.style.MyMaterialTheme_Dark
+            theme.equals("dunkel", ignoreCase = true) ||
+            theme.equals(darkVal, ignoreCase = true) ||
+            theme.equals(darkEntry, ignoreCase = true) ||
+            theme.equals(context.resources.getString(R.string.theme_dark), ignoreCase = true) -> R.style.MyMaterialTheme_Dark
 
-            theme.equals(context.resources.getString(R.string.theme_oled), ignoreCase = true) ||
             theme.equals("oled", ignoreCase = true) ||
-            theme.contains("oled", ignoreCase = true) -> R.style.MyMaterialTheme_Oled
+            theme.contains("oled", ignoreCase = true) ||
+            theme.equals(oledVal, ignoreCase = true) ||
+            theme.equals(oledEntry, ignoreCase = true) ||
+            theme.equals(context.resources.getString(R.string.theme_oled), ignoreCase = true) -> R.style.MyMaterialTheme_Oled
 
-            theme.equals(context.resources.getString(R.string.theme_system), ignoreCase = true) ||
             theme.equals("system", ignoreCase = true) ||
-            theme.startsWith("system", ignoreCase = true) ->
+            theme.startsWith("system", ignoreCase = true) ||
+            theme.equals(sysVal, ignoreCase = true) ||
+            theme.equals(sysEntry, ignoreCase = true) ||
+            theme.equals(context.resources.getString(R.string.theme_system), ignoreCase = true) ->
                 if (isSystemDarkMode(context)) R.style.MyMaterialTheme_Dark else R.style.MyMaterialTheme
 
             else -> R.style.MyMaterialTheme
+        }
+    }
+
+    @JvmStatic
+    fun applyTheme(activity: Activity) {
+        val themeResId = getThemeResId(activity)
+        activity.setTheme(themeResId)
+
+        val nightMode = when (themeResId) {
+            R.style.MyMaterialTheme_Dark, R.style.MyMaterialTheme_Oled -> AppCompatDelegate.MODE_NIGHT_YES
+            else -> {
+                val theme = getTheme(activity)
+                if (theme.contains("system", ignoreCase = true)) {
+                    AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                } else {
+                    AppCompatDelegate.MODE_NIGHT_NO
+                }
+            }
+        }
+        if (AppCompatDelegate.getDefaultNightMode() != nightMode) {
+            AppCompatDelegate.setDefaultNightMode(nightMode)
         }
     }
 

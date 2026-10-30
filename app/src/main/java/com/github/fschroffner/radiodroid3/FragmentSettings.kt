@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentTransaction
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.PreferenceScreen
 import com.bytehamster.lib.preferencesearch.SearchConfiguration
 import com.bytehamster.lib.preferencesearch.SearchPreference
@@ -85,9 +86,21 @@ class FragmentSettings : PreferenceFragmentCompat(),
     }
 
     override fun onCreatePreferences(bundle: Bundle?, s: String?) {
-        preferenceManager.preferenceDataStore = dataStoreBridge
         setPreferencesFromResource(R.xml.preferences, s)
         refreshToolbar()
+
+        findPreference<Preference>("theme_name")?.setOnPreferenceChangeListener { _, newValue ->
+            val themeStr = newValue?.toString()
+            if (!themeStr.isNullOrBlank()) {
+                val sp = preferenceManager.sharedPreferences ?: PreferenceManager.getDefaultSharedPreferences(requireContext())
+                sp.edit().putString("theme_name", themeStr).commit()
+                dataStoreBridge.putString("theme_name", themeStr)
+                val act = requireActivity()
+                Utils.applyTheme(act)
+                act.recreate()
+            }
+            true
+        }
 
         when (s) {
             null -> {
@@ -184,6 +197,15 @@ class FragmentSettings : PreferenceFragmentCompat(),
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
         if (BuildConfig.DEBUG) Log.d("AAA", "changed key:$key")
+        key?.let { k ->
+            when (val v = sharedPreferences.all[k]) {
+                is String -> dataStoreBridge.putString(k, v)
+                is Boolean -> dataStoreBridge.putBoolean(k, v)
+                is Int -> dataStoreBridge.putInt(k, v)
+                is Long -> dataStoreBridge.putLong(k, v)
+                else -> {}
+            }
+        }
         when (key) {
             "alarm_external" -> {
                 if (sharedPreferences.getBoolean(key, false)) {

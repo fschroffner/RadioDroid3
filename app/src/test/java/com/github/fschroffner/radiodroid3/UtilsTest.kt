@@ -1,5 +1,6 @@
 package com.github.fschroffner.radiodroid3
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 
@@ -18,5 +19,21 @@ internal class UtilsTest {
         assertFalse(Utils.urlIndicatesHlsStream("http://www.example.org/no.m3u8.m3u"))
         assertFalse(Utils.urlIndicatesHlsStream("http://www.example.org/playlist.m3u85"))
         assertFalse(Utils.urlIndicatesHlsStream("http://www.example.org/playlist.m3united"))
+    }
+
+    @Test
+    fun testResolvePlaylistIfNeededNonPlaylist() {
+        val client = okhttp3.OkHttpClient()
+        val directUrl = "http://stream.example.org/live.mp3"
+        val result = Utils.resolvePlaylistIfNeeded(client, directUrl)
+        assertEquals(directUrl, result)
+    }
+
+    @Test
+    fun testResolvePlaylistIfNeededHls() {
+        val client = okhttp3.OkHttpClient()
+        val hlsUrl = "http://stream.example.org/live.m3u8"
+        val result = Utils.resolvePlaylistIfNeeded(client, hlsUrl)
+        assertEquals(hlsUrl, result)
     }
 }
