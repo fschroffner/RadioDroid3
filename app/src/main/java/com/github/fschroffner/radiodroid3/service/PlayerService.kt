@@ -621,18 +621,22 @@ class PlayerService : MediaLibraryService(),
     override fun onBufferedTimeUpdate(bufferedMs: Long) {}
 
     override fun foundShoutcastStream(info: ShoutcastInfo, isHls: Boolean) {
-        this.streamInfo = info
-        this.isHls = isHls
-        publishSessionState()
+        handler.post {
+            this.streamInfo = info
+            this.isHls = isHls
+            publishSessionState()
+        }
     }
 
     override fun foundLiveStreamInfo(liveInfo: StreamLiveInfo) {
-        val oldLiveInfo = this.liveInfo
-        this.liveInfo = liveInfo
+        handler.post {
+            val oldLiveInfo = this.liveInfo
+            this.liveInfo = liveInfo
 
-        if (oldLiveInfo.title != liveInfo.title) {
-            updateNotification()
-            currentStation?.let { trackHistoryUpdater.onTrackChanged(it, liveInfo) }
+            if (oldLiveInfo.title != liveInfo.title) {
+                updateNotification()
+                currentStation?.let { trackHistoryUpdater.onTrackChanged(it, liveInfo) }
+            }
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.github.fschroffner.radiodroid3.players.exoplayer
 
 import android.net.Uri
+import android.util.Log
+import androidx.media3.common.C
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.HttpDataSource
@@ -17,10 +19,12 @@ import okhttp3.Request
 import okhttp3.ResponseBody
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 class IcyDataSource(
     private val httpClient: OkHttpClient,
-    private val transferListener: TransferListener,
+    transferListener: TransferListener,
     private val dataSourceListener: IcyDataSourceListener
 ) : HttpDataSource {
 
@@ -34,9 +38,15 @@ class IcyDataSource(
     }
 
     companion object {
+        private const val TAG = "IcyDataSource"
         const val DEFAULT_TIME_UNTIL_STOP_RECONNECTING = 2 * 60 * 1000L
         const val DEFAULT_DELAY_BETWEEN_RECONNECTIONS = 0L
     }
+
+    private val transferListeners = CopyOnWriteArrayList<TransferListener>().apply {
+        add(transferListener)
+    }
+    private val requestProperties = ConcurrentHashMap<String, String>()
 
     private lateinit var dataSpec: DataSpec
     private var request: Request? = null
@@ -59,6 +69,22 @@ class IcyDataSource(
             ?: throw HttpDataSourceException("Malformed URL: ${dataSpec.uri}", dataSpec, HttpDataSourceException.TYPE_OPEN)
         val builder = Request.Builder().url(url).addHeader("Icy-MetaData", "1")
         if (!allowGzip) builder.addHeader("Accept-Encoding", "identity")
+
+        for ((name, value) in requestProperties) {
+            builder.header(name, value)
+        }
+        for ((name, value) in dataSpec.httpRequestHeaders) {
+            builder.header(name, value)
+        }
+
+        if (dataSpec.position != 0L || dataSpec.length != C.LENGTH_UNSET.toLong()) {
+            var range = "bytes=${dataSpec.position}-"
+            if (dataSpec.length != C.LENGTH_UNSET.toLong()) {
+                range += "${dataSpec.position + dataSpec.length - 1}"
+            }
+            builder.addHeader("Range", range)
+        }
+
         request = builder.build()
         return connect()
     }
@@ -88,19 +114,59 @@ class IcyDataSource(
             throw InvalidContentTypeException(type, dataSpec)
         }
 
-        opened = true
-        dataSourceListener.onDataSourceConnected()
-        transferListener.onTransferStart(this, dataSpec, true)
+        // If the server answered 200 instead of 206, but a position > 0 was requested, skip position bytes
+        var bytesSkipped = 0L
+        if (responseCode == 200 && dataSpec.position > 0L) {
+            val stream = responseBody!!.byteStream()
+            var toSkip = dataSpec.position
+            while (toSkip > 0L) {
+                val skipped = stream.skip(toSkip)
+                if (skipped <= 0L) {
+                    val temp = ByteArray(minOf(4096L, toSkip).toInt())
+                    val read = stream.read(temp)
+                    if (read == -1) {
+                        close()
+                        throw HttpDataSourceException(dataSpec, HttpDataSourceException.TYPE_OPEN)
+                    }
+                    toSkip -= read
+                    bytesSkipped += read
+                } else {
+                    toSkip -= skipped
+                    bytesSkipped += skipped
+                }
+            }
+        }
 
-        if (type == "application/vnd.apple.mpegurl" || type == "application/x-mpegurl") {
-            return responseBody!!.contentLength()
-        } else {
+        opened = true
+        try {
+            dataSourceListener.onDataSourceConnected()
+        } catch (e: Exception) {
+            Log.w(TAG, "Error in onDataSourceConnected: $e")
+        }
+
+        for (listener in transferListeners) {
+            listener.onTransferStart(this, dataSpec, true)
+        }
+
+        val rawLength = responseBody!!.contentLength()
+        val bytesToRead: Long = when {
+            dataSpec.length != C.LENGTH_UNSET.toLong() -> dataSpec.length
+            rawLength != -1L -> maxOf(0L, rawLength - bytesSkipped)
+            else -> C.LENGTH_UNSET.toLong()
+        }
+
+        if (type != "application/vnd.apple.mpegurl" && type != "application/x-mpegurl") {
             shoutcastInfo = ShoutcastInfo.Decode(response)
-            dataSourceListener.onDataSourceShoutcastInfo(shoutcastInfo)
+            try {
+                dataSourceListener.onDataSourceShoutcastInfo(shoutcastInfo)
+            } catch (e: Exception) {
+                Log.w(TAG, "Error in onDataSourceShoutcastInfo: $e")
+            }
             metadataBytesToSkip = 0
             remainingUntilMetadata = shoutcastInfo?.metadataOffset ?: Int.MAX_VALUE
-            return responseBody!!.contentLength()
         }
+
+        return bytesToRead
     }
 
     private fun isAcceptableContentType(contentType: String) =
@@ -109,7 +175,9 @@ class IcyDataSource(
     override fun close() {
         if (opened) {
             opened = false
-            transferListener.onTransferEnd(this, dataSpec, true)
+            for (listener in transferListeners) {
+                listener.onTransferEnd(this, dataSpec, true)
+            }
         }
         lastResponseCode = 0
         try { responseBody?.close() } catch (_: Exception) {}
@@ -120,11 +188,17 @@ class IcyDataSource(
         return try {
             val bytesTransferred = readInternal(buffer, offset, readLength)
             if (bytesTransferred > 0) {
-                transferListener.onBytesTransferred(this, dataSpec, true, bytesTransferred)
+                for (listener in transferListeners) {
+                    listener.onBytesTransferred(this, dataSpec, true, bytesTransferred)
+                }
             }
             bytesTransferred
         } catch (e: HttpDataSourceException) {
-            dataSourceListener.onDataSourceConnectionLost()
+            try {
+                dataSourceListener.onDataSourceConnectionLost()
+            } catch (le: Exception) {
+                Log.w(TAG, "Error in onDataSourceConnectionLost: $le")
+            }
             throw e
         }
     }
@@ -132,7 +206,11 @@ class IcyDataSource(
     fun sendToDataSourceListenersWithoutMetadata(buffer: ByteArray, offset: Int, bytesAvailable: Int) {
         val info = shoutcastInfo
         if (info == null || info.metadataOffset <= 0) {
-            dataSourceListener.onDataSourceBytesRead(buffer, offset, bytesAvailable)
+            try {
+                dataSourceListener.onDataSourceBytesRead(buffer, offset, bytesAvailable)
+            } catch (e: Exception) {
+                Log.w(TAG, "Error in onDataSourceBytesRead: $e")
+            }
             return
         }
 
@@ -145,7 +223,11 @@ class IcyDataSource(
         while (avail > 0) {
             if (avail > remainingUntilMetadata) {
                 if (remainingUntilMetadata > 0) {
-                    dataSourceListener.onDataSourceBytesRead(buffer, off, remainingUntilMetadata)
+                    try {
+                        dataSourceListener.onDataSourceBytesRead(buffer, off, remainingUntilMetadata)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Error in onDataSourceBytesRead: $e")
+                    }
                     off += remainingUntilMetadata
                     avail -= remainingUntilMetadata
                 }
@@ -154,7 +236,11 @@ class IcyDataSource(
             }
             val bytesLeft = minOf(avail, remainingUntilMetadata)
             if (bytesLeft > metadataBytesToSkip) {
-                dataSourceListener.onDataSourceBytesRead(buffer, off + metadataBytesToSkip, bytesLeft - metadataBytesToSkip)
+                try {
+                    dataSourceListener.onDataSourceBytesRead(buffer, off + metadataBytesToSkip, bytesLeft - metadataBytesToSkip)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error in onDataSourceBytesRead: $e")
+                }
                 metadataBytesToSkip = 0
             } else {
                 metadataBytesToSkip -= bytesLeft
@@ -179,10 +265,20 @@ class IcyDataSource(
     }
 
     override fun getUri(): Uri = dataSpec.uri
-    override fun setRequestProperty(name: String, value: String) {}
-    override fun clearRequestProperty(name: String) {}
-    override fun clearAllRequestProperties() {}
+    override fun setRequestProperty(name: String, value: String) {
+        requestProperties[name] = value
+    }
+    override fun clearRequestProperty(name: String) {
+        requestProperties.remove(name)
+    }
+    override fun clearAllRequestProperties() {
+        requestProperties.clear()
+    }
     override fun getResponseHeaders(): Map<String, List<String>> = responseHeaders
     override fun getResponseCode(): Int = lastResponseCode
-    override fun addTransferListener(transferListener: TransferListener) {}
+    override fun addTransferListener(transferListener: TransferListener) {
+        if (!transferListeners.contains(transferListener)) {
+            transferListeners.add(transferListener)
+        }
+    }
 }

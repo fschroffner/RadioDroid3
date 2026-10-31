@@ -27,8 +27,8 @@ class PlaybackAudioFocusHelper(
 
     companion object {
         private const val TAG = "PlaybackAudioFocus"
-        const val FULL_VOLUME = 100f
-        const val DUCK_VOLUME = 40f
+        const val FULL_VOLUME = 1.0f
+        const val DUCK_VOLUME = 0.2f
     }
 
     val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->

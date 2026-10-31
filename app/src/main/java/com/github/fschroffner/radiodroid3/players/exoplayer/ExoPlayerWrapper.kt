@@ -26,10 +26,12 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy.LoadErrorInfo
+import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.metadata.icy.IcyHeaders
 import androidx.media3.extractor.metadata.icy.IcyInfo
 import androidx.media3.extractor.metadata.id3.Id3Frame
 import androidx.media3.extractor.metadata.id3.TextInformationFrame
+import androidx.media3.extractor.mp3.Mp3Extractor
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.BuildConfig
 import com.github.fschroffner.radiodroid3.R
@@ -122,8 +124,13 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
         val mediaItem = MediaItem.fromUri(Uri.parse(streamUrl))
         val policy = CustomLoadErrorHandlingPolicy()
 
+        val extractorsFactory = DefaultExtractorsFactory().apply {
+            setMp3ExtractorFlags(Mp3Extractor.FLAG_ENABLE_INDEX_SEEKING)
+            setConstantBitrateSeekingEnabled(true)
+        }
+
         audioSource = if (!isHls) {
-            ProgressiveMediaSource.Factory(dataSourceFactory).setLoadErrorHandlingPolicy(policy).createMediaSource(mediaItem)
+            ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory).setLoadErrorHandlingPolicy(policy).createMediaSource(mediaItem)
         } else {
             HlsMediaSource.Factory(dataSourceFactory).setLoadErrorHandlingPolicy(policy).createMediaSource(mediaItem)
         }
@@ -308,11 +315,20 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
 
     override fun onRepeatModeChanged(repeatMode: Int) {}
 
+    override fun onPlayerError(error: PlaybackException) {
+        Log.e(TAG, "ExoPlayer onPlayerError: ${error.errorCodeName} (${error.errorCode})", error)
+        cancelStopTask()
+        stop()
+        stateListener.onPlayerError(R.string.error_play_stream)
+    }
+
     override fun onPlayerErrorChanged(error: PlaybackException?) {
-        Log.d(TAG, "Player error: ", error)
-        if (fullStopTask != null) {
-            stop()
-            stateListener.onPlayerError(R.string.error_play_stream)
+        if (error != null) {
+            Log.d(TAG, "Player error changed: ", error)
+            if (fullStopTask != null) {
+                stop()
+                stateListener.onPlayerError(R.string.error_play_stream)
+            }
         }
     }
 
@@ -376,7 +392,20 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
                     stop()
                     stateListener.onStateChanged(PlayState.Idle)
                 }
+                Player.STATE_IDLE -> {
+                    if (isPlayingFlag) {
+                        isPlayingFlag = false
+                        stateListener.onStateChanged(PlayState.Idle)
+                    }
+                }
             }
+        }
+
+        override fun onPlayerError(eventTime: AnalyticsListener.EventTime, error: PlaybackException) {
+            Log.e(TAG, "AnalyticsListener onPlayerError: ${error.errorCodeName} (${error.errorCode})", error)
+            cancelStopTask()
+            stop()
+            stateListener.onPlayerError(R.string.error_play_stream)
         }
     }
 }

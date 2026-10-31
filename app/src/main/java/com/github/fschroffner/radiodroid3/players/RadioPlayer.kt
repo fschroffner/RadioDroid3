@@ -251,11 +251,15 @@ class RadioPlayer(
     }
 
     override fun onDataSourceShoutcastInfo(shoutcastInfo: ShoutcastInfo?, isHls: Boolean) {
-        shoutcastInfo?.let { playerListener.foundShoutcastStream(it, isHls) }
+        playerThreadHandler.post {
+            shoutcastInfo?.let { playerListener.foundShoutcastStream(it, isHls) }
+        }
     }
 
     override fun onDataSourceStreamLiveInfo(liveInfo: StreamLiveInfo) {
-        lastLiveInfo = liveInfo
-        playerListener.foundLiveStreamInfo(liveInfo)
+        playerThreadHandler.post {
+            lastLiveInfo = liveInfo
+            playerListener.foundLiveStreamInfo(liveInfo)
+        }
     }
 }
