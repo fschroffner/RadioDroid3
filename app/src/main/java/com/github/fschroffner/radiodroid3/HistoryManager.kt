@@ -37,22 +37,29 @@ class HistoryManager @Inject constructor(
 
     override fun add(station: DataRadioStation) {
         station.lastPlayed = System.currentTimeMillis()
-        if (stationDao != null) {
-            coroutineScope.launch {
-                stationDao.insertOrUpdate(station.toEntity())
-            }
-        } else {
-            val existing = getById(station.StationUuid)
-            if (existing != null) {
-                existing.lastPlayed = station.lastPlayed
-                listStations.remove(existing)
-                listStations.add(0, existing)
+        val existing = getById(station.StationUuid)
+        if (existing != null) {
+            existing.lastPlayed = station.lastPlayed
+            listStations.remove(existing)
+            listStations.add(0, existing)
+            if (stationDao != null) {
+                coroutineScope.launch {
+                    val baseTime = System.currentTimeMillis()
+                    val pairs = listStations.mapIndexed { i, s ->
+                        val t = baseTime - (i * 1000L)
+                        s.lastPlayed = t
+                        Pair(s.StationUuid, t)
+                    }
+                    stationDao.restoreHistoryAndReorder(existing.toEntity(), pairs)
+                }
+            } else {
                 Save()
-                return
             }
-            cutList(MAXSIZE - 1)
-            super.addFront(station)
+            notifyObservers()
+            return
         }
+        cutList(MAXSIZE - 1)
+        super.addFront(station)
     }
 
 

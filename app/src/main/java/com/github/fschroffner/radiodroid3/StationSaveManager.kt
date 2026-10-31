@@ -111,7 +111,7 @@ open class StationSaveManager(
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
                     station.isFavorite = true
-                    station.favoriteOrder = listStations.size
+                    station.favoriteOrder = listStations.indexOf(station).coerceAtLeast(0)
                 } else if (getSaveId() == "history") {
                     station.lastPlayed = System.currentTimeMillis()
                 }
@@ -128,12 +128,13 @@ open class StationSaveManager(
         listStations.addAll(stations)
         if (stationDao != null) {
             coroutineScope.launch {
+                val baseTime = System.currentTimeMillis()
                 stations.forEachIndexed { index, s ->
                     if (getSaveId() == "favourites") {
                         s.isFavorite = true
-                        s.favoriteOrder = listStations.size + index
+                        s.favoriteOrder = listStations.indexOf(s).coerceAtLeast(0)
                     } else if (getSaveId() == "history") {
-                        s.lastPlayed = System.currentTimeMillis() - (index * 1000L)
+                        s.lastPlayed = baseTime - (index * 1000L)
                     }
                     stationDao.insertOrUpdate(s.toEntity())
                 }
@@ -171,11 +172,20 @@ open class StationSaveManager(
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
                     station.isFavorite = true
-                    station.favoriteOrder = 0
+                    listStations.forEachIndexed { i, s -> s.favoriteOrder = i }
+                    val uuids = listStations.map { it.StationUuid }
+                    stationDao.restoreFavoriteAndReorder(station.toEntity(), uuids)
                 } else if (getSaveId() == "history") {
-                    station.lastPlayed = System.currentTimeMillis()
+                    val baseTime = System.currentTimeMillis()
+                    val pairs = listStations.mapIndexed { i, s ->
+                        val t = baseTime - (i * 1000L)
+                        s.lastPlayed = t
+                        Pair(s.StationUuid, t)
+                    }
+                    stationDao.restoreHistoryAndReorder(station.toEntity(), pairs)
+                } else {
+                    stationDao.insertOrUpdate(station.toEntity())
                 }
-                stationDao.insertOrUpdate(station.toEntity())
             }
         } else {
             Save()
@@ -232,9 +242,8 @@ open class StationSaveManager(
         if (stationDao != null && getSaveId() == "favourites") {
             val current = ArrayList(listStations)
             coroutineScope.launch {
-                current.forEachIndexed { index, s ->
-                    stationDao.updateFavoriteOrder(s.StationUuid, index)
-                }
+                val uuids = current.map { it.StationUuid }
+                stationDao.reorderFavorites(uuids)
             }
         } else {
             Save()
@@ -267,9 +276,17 @@ open class StationSaveManager(
         if (stationDao != null) {
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
-                    stationDao.setFavorite(id, false, 0)
+                    listStations.forEachIndexed { i, s -> s.favoriteOrder = i }
+                    val uuids = listStations.map { it.StationUuid }
+                    stationDao.removeFavoriteAndReorder(id, uuids)
                 } else if (getSaveId() == "history") {
-                    stationDao.setLastPlayed(id, 0L)
+                    val baseTime = System.currentTimeMillis()
+                    val pairs = listStations.mapIndexed { i, s ->
+                        val t = baseTime - (i * 1000L)
+                        s.lastPlayed = t
+                        Pair(s.StationUuid, t)
+                    }
+                    stationDao.removeHistoryAndReorder(id, pairs)
                 }
             }
         } else {
@@ -290,11 +307,18 @@ open class StationSaveManager(
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
                     station.isFavorite = true
-                    station.favoriteOrder = pos
+                    listStations.forEachIndexed { i, s -> s.favoriteOrder = i }
+                    val uuids = listStations.map { it.StationUuid }
+                    stationDao.restoreFavoriteAndReorder(station.toEntity(), uuids)
                 } else if (getSaveId() == "history") {
-                    station.lastPlayed = System.currentTimeMillis()
+                    val baseTime = System.currentTimeMillis()
+                    val pairs = listStations.mapIndexed { i, s ->
+                        val t = baseTime - (i * 1000L)
+                        s.lastPlayed = t
+                        Pair(s.StationUuid, t)
+                    }
+                    stationDao.restoreHistoryAndReorder(station.toEntity(), pairs)
                 }
-                stationDao.insertOrUpdate(station.toEntity())
             }
         } else {
             Save()

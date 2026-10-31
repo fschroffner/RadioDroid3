@@ -72,7 +72,6 @@ class FavouriteManager @Inject constructor(
     override fun restore(station: DataRadioStation, pos: Int) {
         if (!has(station.StationUuid)) {
             station.isFavorite = true
-            station.favoriteOrder = pos
             super.restore(station, pos)
         }
     }

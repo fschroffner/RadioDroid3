@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.github.fschroffner.radiodroid3.data.local.entity.RadioStationEntity
 import kotlinx.coroutines.flow.Flow
@@ -68,4 +69,50 @@ interface RadioStationDao {
 
     @Query("DELETE FROM radio_stations WHERE isFavorite = 0 AND lastPlayed IS NULL")
     suspend fun deleteUnusedStations()
+
+    @Transaction
+    suspend fun removeFavoriteAndReorder(removedUuid: String, reorderedUuids: List<String>) {
+        setFavorite(removedUuid, false, 0)
+        reorderedUuids.forEachIndexed { index, uuid ->
+            updateFavoriteOrder(uuid, index)
+        }
+    }
+
+    @Transaction
+    suspend fun restoreFavoriteAndReorder(station: RadioStationEntity, reorderedUuids: List<String>) {
+        insertOrUpdate(station)
+        reorderedUuids.forEachIndexed { index, uuid ->
+            updateFavoriteOrder(uuid, index)
+        }
+    }
+
+    @Transaction
+    suspend fun reorderFavorites(reorderedUuids: List<String>) {
+        reorderedUuids.forEachIndexed { index, uuid ->
+            updateFavoriteOrder(uuid, index)
+        }
+    }
+
+    @Transaction
+    suspend fun removeHistoryAndReorder(removedUuid: String, reorderedTimestamps: List<Pair<String, Long>>) {
+        setLastPlayed(removedUuid, 0L)
+        for (pair in reorderedTimestamps) {
+            setLastPlayed(pair.first, pair.second)
+        }
+    }
+
+    @Transaction
+    suspend fun restoreHistoryAndReorder(station: RadioStationEntity, reorderedTimestamps: List<Pair<String, Long>>) {
+        insertOrUpdate(station)
+        for (pair in reorderedTimestamps) {
+            setLastPlayed(pair.first, pair.second)
+        }
+    }
+
+    @Transaction
+    suspend fun updateHistoryTimestamps(reorderedTimestamps: List<Pair<String, Long>>) {
+        for (pair in reorderedTimestamps) {
+            setLastPlayed(pair.first, pair.second)
+        }
+    }
 }
