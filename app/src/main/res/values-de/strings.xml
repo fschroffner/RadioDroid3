@@ -80,6 +80,7 @@
 
 
     <string name="settings_load_icons">Stationslogos</string>
+    <string name="station_icon">Sender-Icon</string>
     <string name="settings_load_icons_on">Die Stationslogos werden im Hintergrund heruntergeladen; es kann einige Zeit dauern, bis alle Logos angezeigt werden.</string>
     <string name="settings_load_icons_off">Es werden keine Stationslogos heruntergeladen.</string>
 

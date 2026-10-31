@@ -19,7 +19,7 @@ class DataCategory : Comparable<DataCategory> {
         @JvmStatic
         fun DecodeJson(result: String?): Array<DataCategory> {
             val list = mutableListOf<DataCategory>()
-            if (result != null && TextUtils.isGraphic(result)) {
+            if (!result.isNullOrBlank()) {
                 try {
                     val jsonArray = JSONArray(result)
                     for (i in 0 until jsonArray.length()) {

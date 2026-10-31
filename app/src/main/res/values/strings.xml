@@ -121,6 +121,7 @@
     <string name="startup_show_last_view">Last view</string>
 
     <string name="settings_load_icons">Show station icons</string>
+    <string name="station_icon">Station icon</string>
     <string name="settings_load_icons_on">Icons will be downloaded</string>
     <string name="settings_load_icons_off">Icons will not be downloaded</string>
 

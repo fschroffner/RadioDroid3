@@ -123,7 +123,7 @@ fun ComposePlayerBar(
                     !streamArtist.isNullOrBlank() && !streamTitle.isNullOrBlank() -> "$streamArtist - $streamTitle"
                     !streamTitle.isNullOrBlank() -> streamTitle
                     !uiState.station?.TagsAll.isNullOrBlank() -> uiState.station.TagsAll
-                    else -> stringResource(R.string.player_state_stopped)
+                    else -> stringResource(R.string.player_info_status_stopped)
                 }
 
                 Text(
@@ -143,15 +143,15 @@ fun ComposePlayerBar(
                 Crossfade(targetState = uiState.isPlaying, label = "PlayPauseAnimation") { isPlaying ->
                     if (isPlaying) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_pause),
-                            contentDescription = stringResource(R.string.action_pause),
+                            painter = painterResource(id = R.drawable.ic_pause_24dp),
+                            contentDescription = stringResource(R.string.detail_pause),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
                         )
                     } else {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_play),
-                            contentDescription = stringResource(R.string.action_play),
+                            painter = painterResource(id = R.drawable.ic_play_arrow_24dp),
+                            contentDescription = stringResource(R.string.detail_play),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
                         )
@@ -166,7 +166,7 @@ fun ComposePlayerBar(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_more_vert_black_24dp),
-                    contentDescription = stringResource(R.string.more_options),
+                    contentDescription = stringResource(R.string.image_button_more),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.size(22.dp)
                 )

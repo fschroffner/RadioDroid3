@@ -75,9 +75,9 @@ class ComposeSmallPlayerFragment : Fragment() {
         val popup = PopupMenu(requireContext(), anchorView)
         val menu = popup.menu
 
-        val favTitle = if (isFavorite) R.string.action_unstar else R.string.action_star
+        val favTitle = if (isFavorite) R.string.detail_unstar else R.string.detail_star
         menu.add(0, 1, 0, favTitle)
-        menu.add(0, 2, 1, R.string.action_share)
+        menu.add(0, 2, 1, R.string.action_station_share)
 
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -90,7 +90,7 @@ class ComposeSmallPlayerFragment : Fragment() {
                     true
                 }
                 2 -> {
-                    StationActions.shareStation(requireContext(), station)
+                    StationActions.share(requireContext(), station)
                     true
                 }
                 else -> false
