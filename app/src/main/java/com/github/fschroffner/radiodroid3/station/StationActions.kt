@@ -132,7 +132,10 @@ object StationActions {
 
     @JvmStatic
     fun playInRadioDroid(context: Context, station: DataRadioStation) {
-        Utils.playAndWarnIfMetered(context, station, PlayerType.RADIODROID) { Utils.play(station) }
+        val useCase = entryPoint(context).stationPlaybackUseCase()
+        useCase.playAndWarnIfMetered(context, station, PlayerType.RADIODROID) {
+            useCase.playStation(station)
+        }
     }
 
     private fun vote(context: Context, station: DataRadioStation) {

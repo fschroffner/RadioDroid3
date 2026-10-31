@@ -278,7 +278,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
                 val request = NetworkRequest.Builder()
                     .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                     .build()
-                cm.registerNetworkRequest(request, callback)
+                cm.registerNetworkCallback(request, callback)
             }
             isReceiverRegistered = true
         } catch (e: Exception) {

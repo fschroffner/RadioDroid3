@@ -357,8 +357,19 @@ object Utils {
         context: Context,
         station: DataRadioStation,
         playerType: PlayerType,
+        playFunc: Runnable
+    ) {
+        val repo = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).mediaControllerRepository()
+        playAndWarnIfMetered(context, station, playerType, playFunc, repo)
+    }
+
+    @JvmStatic
+    fun playAndWarnIfMetered(
+        context: Context,
+        station: DataRadioStation,
+        playerType: PlayerType,
         playFunc: Runnable,
-        mediaControllerRepository: com.github.fschroffner.radiodroid3.player.MediaControllerRepository? = null
+        mediaControllerRepository: com.github.fschroffner.radiodroid3.player.MediaControllerRepository?
     ) {
         val repo = mediaControllerRepository
             ?: dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).mediaControllerRepository()
