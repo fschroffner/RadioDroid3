@@ -21,7 +21,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.PagerAdapter
-import com.squareup.picasso.Picasso
+import coil.load
 import com.github.fschroffner.radiodroid3.databinding.LayoutPlayerFullBinding
 import com.github.fschroffner.radiodroid3.databinding.PagePlayerAlbumArtBinding
 import com.github.fschroffner.radiodroid3.databinding.PagePlayerHistoryBinding
@@ -221,12 +221,12 @@ class FragmentPlayerFull : Fragment() {
     }
 
     private fun updateAlbumArt(state: PlayerUiState) {
-        val artUrl = state.albumArtUrl
-        val station = state.station
+        val artUrl = state.albumArtUrl ?: state.domainStation?.iconUrl ?: state.station?.IconUrl
         if (!artUrl.isNullOrEmpty()) {
-            Picasso.get().load(artUrl).error(R.drawable.ic_launcher).into(artAndInfoPagerAdapter.imageViewArt)
-        } else if (station != null && station.hasIcon()) {
-            Picasso.get().load(station.IconUrl).error(R.drawable.ic_launcher).into(artAndInfoPagerAdapter.imageViewArt)
+            artAndInfoPagerAdapter.imageViewArt.load(artUrl) {
+                error(R.drawable.ic_launcher)
+                crossfade(true)
+            }
         } else {
             artAndInfoPagerAdapter.imageViewArt.setImageResource(R.drawable.ic_launcher)
         }

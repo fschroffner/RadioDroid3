@@ -2,11 +2,9 @@ package com.github.fschroffner.radiodroid3
 
 import android.annotation.TargetApi
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.os.Build
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.fschroffner.radiodroid3.data.mapper.toDataRadioStation
 import com.github.fschroffner.radiodroid3.data.mapper.toDomain
 import com.github.fschroffner.radiodroid3.domain.model.RadioStation
@@ -47,10 +45,6 @@ class FavouriteManager @Inject constructor(
         setStationStatusListener(object : StationStatusListener {
             override fun onStationStatusChanged(station: DataRadioStation, favourite: Boolean) {
                 _stationChangedFlow.tryEmit(station.StationUuid)
-                val local = Intent(DataRadioStation.RADIO_STATION_LOCAL_INFO_CHAGED).apply {
-                    putExtra(DataRadioStation.RADIO_STATION_UUID, station.StationUuid)
-                }
-                LocalBroadcastManager.getInstance(ctx).sendBroadcast(local)
             }
         })
 

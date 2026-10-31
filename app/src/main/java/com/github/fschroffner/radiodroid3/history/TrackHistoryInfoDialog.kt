@@ -17,7 +17,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.content.res.AppCompatResources
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.squareup.picasso.Picasso
+import coil.load
 import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.databinding.DialogTrackHistoryDetailsBinding
 import java.text.DateFormat
@@ -30,13 +30,11 @@ class TrackHistoryInfoDialog(private val historyEntry: TrackHistoryEntry) : Bott
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = DialogTrackHistoryDetailsBinding.inflate(inflater, container, false)
 
-        val resource = requireContext().resources
-        val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 200f, resource.displayMetrics).toInt()
-        Picasso.get()
-            .load(historyEntry.artUrl)
-            .placeholder(AppCompatResources.getDrawable(requireContext(), R.drawable.ic_photo_24dp)!!)
-            .resize(px, 0)
-            .into(binding.imageViewTrackArt)
+        binding.imageViewTrackArt.load(historyEntry.artUrl) {
+            placeholder(R.drawable.ic_photo_24dp)
+            error(R.drawable.ic_photo_24dp)
+            crossfade(true)
+        }
 
         binding.textViewDate.text = DateFormat.getDateInstance().format(historyEntry.startTime)
 

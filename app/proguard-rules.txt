@@ -43,7 +43,7 @@
 -dontwarn javax.annotation.**
 
 # --- Picasso ---
--dontwarn com.squareup.picasso.**
+
 
 # --- Iconics ---
 -keep class com.mikepenz.iconics.** { *; }

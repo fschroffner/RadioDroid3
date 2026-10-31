@@ -1,5 +1,7 @@
 package com.github.fschroffner.radiodroid3.player
 
+import com.github.fschroffner.radiodroid3.data.mapper.toDomain
+import com.github.fschroffner.radiodroid3.domain.model.RadioStation
 import com.github.fschroffner.radiodroid3.players.PlayState
 import com.github.fschroffner.radiodroid3.service.PauseReason
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
@@ -20,4 +22,7 @@ data class PlaybackState(
     val isNotificationActive: Boolean = false,
     val lastPlayStartTime: Long = 0L,
     val isConnected: Boolean = false
-)
+) {
+    val domainStation: RadioStation?
+        get() = station?.toDomain()
+}

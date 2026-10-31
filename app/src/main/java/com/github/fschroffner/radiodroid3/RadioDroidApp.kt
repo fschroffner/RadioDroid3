@@ -8,10 +8,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import dagger.hilt.android.HiltAndroidApp
-import com.squareup.picasso.OkHttp3Downloader
-import com.squareup.picasso.Picasso
 import com.github.fschroffner.radiodroid3.utils.TvChannelManager
-import okhttp3.Cache
 import okhttp3.OkHttpClient
 import java.io.File
 import javax.inject.Inject
@@ -28,9 +25,6 @@ class RadioDroidApp : Application(), ImageLoaderFactory {
     private var tvChannelManager: TvChannelManager? = null
 
     companion object {
-        var instance: RadioDroidApp? = null
-            private set
-
         init {
             AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
         }
@@ -51,7 +45,6 @@ class RadioDroidApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
-        instance = this
 
         val nightMode = when (Utils.getThemeResId(this)) {
             R.style.MyMaterialTheme_Dark, R.style.MyMaterialTheme_Oled -> AppCompatDelegate.MODE_NIGHT_YES
@@ -67,17 +60,6 @@ class RadioDroidApp : Application(), ImageLoaderFactory {
         AppCompatDelegate.setDefaultNightMode(nightMode)
 
         GoogleProviderHelper.use(baseContext)
-
-        val cache = File(cacheDir, "picasso-cache").also { if (!it.exists()) it.mkdirs() }
-        val picassoOkHttpClient = okHttpClient.newBuilder()
-            .cache(Cache(cache, Int.MAX_VALUE.toLong()))
-            .build()
-        val picassoInstance = Picasso.Builder(this)
-            .downloader(OkHttp3Downloader(picassoOkHttpClient))
-            .build()
-        try {
-            Picasso.setSingletonInstance(picassoInstance)
-        } catch (_: Exception) {}
 
         CountryCodeDictionary.instance.load(this)
         CountryFlagsLoader.instance

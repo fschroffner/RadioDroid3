@@ -70,7 +70,7 @@ fun ComposePlayerBar(
                     .clip(RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                val artUrl = uiState.albumArtUrl ?: uiState.station?.IconUrl
+                val artUrl = uiState.albumArtUrl ?: uiState.domainStation?.iconUrl ?: uiState.station?.IconUrl
                 if (!artUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = artUrl,
@@ -105,7 +105,7 @@ fun ComposePlayerBar(
                     .weight(1f)
                     .padding(end = 8.dp)
             ) {
-                val title = uiState.station?.Name ?: stringResource(R.string.app_name)
+                val title = uiState.domainStation?.name ?: uiState.station?.Name ?: stringResource(R.string.app_name)
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium.copy(
@@ -122,6 +122,7 @@ fun ComposePlayerBar(
                 val subtitle = when {
                     !streamArtist.isNullOrBlank() && !streamTitle.isNullOrBlank() -> "$streamArtist - $streamTitle"
                     !streamTitle.isNullOrBlank() -> streamTitle
+                    !uiState.domainStation?.tagsAll.isNullOrBlank() -> uiState.domainStation.tagsAll
                     !uiState.station?.TagsAll.isNullOrBlank() -> uiState.station.TagsAll
                     else -> stringResource(R.string.player_info_status_stopped)
                 }

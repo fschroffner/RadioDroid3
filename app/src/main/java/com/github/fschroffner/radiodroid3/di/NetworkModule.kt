@@ -94,4 +94,20 @@ object NetworkModule {
 
         return Utils.enableTls12OnPreLollipop(builder).build()
     }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): retrofit2.Retrofit {
+        return retrofit2.Retrofit.Builder()
+            .baseUrl("https://all.api.radio-browser.info/")
+            .client(okHttpClient)
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRadioBrowserApi(retrofit: retrofit2.Retrofit): com.github.fschroffner.radiodroid3.data.remote.RadioBrowserApi {
+        return retrofit.create(com.github.fschroffner.radiodroid3.data.remote.RadioBrowserApi::class.java)
+    }
 }

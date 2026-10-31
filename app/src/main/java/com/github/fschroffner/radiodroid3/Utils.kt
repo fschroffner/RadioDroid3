@@ -5,9 +5,7 @@ import com.github.fschroffner.radiodroid3.utils.NetworkUtils
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.content.res.AppCompatResources
-import com.squareup.picasso.Callback
-import com.squareup.picasso.NetworkPolicy
-import com.squareup.picasso.Picasso
+import coil.load
 import android.Manifest
 import android.app.Activity
 import android.content.ContentResolver
@@ -275,17 +273,11 @@ object Utils {
     @JvmStatic
     fun loadStationIcon(holder: ImageView, fromUrl: String?) {
         if (fromUrl.isNullOrBlank()) return
-        val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 70f, holder.context.resources.displayMetrics)
-        val placeholder = AppCompatResources.getDrawable(holder.context, R.drawable.ic_photo_24dp)
-        Picasso.get().load(fromUrl).placeholder(placeholder!!).resize(px.toInt(), 0)
-            .networkPolicy(NetworkPolicy.OFFLINE)
-            .into(holder, object : Callback {
-                override fun onSuccess() {}
-                override fun onError(e: Exception) {
-                    Picasso.get().load(fromUrl).placeholder(placeholder).resize(px.toInt(), 0)
-                        .networkPolicy(NetworkPolicy.NO_CACHE).into(holder)
-                }
-            })
+        holder.load(fromUrl) {
+            placeholder(R.drawable.ic_photo_24dp)
+            error(R.drawable.ic_photo_24dp)
+            crossfade(true)
+        }
     }
 
     @Deprecated("Inject StationPlaybackUseCase or MediaControllerRepository directly instead of using static Utils.")
@@ -428,10 +420,6 @@ object Utils {
         }
     }
 
-    @JvmStatic
-    fun play(station: DataRadioStation) {
-        RadioDroidApp.instance?.let { play(it, station) }
-    }
 
     @Deprecated("Inject MediaControllerRepository directly instead of using static Utils.")
     @JvmStatic

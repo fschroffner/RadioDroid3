@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.fschroffner.radiodroid3.HistoryManager
 import com.github.fschroffner.radiodroid3.Utils
+import com.github.fschroffner.radiodroid3.data.mapper.toDomain
+import com.github.fschroffner.radiodroid3.domain.model.RadioStation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +25,7 @@ import javax.inject.Inject
  */
 data class HistoryUiState(
     val stations: List<DataRadioStation> = emptyList(),
+    val domainStations: List<RadioStation> = emptyList(),
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null
 )
@@ -47,6 +50,7 @@ class HistoryViewModel @Inject constructor(
     ) { stations, isRefreshing, errorMessage ->
         HistoryUiState(
             stations = stations,
+            domainStations = stations.map { it.toDomain() },
             isRefreshing = isRefreshing,
             errorMessage = errorMessage
         )

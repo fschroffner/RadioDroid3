@@ -7,55 +7,29 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.media.AudioManager
 import android.media.audiofx.AudioEffect
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.os.Parcelable
-import android.text.TextUtils
+import android.os.Looper
 import android.util.Log
-import android.util.TypedValue
 import android.view.KeyEvent
 import android.widget.Toast
 import androidx.core.content.IntentCompat
-import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory
-import androidx.core.os.BundleCompat
-import com.github.fschroffner.radiodroid3.player.MediaItemMapper
-import com.github.fschroffner.radiodroid3.player.toDataRadioStation
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import androidx.media3.common.Player
 import androidx.media3.session.CommandButton
 import androidx.media3.session.DefaultMediaNotificationProvider
-import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
-import androidx.media3.session.MediaLibraryService.LibraryParams
-import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
-import androidx.media3.session.SessionError
-import androidx.media3.session.SessionResult
 import androidx.preference.PreferenceManager
-import com.google.common.collect.ImmutableList
-import com.google.common.util.concurrent.Futures
-import com.google.common.util.concurrent.ListenableFuture
-import com.squareup.picasso.Picasso
-import com.squareup.picasso.Target
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.BuildConfig
-import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.HistoryManager
+import com.github.fschroffner.radiodroid3.R
 import com.github.fschroffner.radiodroid3.Utils
+import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.players.PlayState
 import com.github.fschroffner.radiodroid3.players.RadioPlayer
@@ -63,10 +37,20 @@ import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
 import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
-import java.io.ByteArrayOutputStream
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+/**
+ * Foreground MediaLibraryService managing background radio playback.
+ * Delegates audio focus, notification, session callback, and metered network tasks
+ * to dedicated helper classes.
+ */
 @AndroidEntryPoint
-class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
+class PlayerService : MediaLibraryService(),
+    RadioPlayer.PlayerListener,
+    PlaybackAudioFocusHelper.AudioFocusChangeListener,
+    MediaSessionCallbackHandler.PlayerActionDelegate,
+    MeteredConnectionManager.Listener {
 
     @Inject lateinit var favouriteManager: FavouriteManager
     @Inject lateinit var historyManager: HistoryManager
@@ -115,9 +99,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         const val STATE_PAUSE_REASON = "state_pause_reason"
         const val STATE_NOTIFICATION_ACTIVE = "state_notification_active"
 
-        private const val FULL_VOLUME = 100f
-        private const val DUCK_VOLUME = 40f
-        private const val METERED_CONNECTION_WARNING_COOLDOWN = 20 * 1000
         private const val SESSION_STATE_UPDATE_INTERVAL = 1000L
     }
 
@@ -134,7 +115,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     private lateinit var handler: Handler
 
     private var currentStation: DataRadioStation? = null
-    private lateinit var radioIcon: BitmapDrawable
     private lateinit var radioPlayer: RadioPlayer
     private lateinit var audioManager: AudioManager
 
@@ -143,21 +123,23 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     private lateinit var browseTree: RadioBrowseTree
 
     private lateinit var playbackLocks: PlaybackLocks
-    private lateinit var audioWarning: AudioWarning
     private lateinit var trackHistoryUpdater: TrackHistoryUpdater
 
     private lateinit var becomingNoisyReceiver: BecomingNoisyReceiver
     private lateinit var headsetConnectionReceiver: HeadsetConnectionReceiver
-    private val connectivityChecker = ConnectivityChecker()
+
+    // Delegated helpers
+    private lateinit var audioFocusHelper: PlaybackAudioFocusHelper
+    private lateinit var notificationManager: PlaybackNotificationManager
+    private lateinit var meteredConnectionManager: MeteredConnectionManager
+    private lateinit var mediaSessionCallbackHandler: MediaSessionCallbackHandler
 
     private var pauseReason = PauseReason.NONE
     private var lastErrorFromPlayer = -1
-    private var lastMeteredConnectionWarningTime = 0L
     private var liveInfo: StreamLiveInfo = StreamLiveInfo(null)
     private var streamInfo: ShoutcastInfo? = null
     private var isHls = false
     private var lastPlayStartTime = 0L
-    private var notificationIsActive = false
     private var becomingNoisyRegistered = false
 
     val pendingIntentFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
@@ -168,148 +150,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         override fun onStop() { stop() }
         override fun onNext() { next() }
         override fun onPrevious() { previous() }
-    }
-
-    private val media3SessionCallback = object : MediaLibrarySession.Callback {
-        override fun onConnect(
-            session: MediaSession,
-            controller: MediaSession.ControllerInfo
-        ): MediaSession.ConnectionResult {
-            val sessionCommands =
-                MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
-                    .add(SessionCommand(CUSTOM_COMMAND_PREVIOUS, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_NEXT, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_STOP, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_SET_STATION, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_PLAY_STATION, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_PAUSE, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_RESUME, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_ADD_TIMER, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_CLEAR_TIMER, Bundle.EMPTY))
-                    .add(SessionCommand(CUSTOM_COMMAND_WARN_METERED, Bundle.EMPTY))
-                    .build()
-            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
-                .setAvailableSessionCommands(sessionCommands)
-                .build()
-        }
-
-        override fun onAddMediaItems(
-            mediaSession: MediaSession,
-            controller: MediaSession.ControllerInfo,
-            mediaItems: MutableList<MediaItem>
-        ): ListenableFuture<MutableList<MediaItem>> {
-            val item = mediaItems.firstOrNull() ?: return Futures.immediateFuture(mutableListOf())
-            val station = item.toDataRadioStation()
-                ?: browseTree.stationForMediaId(item.mediaId)
-                ?: favouriteManager.getById(item.mediaId)
-                ?: historyManager.getById(item.mediaId)
-            val playImmediately = item.mediaMetadata.extras?.getBoolean(MediaItemMapper.EXTRA_PLAY_IMMEDIATELY, true) ?: true
-            if (station != null) {
-                setStation(station)
-                if (playImmediately) {
-                    playCurrentStation()
-                }
-            }
-            return Futures.immediateFuture(mediaItems)
-        }
-
-        override fun onGetLibraryRoot(
-            session: MediaLibrarySession,
-            browser: MediaSession.ControllerInfo,
-            params: LibraryParams?
-        ): ListenableFuture<LibraryResult<MediaItem>> {
-            val rootParams = LibraryParams.Builder().setExtras(browseTree.rootExtras()).build()
-            return Futures.immediateFuture(LibraryResult.ofItem(browseTree.rootItem(), rootParams))
-        }
-
-        override fun onGetChildren(
-            session: MediaLibrarySession,
-            browser: MediaSession.ControllerInfo,
-            parentId: String,
-            page: Int,
-            pageSize: Int,
-            params: LibraryParams?
-        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
-            Futures.immediateFuture(LibraryResult.ofItemList(browseTree.childrenOf(parentId), params))
-
-        override fun onGetItem(
-            session: MediaLibrarySession,
-            browser: MediaSession.ControllerInfo,
-            mediaId: String
-        ): ListenableFuture<LibraryResult<MediaItem>> {
-            val item = browseTree.itemForMediaId(mediaId)
-            return if (item != null) Futures.immediateFuture(LibraryResult.ofItem(item, null))
-            else Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_BAD_VALUE))
-        }
-
-        override fun onCustomCommand(
-            session: MediaSession,
-            controller: MediaSession.ControllerInfo,
-            customCommand: SessionCommand,
-            args: Bundle
-        ): ListenableFuture<SessionResult> {
-            args.classLoader = this@PlayerService.classLoader
-            when (customCommand.customAction) {
-                CUSTOM_COMMAND_PREVIOUS -> previous()
-                CUSTOM_COMMAND_NEXT -> next()
-                CUSTOM_COMMAND_STOP -> stop()
-                CUSTOM_COMMAND_SET_STATION ->
-                    BundleCompat.getParcelable(args, CMD_ARG_STATION, DataRadioStation::class.java)
-                        ?.let { setStation(it) }
-                CUSTOM_COMMAND_PLAY_STATION -> {
-                    val station = BundleCompat.getParcelable(args, CMD_ARG_STATION, DataRadioStation::class.java)
-                    if (station != null) setStation(station)
-                    playCurrentStation()
-                }
-                CUSTOM_COMMAND_PAUSE -> {
-                    val reason = BundleCompat.getParcelable(args, CMD_ARG_PAUSE_REASON, PauseReason::class.java)
-                        ?: PauseReason.USER
-                    pause(reason)
-                }
-                CUSTOM_COMMAND_RESUME -> resume()
-                CUSTOM_COMMAND_ADD_TIMER -> addTimer(args.getInt(CMD_ARG_TIMER_SECONDS, 0))
-                CUSTOM_COMMAND_CLEAR_TIMER -> clearTimer()
-                CUSTOM_COMMAND_WARN_METERED ->
-                    BundleCompat.getParcelable(args, CMD_ARG_PLAYER_TYPE, PlayerType::class.java)
-                        ?.let { warnAboutMeteredConnection(it) }
-            }
-            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
-        }
-    }
-
-    private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-        if (!radioPlayer.isLocal()) return@OnAudioFocusChangeListener
-
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                if (BuildConfig.DEBUG) Log.d(TAG, "audio focus gain")
-                if (pauseReason == PauseReason.FOCUS_LOSS_TRANSIENT) {
-                    registerBecomingNoisy()
-                    resume()
-                }
-                radioPlayer.setVolume(FULL_VOLUME)
-            }
-            AudioManager.AUDIOFOCUS_LOSS -> {
-                if (BuildConfig.DEBUG) Log.d(TAG, "audio focus loss")
-                if (radioPlayer.isPlaying()) pause(PauseReason.FOCUS_LOSS)
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                if (BuildConfig.DEBUG) Log.d(TAG, "audio focus loss transient")
-                if (radioPlayer.isPlaying()) pause(PauseReason.FOCUS_LOSS_TRANSIENT)
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                if (BuildConfig.DEBUG) Log.d(TAG, "audio focus loss transient can duck")
-                radioPlayer.setVolume(DUCK_VOLUME)
-            }
-        }
-    }
-
-    private val connectivityCallback = object : ConnectivityChecker.ConnectivityCallback {
-        override fun onConnectivityChanged(connected: Boolean, connectionType: ConnectivityChecker.ConnectionType) {
-            if (connectionType == ConnectivityChecker.ConnectionType.METERED && appPreferencesDataStore.getBoolean(METERED_CONNECTION_WARNING_KEY, false)) {
-                warnAboutMeteredConnection(PlayerType.RADIODROID)
-            }
-        }
     }
 
     private val sleepTimer: SleepTimer = SleepTimer(object : SleepTimer.Callback {
@@ -323,21 +163,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         }
     })
 
-    private val audioWarningCallback = object : AudioWarning.Callback {
-        override fun onWarningStarted() {}
-        override fun onWarningFinished() {}
-    }
-
-    private fun getTimerSeconds(): Long = sleepTimer.seconds
-
-    private fun clearTimer() {
-        if (sleepTimer.clear()) {
-            publishSessionState()
-        }
-    }
-
-    private fun addTimer(secondsAdd: Int) = sleepTimer.add(secondsAdd)
-
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession =
         media3Session
 
@@ -348,10 +173,19 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         handler = Handler(mainLooper)
         itsContext = this
         audioManager = itsContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        radioIcon = ResourcesCompat.getDrawable(resources, R.drawable.ic_launcher, null) as BitmapDrawable
 
-        playbackLocks = PlaybackLocks(this, audioManager, afChangeListener)
-        audioWarning = AudioWarning(handler, audioWarningCallback)
+        playbackLocks = PlaybackLocks(this, audioManager) { focusChange ->
+            audioFocusHelper.afChangeListener.onAudioFocusChange(focusChange)
+        }
+
+        audioFocusHelper = PlaybackAudioFocusHelper(this, playbackLocks, this)
+
+        meteredConnectionManager = MeteredConnectionManager(
+            context = this,
+            handler = handler,
+            appPreferencesDataStore = appPreferencesDataStore,
+            listener = this
+        )
 
         becomingNoisyReceiver = BecomingNoisyReceiver(
             injectedPreferences = appPreferencesDataStore
@@ -373,7 +207,21 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         )
 
         radioMediaPlayer = RadioMediaPlayer(mainLooper, radioMediaPlayerCallback)
-        media3Session = MediaLibrarySession.Builder(this, radioMediaPlayer, media3SessionCallback)
+
+        notificationManager = PlaybackNotificationManager(
+            context = this,
+            radioMediaPlayer = radioMediaPlayer,
+            onIconUpdated = { updateNotification() }
+        )
+
+        mediaSessionCallbackHandler = MediaSessionCallbackHandler(
+            browseTree = browseTree,
+            favouriteManager = favouriteManager,
+            historyManager = historyManager,
+            delegate = this
+        )
+
+        media3Session = MediaLibrarySession.Builder(this, radioMediaPlayer, mediaSessionCallbackHandler)
             .setId("RadioDroidPlayerService")
             .setCustomLayout(buildCustomLayout())
             .setSessionActivity(sessionActivityPendingIntent)
@@ -383,7 +231,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         notificationProvider.setSmallIcon(R.drawable.ic_play_arrow_white_24dp)
         setMediaNotificationProvider(notificationProvider)
 
-        
         trackHistoryRepository = injectedTrackHistoryRepository
         trackHistoryUpdater = TrackHistoryUpdater(trackHistoryRepository)
 
@@ -428,13 +275,10 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
         if (currentStation == null) {
-            
             currentStation = historyManager.getFirst()
         }
         if (currentStation == null) {
-            
             currentStation = favouriteManager.getFirst()
         }
 
@@ -468,13 +312,13 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     }
 
     private fun playAndWarnIfMetered(station: DataRadioStation) {
-        
         Utils.playAndWarnIfMetered(this, station, PlayerType.RADIODROID,
             Runnable { playWithoutWarnings(station) },
             object : Utils.MeteredWarningCallback {
                 override fun warn(station1: DataRadioStation, playerType: PlayerType) {
                     setStation(station1)
-                    warnAboutMeteredConnection(playerType)
+                    meteredConnectionManager.warnAboutMeteredConnection(playerType, media3Session)
+                    updateNotification(PlayState.Paused)
                 }
             })
     }
@@ -485,9 +329,9 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     }
 
     fun playCurrentStation() {
-        if (Utils.shouldLoadIcons(itsContext)) downloadRadioIcon()
+        notificationManager.loadStationIcon(currentStation)
 
-        val result = acquireAudioFocus()
+        val result = audioFocusHelper.acquireAudioFocus()
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             registerBecomingNoisy()
             liveInfo = StreamLiveInfo(null)
@@ -498,19 +342,19 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     }
 
     fun pause(pauseReason: PauseReason) {
-        if (BuildConfig.DEBUG) Log.d(TAG, "pausing playback, reason ${pauseReason}")
+        if (BuildConfig.DEBUG) Log.d(TAG, "pausing playback, reason $pauseReason")
 
         this.pauseReason = pauseReason
-        forceStopAudioWarning()
+        meteredConnectionManager.forceStopAudioWarning()
 
         if (pauseReason == PauseReason.METERED_CONNECTION) {
-            lastMeteredConnectionWarningTime = System.currentTimeMillis()
+            meteredConnectionManager.recordMeteredPause()
         }
 
         playbackLocks.release()
 
         if (pauseReason != PauseReason.FOCUS_LOSS_TRANSIENT) {
-            releaseAudioFocus()
+            audioFocusHelper.releaseAudioFocus()
         }
 
         radioPlayer.pause()
@@ -537,30 +381,20 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     fun resume() {
         if (BuildConfig.DEBUG) Log.d(TAG, "resuming playback.")
 
-        forceStopAudioWarning()
+        meteredConnectionManager.forceStopAudioWarning()
 
-        var bypassMeteredConnectionWarning = false
-
-        if (pauseReason == PauseReason.METERED_CONNECTION) {
-            val now = System.currentTimeMillis()
-            val delta = now - lastMeteredConnectionWarningTime
-            bypassMeteredConnectionWarning = delta < METERED_CONNECTION_WARNING_COOLDOWN && delta > 0
-        }
+        val bypassMeteredConnectionWarning = pauseReason == PauseReason.METERED_CONNECTION &&
+            meteredConnectionManager.isCooldownActive()
 
         this.pauseReason = PauseReason.NONE
-        this.lastMeteredConnectionWarningTime = 0
+        meteredConnectionManager.resetCooldown()
 
         if (!radioPlayer.isPlaying()) {
-            
-            var station = currentStation
-            if (currentStation == null) {
-                station = historyManager.getFirst()
-            }
-
+            val station = currentStation ?: historyManager.getFirst()
             if (station != null) {
                 if (bypassMeteredConnectionWarning) {
-                    startMeteredConnectionListener()
-                    acquireAudioFocus()
+                    meteredConnectionManager.startListening()
+                    audioFocusHelper.acquireAudioFocus()
                     playWithoutWarnings(station)
                 } else {
                     playAndWarnIfMetered(station)
@@ -573,21 +407,20 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         if (BuildConfig.DEBUG) Log.d(TAG, "stopping playback.")
 
         this.pauseReason = PauseReason.NONE
-        this.lastMeteredConnectionWarningTime = 0
-        this.notificationIsActive = false
+        meteredConnectionManager.resetCooldown()
 
         liveInfo = StreamLiveInfo(null)
         streamInfo = null
 
-        forceStopAudioWarning()
-        releaseAudioFocus()
+        meteredConnectionManager.forceStopAudioWarning()
+        audioFocusHelper.releaseAudioFocus()
         unregisterBecomingNoisy()
         radioPlayer.stop()
         playbackLocks.release()
         clearTimer()
 
         updateNotification(PlayState.Idle)
-        stopMeteredConnectionListener()
+        meteredConnectionManager.stopListening()
     }
 
     private fun registerBecomingNoisy() {
@@ -606,18 +439,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         }
     }
 
-    private fun acquireAudioFocus(): Int {
-        val result = playbackLocks.acquireAudioFocus()
-        if (result != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            toastOnUi(R.string.error_grant_audiofocus)
-        }
-        return result
-    }
-
-    private fun releaseAudioFocus() {
-        playbackLocks.releaseAudioFocus()
-    }
-
     private fun toastOnUi(messageId: Int) {
         handler.post {
             Toast.makeText(itsContext, itsContext.resources.getString(messageId), Toast.LENGTH_SHORT).show()
@@ -629,7 +450,14 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     }
 
     private fun updateNotification(playState: PlayState) {
-        updateMedia3PlayerState(playState)
+        notificationManager.updatePlayerState(
+            playState = playState,
+            currentStation = currentStation,
+            pauseReason = pauseReason,
+            lastErrorFromPlayer = lastErrorFromPlayer,
+            liveTitle = liveInfo.title,
+            currentPlayerState = if (::radioPlayer.isInitialized) radioPlayer.getPlayState() else PlayState.Idle
+        )
         publishSessionState()
     }
 
@@ -649,7 +477,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
             putLong(STATE_BUFFERED_SECONDS, if (playerInitialized) radioPlayer.getBufferedSeconds() else 0L)
             putLong(STATE_LAST_PLAY_START_TIME, lastPlayStartTime)
             putParcelable(STATE_PAUSE_REASON, pauseReason)
-            putBoolean(STATE_NOTIFICATION_ACTIVE, notificationIsActive)
+            putBoolean(STATE_NOTIFICATION_ACTIVE, notificationManager.isNotificationActive)
         }
     }
 
@@ -676,142 +504,59 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         handler.removeCallbacks(sessionStateUpdater)
     }
 
-    private fun updateMedia3PlayerState(playState: PlayState) {
-        if (!::radioMediaPlayer.isInitialized) return
-
-        val station = currentStation
-        if (playState == PlayState.Idle || station == null) {
-            notificationIsActive = false
-            radioMediaPlayer.update(Player.STATE_IDLE, false, null, MediaMetadata.EMPTY)
-            return
-        }
-
-        notificationIsActive = true
-
-        val statusText = notificationStatusText(playState)
-        val metadataBuilder = MediaMetadata.Builder()
-            .setTitle(station.Name)
-            .setStation(station.Name)
-            .setArtist(statusText)
-        bitmapToPng(radioIcon.bitmap)?.let {
-            metadataBuilder.setArtworkData(it, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
-        }
-        val metadata = metadataBuilder.build()
-
-        val mediaItem = MediaItem.Builder()
-            .setMediaId(station.StationUuid)
-            .setMediaMetadata(metadata)
-            .build()
-
-        val (state, playWhenReady) = when (playState) {
-            PlayState.PrePlaying -> Player.STATE_BUFFERING to true
-            PlayState.Playing -> Player.STATE_READY to true
-            PlayState.Paused -> Player.STATE_READY to false
-            PlayState.Idle -> Player.STATE_IDLE to false
-        }
-
-        radioMediaPlayer.update(state, playWhenReady, mediaItem, metadata)
-    }
-
-    private fun notificationStatusText(playState: PlayState): String {
-        val res = itsContext.resources
-        val currentPlayerState = radioPlayer.getPlayState()
-
-        if ((currentPlayerState == PlayState.Paused || currentPlayerState == PlayState.Idle)
-                && pauseReason == PauseReason.METERED_CONNECTION) {
-            return res.getString(R.string.notify_metered_connection)
-        }
-
-        if (lastErrorFromPlayer != -1) {
-            try {
-                return res.getString(lastErrorFromPlayer)
-            } catch (ex: Resources.NotFoundException) {
-                Log.e(TAG, "Unknown play error: $lastErrorFromPlayer", ex)
-            }
-        }
-
-        return when (playState) {
-            PlayState.PrePlaying -> res.getString(R.string.notify_pre_play)
-            PlayState.Playing ->
-                if (!TextUtils.isEmpty(liveInfo.title)) liveInfo.title else res.getString(R.string.notify_play)
-            PlayState.Paused -> res.getString(R.string.notify_paused)
-            PlayState.Idle -> ""
-        }
-    }
-
-    private fun bitmapToPng(bitmap: Bitmap): ByteArray? = try {
-        ByteArrayOutputStream().use { stream ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-            stream.toByteArray()
-        }
-    } catch (e: Exception) {
-        Log.e(TAG, "Could not encode notification artwork", e)
-        null
-    }
-
-    private fun downloadRadioIcon() {
-        val px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 70f, resources.displayMetrics)
-
-        if (!currentStation!!.hasIcon()) {
-            radioIcon = ResourcesCompat.getDrawable(resources, R.drawable.ic_launcher, null) as BitmapDrawable
-            updateNotification()
-            return
-        }
-
-        Picasso.get()
-            .load(currentStation!!.IconUrl)
-            .resize(px.toInt(), 0)
-            .into(object : Target {
-                override fun onBitmapLoaded(bitmap: Bitmap, from: Picasso.LoadedFrom) {
-                    val useCircularIcons = Utils.useCircularIcons(itsContext)
-                    if (!useCircularIcons) {
-                        radioIcon = BitmapDrawable(resources, bitmap)
-                    } else {
-                        val rb = RoundedBitmapDrawableFactory.create(resources, bitmap)
-                        rb.isCircular = true
-                        radioIcon = BitmapDrawable(resources, rb.bitmap)
-                    }
-                    updateNotification()
-                }
-
-                override fun onBitmapFailed(e: Exception, errorDrawable: Drawable?) {}
-                override fun onPrepareLoad(placeHolderDrawable: Drawable?) {}
-            })
-    }
-
-    private fun warnAboutMeteredConnection(playerType: PlayerType) {
-        stopMeteredConnectionListener()
-        pause(PauseReason.METERED_CONNECTION)
-
-        audioWarning.play()
-
-        val bundle = Bundle().apply {
-            putParcelable(PLAYER_SERVICE_METERED_CONNECTION_PLAYER_TYPE, playerType as Parcelable)
-        }
-        if (::media3Session.isInitialized) {
-            media3Session.broadcastCustomCommand(
-                SessionCommand(PLAYER_SERVICE_METERED_CONNECTION, Bundle.EMPTY),
-                bundle
-            )
-        }
-
+    // --- MediaSessionCallbackHandler.PlayerActionDelegate ---
+    override fun onSkipToPrevious() = previous()
+    override fun onSkipToNext() = next()
+    override fun onStopPlayback() = stop()
+    override fun onSetStation(station: DataRadioStation) = setStation(station)
+    override fun onPlayCurrentStation() = playCurrentStation()
+    override fun onPausePlayback(reason: PauseReason) = pause(reason)
+    override fun onResumePlayback() = resume()
+    override fun onAddTimer(seconds: Int) { sleepTimer.add(seconds) }
+    override fun onClearTimer() { clearTimer() }
+    override fun onWarnMeteredConnection(playerType: PlayerType) {
+        meteredConnectionManager.warnAboutMeteredConnection(playerType, media3Session)
         updateNotification(PlayState.Paused)
     }
+    override fun getServiceClassLoader(): ClassLoader = classLoader
 
-    private fun forceStopAudioWarning() {
-        audioWarning.forceStop()
+    // --- MeteredConnectionManager.Listener ---
+    override fun onMeteredWarningTriggered(playerType: PlayerType) {
+        meteredConnectionManager.warnAboutMeteredConnection(playerType, media3Session)
+        updateNotification(PlayState.Paused)
+    }
+    override fun onPauseForMetered() {
+        pause(PauseReason.METERED_CONNECTION)
     }
 
-    private fun startMeteredConnectionListener() {
-        if (appPreferencesDataStore.getBoolean(METERED_CONNECTION_WARNING_KEY, false)) {
-            connectivityChecker.startListening(this, connectivityCallback)
+    // --- PlaybackAudioFocusHelper.AudioFocusChangeListener ---
+    override fun onAudioFocusGain(wasTransientLoss: Boolean) {
+        if (wasTransientLoss) {
+            registerBecomingNoisy()
+            resume()
+        }
+        radioPlayer.setVolume(PlaybackAudioFocusHelper.FULL_VOLUME)
+    }
+    override fun onAudioFocusLoss() {
+        if (radioPlayer.isPlaying()) pause(PauseReason.FOCUS_LOSS)
+    }
+    override fun onAudioFocusLossTransient() {
+        if (radioPlayer.isPlaying()) pause(PauseReason.FOCUS_LOSS_TRANSIENT)
+    }
+    override fun onAudioFocusDuck(canDuck: Boolean) {
+        radioPlayer.setVolume(if (canDuck) PlaybackAudioFocusHelper.DUCK_VOLUME else PlaybackAudioFocusHelper.FULL_VOLUME)
+    }
+    override fun isLocalPlayer(): Boolean = ::radioPlayer.isInitialized && radioPlayer.isLocal()
+    override fun isPlaying(): Boolean = ::radioPlayer.isInitialized && radioPlayer.isPlaying()
+    override fun getPauseReason(): PauseReason = pauseReason
+
+    private fun clearTimer() {
+        if (sleepTimer.clear()) {
+            publishSessionState()
         }
     }
 
-    private fun stopMeteredConnectionListener() {
-        connectivityChecker.stopListening(this)
-    }
-
+    // --- RadioPlayer.PlayerListener ---
     override fun onStateChanged(state: PlayState, audioSessionId: Int) {
         handler.post {
             lastErrorFromPlayer = -1
@@ -850,16 +595,14 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
             }
 
             if (state != PlayState.Paused && state != PlayState.Idle) {
-                startMeteredConnectionListener()
+                meteredConnectionManager.startListening()
                 startSessionStateUpdates()
             } else {
-                stopMeteredConnectionListener()
+                meteredConnectionManager.stopListening()
                 stopSessionStateUpdates()
             }
 
             updateNotification(state)
-
-
         }
     }
 
@@ -880,14 +623,6 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     override fun foundShoutcastStream(info: ShoutcastInfo, isHls: Boolean) {
         this.streamInfo = info
         this.isHls = isHls
-        if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Metadata offset:${info.metadataOffset}")
-            Log.d(TAG, "Bitrate:${info.bitrate}")
-            Log.d(TAG, "Name:${info.audioName}")
-            Log.d(TAG, "Hls:$isHls")
-            Log.d(TAG, "Server:${info.serverName}")
-            Log.d(TAG, "AudioInfo:${info.audioInfo}")
-        }
         publishSessionState()
     }
 
@@ -895,16 +630,8 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         val oldLiveInfo = this.liveInfo
         this.liveInfo = liveInfo
 
-        if (BuildConfig.DEBUG) {
-            val rawMetadata = liveInfo.rawMetadata ?: emptyMap()
-            for (key in rawMetadata.keys) {
-                Log.i(TAG, "INFO:$key=${rawMetadata[key]}")
-            }
-        }
-
         if (oldLiveInfo.title != liveInfo.title) {
             updateNotification()
-
             currentStation?.let { trackHistoryUpdater.onTrackChanged(it, liveInfo) }
         }
     }

@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.HistoryManager
+import com.github.fschroffner.radiodroid3.data.mapper.toDataRadioStation
+import com.github.fschroffner.radiodroid3.data.mapper.toDomain
+import com.github.fschroffner.radiodroid3.domain.model.RadioStation
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.service.PauseReason
 import com.github.fschroffner.radiodroid3.players.PlayState
@@ -30,6 +33,7 @@ import javax.inject.Inject
  */
 data class PlayerUiState(
     val station: DataRadioStation? = null,
+    val domainStation: RadioStation? = null,
     val isPlaying: Boolean = false,
     val playState: PlayState = PlayState.Idle,
     val isConnected: Boolean = false,
@@ -68,9 +72,11 @@ class PlayerViewModel @Inject constructor(
     ) { playbackState, favorites, artUrl ->
         val currentStation = playbackState.station ?: historyManager.getFirst()
         val isFav = currentStation != null && favorites.any { it.StationUuid == currentStation.StationUuid }
+        val domainStation = currentStation?.toDomain()
 
         PlayerUiState(
             station = currentStation,
+            domainStation = domainStation,
             isPlaying = playbackState.isPlaying,
             playState = playbackState.playState,
             isConnected = playbackState.isConnected,
@@ -216,7 +222,23 @@ class PlayerViewModel @Inject constructor(
         stationPlaybackUseCase.playStation(station)
     }
 
+    fun playStation(station: RadioStation) {
+        stationPlaybackUseCase.playStation(station)
+    }
+
     fun showPlaySelection(targetContext: Context, station: DataRadioStation, fragmentManager: androidx.fragment.app.FragmentManager) {
         stationPlaybackUseCase.showPlaySelection(targetContext, station, fragmentManager)
+    }
+
+    fun showPlaySelection(targetContext: Context, station: RadioStation, fragmentManager: androidx.fragment.app.FragmentManager) {
+        stationPlaybackUseCase.showPlaySelection(targetContext, station.toDataRadioStation(), fragmentManager)
+    }
+
+    fun toggleFavorite(currentStation: RadioStation) {
+        toggleFavorite(currentStation.toDataRadioStation())
+    }
+
+    fun getDomainCurrentOrLastStation(): RadioStation? {
+        return getCurrentOrLastStation()?.toDomain()
     }
 }

@@ -55,7 +55,8 @@ private object CastUnavailable : CastState() {
     }
 }
 
-private class CastAvailable(val castContext: CastContext,
+private class CastAvailable(val appContext: Context,
+                            val castContext: CastContext,
                             val sessionManager: SessionManager,
                             val sessionManagerListener: SessionManagerListener<Session>,
                             var castSession: CastSession?) : CastState() {
@@ -80,7 +81,7 @@ private class CastAvailable(val castContext: CastContext,
 
         invalidateOptions()
 
-        val appCtx = (activity as? Context)?.applicationContext ?: RadioDroidApp.instance ?: return
+        val appCtx = (activity as? Context)?.applicationContext ?: appContext
         val entryPoint = dagger.hilt.EntryPoints.get(appCtx, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
         val repo = entryPoint.mediaControllerRepository()
         if (repo.isPlaying()) {
@@ -152,6 +153,7 @@ public class CastHandler {
             if (result == ConnectionResult.SUCCESS) {
                 val castContext = CastContext.getSharedInstance(context)
                 val castState = CastAvailable(
+                        appContext = context.applicationContext,
                         castContext = castContext,
                         sessionManager = castContext.sessionManager,
                         sessionManagerListener = SessionManagerListenerImpl(),

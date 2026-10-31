@@ -2,6 +2,9 @@ package com.github.fschroffner.radiodroid3.station
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.fschroffner.radiodroid3.data.mapper.toDataRadioStation
+import com.github.fschroffner.radiodroid3.data.mapper.toDomain
+import com.github.fschroffner.radiodroid3.domain.model.RadioStation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +19,10 @@ import javax.inject.Inject
 sealed interface StationsUiState {
     object Idle : StationsUiState
     object Loading : StationsUiState
-    data class Success(val stations: List<DataRadioStation>) : StationsUiState
+    data class Success(
+        val stations: List<DataRadioStation>,
+        val domainStations: List<RadioStation> = stations.map { it.toDomain() }
+    ) : StationsUiState
     object Error : StationsUiState
 }
 

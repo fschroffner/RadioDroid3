@@ -7,15 +7,14 @@ on:
   pull_request:
     branches:
       - master
-  # Also trigger on page_build, as well as release created events
   page_build:
   release:
-    types: # This configuration does not affect the page_build event above
+    types:
       - created
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Tests & Static Analysis
     runs-on: ubuntu-latest
 
     steps:
@@ -25,11 +24,18 @@ jobs:
       with:
         distribution: 'zulu'
         java-version: 21
-    - name: Tests
-      run: bash ./gradlew assembleDebug test --stacktrace
+    - name: Run Tests & Lint
+      run: bash ./gradlew lintFreeDebug testFreeDebugUnitTest assembleDebug --stacktrace
     - name: Upload Debug APK
       uses: actions/upload-artifact@v6
       with:
         name: debug-apk
         path: app/build/outputs/apk/free/debug/*.apk
         retention-days: 30
+    - name: Upload Lint Reports
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: lint-reports
+        path: app/build/reports/lint-results*
+        retention-days: 14

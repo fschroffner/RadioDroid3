@@ -29,7 +29,6 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.bytehamster.lib.preferencesearch.SearchPreferenceResult
 import com.bytehamster.lib.preferencesearch.SearchPreferenceResultListener
@@ -86,8 +85,6 @@ class ActivityMain : AppCompatActivity(),
         const val LAUNCH_EQUALIZER_REQUEST = 1
         const val MAX_DYNAMIC_LAUNCHER_SHORTCUTS = 4
         const val FRAGMENT_FROM_BACKSTACK = 777
-        const val ACTION_SHOW_LOADING = "com.github.fschroffner.radiodroid3.show_loading"
-        const val ACTION_HIDE_LOADING = "com.github.fschroffner.radiodroid3.hide_loading"
         const val ACTION_PLAY_STATION_BY_UUID = "PLAY_STATION_BY_UUID"
         const val EXTRA_STATION_UUID = "STATION_UUID"
         private const val TAG = "RadioDroid"
@@ -119,7 +116,6 @@ class ActivityMain : AppCompatActivity(),
     lateinit var searchManager: MainSearchManager
         private set
 
-    var broadcastReceiver: BroadcastReceiver? = null
 
     var menuItemSearch: MenuItem? = null
     var menuItemDelete: MenuItem? = null
@@ -319,7 +315,6 @@ class ActivityMain : AppCompatActivity(),
 
     override fun onPause() {
         navigationController.saveSelectedMenuItem()
-        broadcastReceiver?.let { LocalBroadcastManager.getInstance(this).unregisterReceiver(it) }
         super.onPause()
 
         if (mediaControllerRepository.playbackState.value.playState == PlayState.Idle) {
@@ -332,7 +327,6 @@ class ActivityMain : AppCompatActivity(),
 
     override fun onResume() {
         super.onResume()
-        setupBroadcastReceiver()
         mediaControllerRepository.connect()
 
         castHandler.onResume()
@@ -567,29 +561,6 @@ class ActivityMain : AppCompatActivity(),
         meteredConnectionAlertDialog?.show()
     }
 
-    private fun setupBroadcastReceiver() {
-        val filter = IntentFilter().apply {
-            addAction(ACTION_HIDE_LOADING)
-            addAction(ACTION_SHOW_LOADING)
-        }
-        broadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                when (intent.action) {
-                    ACTION_HIDE_LOADING -> hideLoadingIcon()
-                    ACTION_SHOW_LOADING -> showLoadingIcon()
-                }
-            }
-        }
-        LocalBroadcastManager.getInstance(this).registerReceiver(broadcastReceiver!!, filter)
-    }
-
-    private fun showLoadingIcon() {
-        loadingStateHolder.showLoading()
-    }
-
-    private fun hideLoadingIcon() {
-        loadingStateHolder.hideLoading()
-    }
 
     private fun cleanInternalFilesDirectory() {
         try {

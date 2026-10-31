@@ -1,5 +1,6 @@
 package com.github.fschroffner.radiodroid3.player
 
+import com.github.fschroffner.radiodroid3.data.mapper.toDomain
 import com.github.fschroffner.radiodroid3.players.PlayState
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.FavoritesUiState
@@ -64,18 +65,22 @@ class PlayerUiStateTest {
         }
         val populated = FavoritesUiState(
             stations = listOf(station),
+            domainStations = listOf(station.toDomain()),
             isRefreshing = true,
             errorMessage = null
         )
         assertEquals(1, populated.stations.size)
+        assertEquals(1, populated.domainStations.size)
         assertTrue(populated.isRefreshing)
         assertEquals("Rock Antenne", populated.stations[0].Name)
+        assertEquals("Rock Antenne", populated.domainStations[0].name)
     }
 
     @Test
     fun testHistoryUiState() {
         val defaultState = HistoryUiState()
         assertTrue(defaultState.stations.isEmpty())
+        assertTrue(defaultState.domainStations.isEmpty())
         assertFalse(defaultState.isRefreshing)
         assertNull(defaultState.errorMessage)
 
@@ -85,11 +90,25 @@ class PlayerUiStateTest {
         }
         val populated = HistoryUiState(
             stations = listOf(station),
+            domainStations = listOf(station.toDomain()),
             isRefreshing = false,
             errorMessage = "Connection timeout"
         )
         assertEquals(1, populated.stations.size)
+        assertEquals(1, populated.domainStations.size)
         assertFalse(populated.isRefreshing)
         assertEquals("Connection timeout", populated.errorMessage)
+        assertEquals("BBC World Service", populated.domainStations[0].name)
+    }
+
+    @Test
+    fun testDomainStationInPlaybackState() {
+        val station = DataRadioStation().apply {
+            StationUuid = "domain-test-uuid"
+            Name = "Lounge FM"
+        }
+        val playback = PlaybackState(station = station)
+        assertEquals("domain-test-uuid", playback.domainStation?.stationUuid)
+        assertEquals("Lounge FM", playback.domainStation?.name)
     }
 }
