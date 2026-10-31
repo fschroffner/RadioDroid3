@@ -96,29 +96,20 @@ class StationModelMappingTest {
         assertEquals(1, stations.size)
 
         val station = stations[0]
-        // Check camelCase accessors
-        assertEquals("1111-2222-3333", station.stationUuid)
-        assertEquals("Jazz Radio One", station.name)
-        assertEquals("https://stream.jazzradio.com/live", station.streamUrl)
+        assertEquals("1111-2222-3333", station.StationUuid)
+        assertEquals("Jazz Radio One", station.Name)
+        assertEquals("https://stream.jazzradio.com/live", station.StreamUrl)
 
-        // Check PascalCase compatibility accessors
-        @Suppress("DEPRECATION")
-        run {
-            assertEquals("1111-2222-3333", station.StationUuid)
-            assertEquals("Jazz Radio One", station.Name)
-            assertEquals("https://stream.jazzradio.com/live", station.StreamUrl)
-        }
-
-        // Check toJson()
-        val json = station.toJson()
-        assertNotNull(json)
-        assertEquals("1111-2222-3333", json!!.getString("stationuuid"))
-        assertEquals("Jazz Radio One", json.getString("name"))
+        // Check toJsonString()
+        val jsonString = station.toJsonString()
+        assertNotNull(jsonString)
+        assertTrue(jsonString.contains("\"stationuuid\":\"1111-2222-3333\""))
+        assertTrue(jsonString.contains("\"name\":\"Jazz Radio One\""))
 
         // Check single decode
-        val singleJson = json.toString()
-        val singleStation = DataRadioStation.DecodeJsonSingle(singleJson)
+        val singleStation = DataRadioStation.DecodeJsonSingle(jsonString)
         assertNotNull(singleStation)
-        assertEquals("1111-2222-3333", singleStation!!.stationUuid)
+        assertEquals("1111-2222-3333", singleStation!!.StationUuid)
+        assertEquals("Jazz Radio One", singleStation.Name)
     }
 }
