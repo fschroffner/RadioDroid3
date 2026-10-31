@@ -77,23 +77,7 @@ class FavouriteManager @Inject constructor(
         }
     }
 
-    override fun remove(id: String): Int {
-        stationDao?.let { dao ->
-            coroutineScope.launch {
-                dao.setFavorite(id, false, 0)
-            }
-        }
-        return super.remove(id)
-    }
 
-    override fun clear() {
-        stationDao?.let { dao ->
-            coroutineScope.launch {
-                dao.clearFavorites()
-            }
-        }
-        super.clear()
-    }
 
     fun updateShortcuts(favorites: List<DataRadioStation> = listStations) {
         if (Build.VERSION.SDK_INT >= 25 && !BuildConfig.IS_TESTING.get()) {

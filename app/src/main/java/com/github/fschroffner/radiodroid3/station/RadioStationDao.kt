@@ -15,13 +15,13 @@ interface RadioStationDao {
     @Query("SELECT * FROM radio_stations WHERE isFavorite = 1 ORDER BY favoriteOrder ASC, Name COLLATE NOCASE ASC")
     fun getFavoriteStations(): Flow<List<RadioStationEntity>>
 
-    @Query("SELECT * FROM radio_stations WHERE lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT 25")
+    @Query("SELECT * FROM radio_stations WHERE lastPlayed IS NOT NULL AND lastPlayed > 0 ORDER BY lastPlayed DESC LIMIT 25")
     fun getHistoryStations(): Flow<List<RadioStationEntity>>
 
     @Query("SELECT * FROM radio_stations WHERE isFavorite = 1 ORDER BY favoriteOrder ASC, Name COLLATE NOCASE ASC")
     suspend fun getFavoriteStationsList(): List<RadioStationEntity>
 
-    @Query("SELECT * FROM radio_stations WHERE lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT 25")
+    @Query("SELECT * FROM radio_stations WHERE lastPlayed IS NOT NULL AND lastPlayed > 0 ORDER BY lastPlayed DESC LIMIT 25")
     suspend fun getHistoryStationsList(): List<RadioStationEntity>
 
     @Query("SELECT * FROM radio_stations WHERE StationUuid = :uuid LIMIT 1")

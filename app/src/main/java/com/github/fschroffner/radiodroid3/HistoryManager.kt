@@ -55,23 +55,7 @@ class HistoryManager @Inject constructor(
         }
     }
 
-    override fun remove(id: String): Int {
-        stationDao?.let { dao ->
-            coroutineScope.launch {
-                dao.setLastPlayed(id, 0L)
-            }
-        }
-        return super.remove(id)
-    }
 
-    override fun clear() {
-        stationDao?.let { dao ->
-            coroutineScope.launch {
-                dao.clearHistory()
-            }
-        }
-        super.clear()
-    }
 
     private fun cutList(count: Int) {
         if (listStations.size > count) {

@@ -106,6 +106,7 @@ open class StationSaveManager(
     }
 
     open fun add(station: DataRadioStation) {
+        listStations.add(station)
         if (stationDao != null) {
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
@@ -117,14 +118,14 @@ open class StationSaveManager(
                 stationDao.insertOrUpdate(station.toEntity())
             }
         } else {
-            listStations.add(station)
             Save()
-            notifyObservers()
         }
+        notifyObservers()
         stationStatusListener?.onStationStatusChanged(station, true)
     }
 
     fun addMultiple(stations: List<DataRadioStation>) {
+        listStations.addAll(stations)
         if (stationDao != null) {
             coroutineScope.launch {
                 stations.forEachIndexed { index, s ->
@@ -138,10 +139,9 @@ open class StationSaveManager(
                 }
             }
         } else {
-            listStations.addAll(stations)
             Save()
-            notifyObservers()
         }
+        notifyObservers()
     }
 
     fun replaceList(stationsNew: List<DataRadioStation>) {
@@ -166,6 +166,7 @@ open class StationSaveManager(
     }
 
     fun addFront(station: DataRadioStation) {
+        listStations.add(0, station)
         if (stationDao != null) {
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
@@ -177,10 +178,9 @@ open class StationSaveManager(
                 stationDao.insertOrUpdate(station.toEntity())
             }
         } else {
-            listStations.add(0, station)
             Save()
-            notifyObservers()
         }
+        notifyObservers()
         stationStatusListener?.onStationStatusChanged(station, true)
     }
 
@@ -261,6 +261,9 @@ open class StationSaveManager(
     open fun remove(id: String): Int {
         val idx = listStations.indexOfFirst { it.StationUuid == id }
         val station = listStations.getOrNull(idx)
+        if (idx != -1) {
+            listStations.removeAt(idx)
+        }
         if (stationDao != null) {
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
@@ -270,17 +273,19 @@ open class StationSaveManager(
                 }
             }
         } else {
-            if (idx != -1) {
-                listStations.removeAt(idx)
-                Save()
-                notifyObservers()
-            }
+            Save()
         }
+        notifyObservers()
         station?.let { stationStatusListener?.onStationStatusChanged(it, false) }
         return idx
     }
 
     open fun restore(station: DataRadioStation, pos: Int) {
+        if (pos != -1 && pos <= listStations.size) {
+            listStations.add(pos, station)
+        } else {
+            listStations.add(station)
+        }
         if (stationDao != null) {
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
@@ -292,15 +297,15 @@ open class StationSaveManager(
                 stationDao.insertOrUpdate(station.toEntity())
             }
         } else {
-            listStations.add(pos, station)
             Save()
-            notifyObservers()
         }
-        stationStatusListener?.onStationStatusChanged(station, false)
+        notifyObservers()
+        stationStatusListener?.onStationStatusChanged(station, true)
     }
 
     open fun clear() {
         val oldStations = listStations.toList()
+        listStations = mutableListOf()
         if (stationDao != null) {
             coroutineScope.launch {
                 if (getSaveId() == "favourites") {
@@ -310,10 +315,9 @@ open class StationSaveManager(
                 }
             }
         } else {
-            listStations = mutableListOf()
             Save()
-            notifyObservers()
         }
+        notifyObservers()
         oldStations.forEach { stationStatusListener?.onStationStatusChanged(it, false) }
     }
 
