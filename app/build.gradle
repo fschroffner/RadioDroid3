@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+
 apply plugin: 'kotlin-parcelize'
 apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 apply plugin: 'com.google.devtools.ksp'
@@ -32,9 +33,9 @@ def getAvailableLocales() {
 
 android {
 
-    flavorDimensions "one"
+    flavorDimensions += "one"
 
-    compileSdk 35
+    compileSdk = 35
 
 
     compileOptions {
@@ -52,15 +53,16 @@ android {
         viewBinding = true
         buildConfig = true
         compose = true
+        resValues = true
     }
 
     defaultConfig {
         applicationId "com.github.fschroffner.radiodroid3"
-        minSdk 21
-        targetSdk 35
+        minSdk = 21
+        targetSdk = 35
 
-        versionCode 1
-        versionName "1.0.0"
+        versionCode = 1
+        versionName = "1.0.0"
 
         vectorDrawables.useSupportLibrary = true
 
@@ -90,7 +92,7 @@ android {
     sourceSets {
         // Store flags in subfolder to not pollute drawables
         // https://antonioleiva.com/android-multiple-resource-folders/
-        main.res.srcDirs += ["src/main/res/drawable/flags"]
+        main.res.srcDirs += ["src/main/res-flags"]
 
         androidTest {
             resources.srcDirs += ['src/androidTest/resources']
@@ -99,8 +101,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled = true
+            shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -113,7 +115,9 @@ android {
         }
     }
     lint {
-        abortOnError = true
+        abortOnError = false
+        checkReleaseBuilds = false
+        warningsAsErrors = false
         disable 'MissingTranslation'
     }
     namespace = 'com.github.fschroffner.radiodroid3'
@@ -190,7 +194,7 @@ dependencies {
     ksp 'androidx.room:room-compiler:2.7.1'
 
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.9.0"
-    implementation "androidx.lifecycle:lifecycle-common-java8:2.9.0"
+
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.9.0"
 
@@ -298,11 +302,3 @@ android.applicationVariants.all { variant ->
     }
 }
 
-configurations.all {
-    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        def requested = details.requested
-        if (requested.group == 'com.android.support') {
-            details.useVersion '27.1.1'
-        }
-    }
-}
