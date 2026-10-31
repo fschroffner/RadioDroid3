@@ -65,12 +65,12 @@ open class StationSaveManager(
 
     init {
         Load()
-        observeDatabaseFlow()
     }
 
     protected open fun getSaveId() = "default"
 
     protected fun observeDatabaseFlow() {
+        if (stationDao == null) return
         coroutineScope.launch {
             stationsFlow.collect { stations ->
                 withContext(Dispatchers.Main) {

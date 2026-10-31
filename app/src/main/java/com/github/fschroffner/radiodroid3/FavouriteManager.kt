@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,16 +32,18 @@ class FavouriteManager @Inject constructor(
 
     override fun getSaveId() = "favourites"
 
-    override val stationsFlow: Flow<List<DataRadioStation>> =
-        stationDao.getFavoriteStations().map { list -> list.map { it.toDataRadioStation() } }
+    override val stationsFlow: Flow<List<DataRadioStation>>
+        get() = stationDao?.getFavoriteStations()?.map { list -> list.map { it.toDataRadioStation() } } ?: emptyFlow()
 
-    val domainStationsFlow: Flow<List<RadioStation>> =
-        stationDao.getFavoriteStations().map { list -> list.map { it.toDomain() } }
+    val domainStationsFlow: Flow<List<RadioStation>>
+        get() = stationDao?.getFavoriteStations()?.map { list -> list.map { it.toDomain() } } ?: emptyFlow()
 
     private val _stationChangedFlow = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val stationChangedFlow: SharedFlow<String> = _stationChangedFlow.asSharedFlow()
 
     init {
+        observeDatabaseFlow()
+
         setStationStatusListener(object : StationStatusListener {
             override fun onStationStatusChanged(station: DataRadioStation, favourite: Boolean) {
                 _stationChangedFlow.tryEmit(station.StationUuid)

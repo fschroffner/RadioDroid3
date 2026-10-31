@@ -9,6 +9,7 @@ import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,11 +21,15 @@ class HistoryManager @Inject constructor(
 
     override fun getSaveId() = "history"
 
-    override val stationsFlow: Flow<List<DataRadioStation>> =
-        stationDao.getHistoryStations().map { list -> list.map { it.toDataRadioStation() } }
+    override val stationsFlow: Flow<List<DataRadioStation>>
+        get() = stationDao?.getHistoryStations()?.map { list -> list.map { it.toDataRadioStation() } } ?: emptyFlow()
 
-    val domainStationsFlow: Flow<List<RadioStation>> =
-        stationDao.getHistoryStations().map { list -> list.map { it.toDomain() } }
+    val domainStationsFlow: Flow<List<RadioStation>>
+        get() = stationDao?.getHistoryStations()?.map { list -> list.map { it.toDomain() } } ?: emptyFlow()
+
+    init {
+        observeDatabaseFlow()
+    }
 
     fun add(station: RadioStation) {
         add(station.toDataRadioStation())

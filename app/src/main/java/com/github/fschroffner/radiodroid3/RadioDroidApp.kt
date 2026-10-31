@@ -75,7 +75,9 @@ class RadioDroidApp : Application(), ImageLoaderFactory {
         val picassoInstance = Picasso.Builder(this)
             .downloader(OkHttp3Downloader(picassoOkHttpClient))
             .build()
-        Picasso.setSingletonInstance(picassoInstance)
+        try {
+            Picasso.setSingletonInstance(picassoInstance)
+        } catch (_: Exception) {}
 
         CountryCodeDictionary.instance.load(this)
         CountryFlagsLoader.instance
