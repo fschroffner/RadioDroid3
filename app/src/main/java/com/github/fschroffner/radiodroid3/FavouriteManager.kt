@@ -8,6 +8,8 @@ import android.content.pm.ShortcutManager
 import android.os.Build
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.github.fschroffner.radiodroid3.data.mapper.toDataRadioStation
+import com.github.fschroffner.radiodroid3.data.mapper.toDomain
+import com.github.fschroffner.radiodroid3.domain.model.RadioStation
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import com.github.fschroffner.radiodroid3.station.StationShortcutHelper
@@ -32,6 +34,9 @@ class FavouriteManager @Inject constructor(
     override val stationsFlow: Flow<List<DataRadioStation>> =
         stationDao.getFavoriteStations().map { list -> list.map { it.toDataRadioStation() } }
 
+    val domainStationsFlow: Flow<List<RadioStation>> =
+        stationDao.getFavoriteStations().map { list -> list.map { it.toDomain() } }
+
     private val _stationChangedFlow = MutableSharedFlow<String>(extraBufferCapacity = 64)
     val stationChangedFlow: SharedFlow<String> = _stationChangedFlow.asSharedFlow()
 
@@ -53,6 +58,10 @@ class FavouriteManager @Inject constructor(
                 }
             }
         }
+    }
+
+    fun add(station: RadioStation) {
+        add(station.toDataRadioStation())
     }
 
     override fun add(station: DataRadioStation) {

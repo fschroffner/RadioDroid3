@@ -78,37 +78,24 @@ object Utils {
 
     @JvmStatic
     fun getCacheFile(ctx: Context, theURI: String): String? {
-        val chaine = StringBuilder("")
         return try {
             var aFileName = theURI.lowercase().replace("http://", "")
             aFileName = aFileName.lowercase().replace("https://", "")
             aFileName = sanitizeName(aFileName)
 
-            val file = File(ctx.cacheDir.absolutePath + "/" + aFileName)
-            val lastModDate = Date(file.lastModified())
-            val now = Date()
-            val millis = now.time - file.lastModified()
-            val secs = millis / 1000
-            val mins = secs / 60
-            val hours = mins / 60
+            val file = File(ctx.cacheDir, aFileName)
+            if (!file.exists() || !file.isFile) return null
 
-            if (BuildConfig.DEBUG) {
-                Log.d("UTIL", "File last modified : $lastModDate secs=$secs  mins=$mins hours=$hours")
-            }
+            val millis = System.currentTimeMillis() - file.lastModified()
+            val hours = millis / (1000 * 60 * 60)
 
             if (hours < 1) {
-                val aStream = FileInputStream(file)
-                val rd = BufferedReader(InputStreamReader(aStream))
-                var line: String?
-                while (rd.readLine().also { line = it } != null) {
-                    chaine.append(line)
-                }
-                rd.close()
                 if (BuildConfig.DEBUG) Log.d("UTIL", "used cache for:$theURI")
-                return chaine.toString()
+                file.readText(Charsets.UTF_8)
+            } else {
+                if (BuildConfig.DEBUG) Log.d("UTIL", "do not use cache, because too old:$theURI")
+                null
             }
-            if (BuildConfig.DEBUG) Log.d("UTIL", "do not use cache, because too old:$theURI")
-            null
         } catch (e: Exception) {
             Log.e("UTIL", "getCacheFile() $e")
             null
@@ -122,10 +109,8 @@ object Utils {
             aFileName = aFileName.lowercase().replace("https://", "")
             aFileName = sanitizeName(aFileName)
 
-            val f = File(ctx.cacheDir.toString() + "/" + aFileName)
-            val aStream = FileOutputStream(f)
-            aStream.write(content.toByteArray(Charsets.UTF_8))
-            aStream.close()
+            val f = File(ctx.cacheDir, aFileName)
+            f.writeText(content, Charsets.UTF_8)
         } catch (e: Exception) {
             Log.e("UTIL", "writeFileCache() could not write to cache file for:$theURI")
         }
@@ -153,17 +138,18 @@ object Utils {
             }
 
             val request = requestBuilder.build()
-            val response = httpClient.newCall(request).execute()
-            val responseStr = response.body!!.string()
+            httpClient.newCall(request).execute().use { response ->
+                val responseStr = response.body?.string()
 
-            if (!response.isSuccessful) {
-                Log.e("UTIL", "Unsuccessful response: ${response.message}\n$responseStr")
-                return null
+                if (!response.isSuccessful || responseStr == null) {
+                    Log.e("UTIL", "Unsuccessful response: ${response.code} ${response.message}\n$responseStr")
+                    return null
+                }
+
+                writeFileCache(ctx, theURI, responseStr)
+                if (BuildConfig.DEBUG) Log.d("UTIL", "wrote cache file for:$theURI")
+                responseStr
             }
-
-            writeFileCache(ctx, theURI, responseStr)
-            if (BuildConfig.DEBUG) Log.d("UTIL", "wrote cache file for:$theURI")
-            responseStr
         } catch (e: Exception) {
             Log.e("UTIL", "downloadFeed() $e")
             null
@@ -398,24 +384,25 @@ object Utils {
 
         try {
             val request = Request.Builder().url(trimmed).build()
-            val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) return trimmed
-            val body = response.body?.string() ?: return trimmed
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return trimmed
+                val body = response.body?.string() ?: return trimmed
 
-            if (isPls || body.startsWith("[playlist]", ignoreCase = true)) {
-                val fileLine = body.lineSequence().firstOrNull { it.trim().startsWith("File", ignoreCase = true) && it.contains("=") }
-                if (fileLine != null) {
-                    val url = fileLine.substringAfter("=").trim()
-                    if (url.startsWith("http://", ignoreCase = true) || url.startsWith("https://", ignoreCase = true)) {
-                        return url
+                if (isPls || body.startsWith("[playlist]", ignoreCase = true)) {
+                    val fileLine = body.lineSequence().firstOrNull { it.trim().startsWith("File", ignoreCase = true) && it.contains("=") }
+                    if (fileLine != null) {
+                        val url = fileLine.substringAfter("=").trim()
+                        if (url.startsWith("http://", ignoreCase = true) || url.startsWith("https://", ignoreCase = true)) {
+                            return url
+                        }
                     }
-                }
-            } else {
-                val urlLine = body.lineSequence()
-                    .map { it.trim() }
-                    .firstOrNull { !it.startsWith("#") && (it.startsWith("http://", ignoreCase = true) || it.startsWith("https://", ignoreCase = true)) }
-                if (urlLine != null) {
-                    return urlLine
+                } else {
+                    val urlLine = body.lineSequence()
+                        .map { it.trim() }
+                        .firstOrNull { !it.startsWith("#") && (it.startsWith("http://", ignoreCase = true) || it.startsWith("https://", ignoreCase = true)) }
+                    if (urlLine != null) {
+                        return urlLine
+                    }
                 }
             }
         } catch (e: Exception) {

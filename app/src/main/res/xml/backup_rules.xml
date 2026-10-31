@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Exclude temporary cache and sensitive preferences -->
+    <exclude domain="root" path="cache" />
+    <exclude domain="sharedpref" path="proxy_preferences.xml" />
+    <exclude domain="sharedpref" path="com.github.fschroffner.radiodroid3_preferences.xml" />
+</full-backup-content>

@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Cleartext (HTTP) is intentionally permitted for radio stream URLs,
+    <!-- Internal community and metadata APIs must strictly enforce HTTPS -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">api.radio-browser.info</domain>
+        <domain includeSubdomains="true">radio-browser.info</domain>
+        <domain includeSubdomains="true">ws.audioscrobbler.com</domain>
+        <domain includeSubdomains="true">last.fm</domain>
+    </domain-config>
+
+    <!-- Cleartext (HTTP) is intentionally permitted for arbitrary third-party radio stream URLs,
          which are user-provided and frequently use plain HTTP. -->
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>

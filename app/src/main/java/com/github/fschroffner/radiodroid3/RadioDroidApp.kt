@@ -4,6 +4,9 @@ import android.app.Application
 import android.app.UiModeManager
 import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatDelegate
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.disk.DiskCache
 import dagger.hilt.android.HiltAndroidApp
 import com.squareup.picasso.OkHttp3Downloader
 import com.squareup.picasso.Picasso
@@ -14,7 +17,7 @@ import java.io.File
 import javax.inject.Inject
 
 @HiltAndroidApp
-class RadioDroidApp : Application() {
+class RadioDroidApp : Application(), ImageLoaderFactory {
 
     @Inject
     lateinit var okHttpClient: OkHttpClient
@@ -31,6 +34,19 @@ class RadioDroidApp : Application() {
         init {
             AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
         }
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .okHttpClient { okHttpClient }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(File(cacheDir, "coil_image_cache"))
+                    .maxSizeBytes(100L * 1024 * 1024)
+                    .build()
+            }
+            .crossfade(true)
+            .build()
     }
 
     override fun onCreate() {

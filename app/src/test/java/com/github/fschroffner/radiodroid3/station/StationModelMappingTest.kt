@@ -111,5 +111,13 @@ class StationModelMappingTest {
         assertNotNull(singleStation)
         assertEquals("1111-2222-3333", singleStation!!.StationUuid)
         assertEquals("Jazz Radio One", singleStation.Name)
+
+        // Verify Domain conversion roundtrip
+        val domainFromLegacy = singleStation.toDomain()
+        assertEquals(singleStation.StationUuid, domainFromLegacy.stationUuid)
+        assertEquals(singleStation.Name, domainFromLegacy.name)
+        val legacyFromDomain = domainFromLegacy.toDataRadioStation()
+        assertEquals(domainFromLegacy.stationUuid, legacyFromDomain.StationUuid)
+        assertEquals(domainFromLegacy.name, legacyFromDomain.Name)
     }
 }

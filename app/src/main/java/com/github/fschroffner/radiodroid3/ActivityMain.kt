@@ -593,10 +593,12 @@ class ActivityMain : AppCompatActivity(),
 
     private fun cleanInternalFilesDirectory() {
         try {
-            val dir = File(filesDir.absolutePath)
+            val dir = filesDir
             if (dir.isDirectory) {
-                dir.list()?.forEach { child ->
-                    try { File(dir, child).delete() } catch (_: Exception) {}
+                dir.listFiles()?.forEach { file ->
+                    if (file.isFile && (file.name.endsWith(".tmp") || file.name.startsWith("temp_"))) {
+                        try { file.delete() } catch (_: Exception) {}
+                    }
                 }
             }
         } catch (_: Exception) {}

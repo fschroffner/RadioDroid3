@@ -52,44 +52,50 @@ class LfmMetadataSearcher(private val httpClient: OkHttpClient) {
         }
 
         override fun onResponse(call: Call, response: Response) {
-            try {
-                val lfmData = gson.fromJson(response.body!!.charStream(), LfmTrackMetadata::class.java)
-                val trackData = lfmData.track
-                if (trackData == null) {
-                    val normalized = tryNormalizeTrack(track)
-                    if (normalized != null && normalized.length > 3) {
-                        httpClient.newCall(buildRequest(lastFMApiKey, artist, normalized))
-                            .enqueue(MetadataCallback(trackMetadataCallback, lastFMApiKey, artist, normalized))
-                    } else {
+            response.use { res ->
+                try {
+                    val body = res.body ?: run {
                         trackMetadataCallback.onFailure(TrackMetadataCallback.FailureType.UNRECOVERABLE)
+                        return
                     }
-                    return
-                }
-
-                val metadata = TrackMetadata()
-                trackData.artist?.let { metadata.artist = it.name }
-
-                val albumArts = mutableListOf<TrackMetadata.AlbumArt>()
-                trackData.album?.let { album ->
-                    metadata.album = album.title
-                    album.image?.forEach { img ->
-                        val size = when (img.size) {
-                            "small" -> TrackMetadata.AlbumArtSize.SMALL
-                            "medium" -> TrackMetadata.AlbumArtSize.MEDIUM
-                            "large" -> TrackMetadata.AlbumArtSize.LARGE
-                            "extralarge" -> TrackMetadata.AlbumArtSize.EXTRA_LARGE
-                            else -> TrackMetadata.AlbumArtSize.SMALL
+                    val lfmData = gson.fromJson(body.charStream(), LfmTrackMetadata::class.java)
+                    val trackData = lfmData?.track
+                    if (trackData == null) {
+                        val normalized = tryNormalizeTrack(track)
+                        if (normalized != null && normalized.length > 3) {
+                            httpClient.newCall(buildRequest(lastFMApiKey, artist, normalized))
+                                .enqueue(MetadataCallback(trackMetadataCallback, lastFMApiKey, artist, normalized))
+                        } else {
+                            trackMetadataCallback.onFailure(TrackMetadataCallback.FailureType.UNRECOVERABLE)
                         }
-                        albumArts.add(TrackMetadata.AlbumArt(size, img.text ?: ""))
+                        return
                     }
-                    albumArts.sortByDescending { it.size }
-                }
-                metadata.albumArts = albumArts
-                metadata.track = trackData.name
 
-                trackMetadataCallback.onSuccess(metadata)
-            } catch (_: Exception) {
-                trackMetadataCallback.onFailure(TrackMetadataCallback.FailureType.UNRECOVERABLE)
+                    val metadata = TrackMetadata()
+                    trackData.artist?.let { metadata.artist = it.name }
+
+                    val albumArts = mutableListOf<TrackMetadata.AlbumArt>()
+                    trackData.album?.let { album ->
+                        metadata.album = album.title
+                        album.image?.forEach { img ->
+                            val size = when (img.size) {
+                                "small" -> TrackMetadata.AlbumArtSize.SMALL
+                                "medium" -> TrackMetadata.AlbumArtSize.MEDIUM
+                                "large" -> TrackMetadata.AlbumArtSize.LARGE
+                                "extralarge" -> TrackMetadata.AlbumArtSize.EXTRA_LARGE
+                                else -> TrackMetadata.AlbumArtSize.SMALL
+                            }
+                            albumArts.add(TrackMetadata.AlbumArt(size, img.text ?: ""))
+                        }
+                        albumArts.sortByDescending { it.size }
+                    }
+                    metadata.albumArts = albumArts
+                    metadata.track = trackData.name
+
+                    trackMetadataCallback.onSuccess(metadata)
+                } catch (_: Exception) {
+                    trackMetadataCallback.onFailure(TrackMetadataCallback.FailureType.UNRECOVERABLE)
+                }
             }
         }
     }

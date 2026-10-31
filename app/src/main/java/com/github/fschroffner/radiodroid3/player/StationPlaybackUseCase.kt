@@ -15,6 +15,8 @@ import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
 import com.github.fschroffner.radiodroid3.players.selector.PlayerSelectorDialog
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
+import com.github.fschroffner.radiodroid3.data.mapper.toDataRadioStation
+import com.github.fschroffner.radiodroid3.domain.model.RadioStation
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -52,6 +54,10 @@ class StationPlaybackUseCase @Inject constructor(
         return mediaControllerRepository.getCurrentStation() ?: historyManager.getFirst()
     }
 
+    fun playStation(station: RadioStation) {
+        playStation(station.toDataRadioStation())
+    }
+
     fun playStation(station: DataRadioStation) {
         historyManager.add(station)
 
@@ -64,6 +70,9 @@ class StationPlaybackUseCase @Inject constructor(
 
         mediaControllerRepository.playStation(station)
     }
+
+    suspend fun resolveStreamUrl(station: RadioStation): String? =
+        resolveStreamUrl(station.toDataRadioStation())
 
     suspend fun resolveStreamUrl(station: DataRadioStation): String? = withContext(Dispatchers.IO) {
         var streamUrl: String? = null

@@ -167,10 +167,7 @@ class FragmentTabs : Fragment(), IFragmentRefreshable, IFragmentSearchable {
 
     override fun Refresh() {
         val vp = _binding?.viewpager ?: return
-        when (val fragment = fragments[vp.currentItem]) {
-            is IFragmentRefreshable -> fragment.Refresh()
-            is FragmentBase -> fragment.DownloadUrl(true)
-        }
+        (fragments[vp.currentItem] as? IFragmentRefreshable)?.Refresh()
     }
 
     inner class ViewPagerAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {

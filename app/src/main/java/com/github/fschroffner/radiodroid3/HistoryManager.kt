@@ -2,7 +2,9 @@ package com.github.fschroffner.radiodroid3
 
 import android.content.Context
 import com.github.fschroffner.radiodroid3.data.mapper.toDataRadioStation
+import com.github.fschroffner.radiodroid3.data.mapper.toDomain
 import com.github.fschroffner.radiodroid3.data.mapper.toEntity
+import com.github.fschroffner.radiodroid3.domain.model.RadioStation
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,6 +22,13 @@ class HistoryManager @Inject constructor(
 
     override val stationsFlow: Flow<List<DataRadioStation>> =
         stationDao.getHistoryStations().map { list -> list.map { it.toDataRadioStation() } }
+
+    val domainStationsFlow: Flow<List<RadioStation>> =
+        stationDao.getHistoryStations().map { list -> list.map { it.toDomain() } }
+
+    fun add(station: RadioStation) {
+        add(station.toDataRadioStation())
+    }
 
     override fun add(station: DataRadioStation) {
         station.lastPlayed = System.currentTimeMillis()

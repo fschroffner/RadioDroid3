@@ -64,7 +64,10 @@ class ProxySettingsDialog : DialogFragment() {
                 val proxy = createProxySettings()
                 entryPoint.appPreferencesDataStore().putStringAsync("proxySettings", Gson().toJson(proxy))
                 val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-                proxy.toPreferences(prefs.edit().also { it.apply() })
+                prefs.edit().also { editor ->
+                    proxy.toPreferences(editor)
+                    editor.apply()
+                }
             }
             .setNeutralButton(R.string.settings_proxy_action_test, null)
             .setNegativeButton(android.R.string.cancel) { _, _ -> }

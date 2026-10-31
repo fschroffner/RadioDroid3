@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Exclude temporary cache and sensitive proxy credentials -->
+        <exclude domain="root" path="cache" />
+        <exclude domain="sharedpref" path="proxy_preferences.xml" />
+        <exclude domain="sharedpref" path="com.github.fschroffner.radiodroid3_preferences.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <!-- Exclude temporary cache files during device-to-device transfer -->
+        <exclude domain="root" path="cache" />
+    </device-transfer>
+</data-extraction-rules>

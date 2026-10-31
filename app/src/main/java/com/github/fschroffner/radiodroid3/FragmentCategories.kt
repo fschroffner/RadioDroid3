@@ -1,27 +1,45 @@
 package com.github.fschroffner.radiodroid3
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.fschroffner.radiodroid3.adapters.ItemAdapterCategory
+import com.github.fschroffner.radiodroid3.category.CategoriesUiState
+import com.github.fschroffner.radiodroid3.category.CategoriesViewModel
 import com.github.fschroffner.radiodroid3.data.DataCategory
+import com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
 import com.github.fschroffner.radiodroid3.databinding.FragmentStationsRemoteBinding
+import com.github.fschroffner.radiodroid3.interfaces.IFragmentRefreshable
 import com.github.fschroffner.radiodroid3.station.StationsFilter
-import java.util.ArrayList
-import java.util.Collections
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
-class FragmentCategories : FragmentBase() {
+/**
+ * Fragment rendering category lists (tags, countries, languages).
+ * Backed by [CategoriesViewModel] and [com.github.fschroffner.radiodroid3.data.CategoryRepository].
+ */
+@AndroidEntryPoint
+class FragmentCategories : Fragment(), IFragmentRefreshable {
+
     companion object {
         private const val TAG = "FragmentCategories"
     }
 
+    private val categoriesViewModel: CategoriesViewModel by viewModels()
+
     private var _binding: FragmentStationsRemoteBinding? = null
     private val binding get() = _binding!!
 
+    private var relativeUrl: String = ""
     private var searchStyle = StationsFilter.SearchStyle.ByName
     private var singleUseFilter = false
 
@@ -29,39 +47,17 @@ class FragmentCategories : FragmentBase() {
         this.searchStyle = searchStyle
     }
 
+    fun EnableSingleUseFilter(b: Boolean) {
+        singleUseFilter = b
+    }
+
     fun ClickOnItem(theData: DataCategory) {
         (requireActivity() as ActivityMain).Search(searchStyle, theData.Name)
     }
 
-    override fun RefreshListGui() {
-        val currentBinding = _binding ?: return
-        if (BuildConfig.DEBUG) Log.d(TAG, "refreshing the categories list.")
-
-        val ctx = context ?: return
-        val sharedPref = PreferenceManager.getDefaultSharedPreferences(ctx)
-        val showSingleUseTags = sharedPref.getBoolean("single_use_tags", false)
-
-        val filteredCategoriesList = ArrayList<DataCategory>()
-        val data = DataCategory.DecodeJson(urlResult)
-
-        if (BuildConfig.DEBUG) Log.d(TAG, "categories count:${data.size}")
-        val countryDict = CountryCodeDictionary.instance
-        val flagsDict = CountryFlagsLoader.instance
-
-        for (aData in data) {
-            if (!singleUseFilter || showSingleUseTags || aData.UsedCount > 1) {
-                if (searchStyle == StationsFilter.SearchStyle.ByCountryCodeExact) {
-                    aData.Label = countryDict.getCountryByCode(aData.Name)
-                    aData.Icon = flagsDict.getFlag(requireContext(), aData.Name)
-                }
-                filteredCategoriesList.add(aData)
-            }
-        }
-
-        if (searchStyle == StationsFilter.SearchStyle.ByCountryCodeExact) {
-            Collections.sort(filteredCategoriesList)
-        }
-        (currentBinding.recyclerViewStations.adapter as? ItemAdapterCategory)?.updateList(filteredCategoriesList)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        relativeUrl = arguments?.getString("url").orEmpty()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -74,29 +70,75 @@ class FragmentCategories : FragmentBase() {
             }
         }
 
-        val llm = LinearLayoutManager(context).apply { orientation = LinearLayoutManager.VERTICAL }
         binding.recyclerViewStations.adapter = adapterCategory
-        binding.recyclerViewStations.layoutManager = llm
+        binding.recyclerViewStations.layoutManager = LinearLayoutManager(context)
 
         binding.swiperefresh.setOnRefreshListener {
-            if (BuildConfig.DEBUG) Log.d(TAG, "onRefresh called from SwipeRefreshLayout")
-            DownloadUrl(true, false)
+            loadCategories(forceUpdate = true)
         }
 
-        RefreshListGui()
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        observeViewModel()
+        if (categoriesViewModel.uiState.value is CategoriesUiState.Idle) {
+            loadCategories(forceUpdate = false)
+        }
+    }
+
+    private fun loadCategories(forceUpdate: Boolean) {
+        val showSingleUseTags = PreferenceManager.getDefaultSharedPreferences(requireContext())
+            .getBoolean("single_use_tags", false)
+        if (context != null) {
+            LoadingStateHolder.show()
+        }
+        categoriesViewModel.load(relativeUrl, forceUpdate, searchStyle, singleUseFilter, showSingleUseTags)
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                categoriesViewModel.uiState.collect { state ->
+                    val b = _binding ?: return@collect
+                    when (state) {
+                        is CategoriesUiState.Idle -> {
+                            b.layoutError.visibility = View.GONE
+                            b.swiperefresh.isRefreshing = false
+                        }
+                        is CategoriesUiState.Loading -> {
+                            b.layoutError.visibility = View.GONE
+                            b.swiperefresh.isRefreshing = true
+                        }
+                        is CategoriesUiState.Success -> {
+                            LoadingStateHolder.hide()
+                            b.layoutError.visibility = View.GONE
+                            b.swiperefresh.isRefreshing = false
+                            (b.recyclerViewStations.adapter as? ItemAdapterCategory)?.updateList(state.categories)
+                        }
+                        is CategoriesUiState.Error -> {
+                            LoadingStateHolder.hide()
+                            b.swiperefresh.isRefreshing = false
+                            if ((b.recyclerViewStations.adapter?.itemCount ?: 0) == 0) {
+                                b.layoutError.visibility = View.VISIBLE
+                            }
+                            if (context != null) {
+                                Toast.makeText(context, R.string.error_list_update, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun Refresh() {
+        loadCategories(forceUpdate = true)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    fun EnableSingleUseFilter(b: Boolean) {
-        singleUseFilter = b
-    }
-
-    override fun DownloadFinished() {
-        _binding?.swiperefresh?.isRefreshing = false
     }
 }
