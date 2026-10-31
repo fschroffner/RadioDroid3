@@ -6,28 +6,29 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.github.fschroffner.radiodroid3.data.local.entity.RadioStationEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RadioStationDao {
 
     @Query("SELECT * FROM radio_stations WHERE isFavorite = 1 ORDER BY favoriteOrder ASC, Name COLLATE NOCASE ASC")
-    fun getFavoriteStations(): Flow<List<DataRadioStation>>
+    fun getFavoriteStations(): Flow<List<RadioStationEntity>>
 
     @Query("SELECT * FROM radio_stations WHERE lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT 25")
-    fun getHistoryStations(): Flow<List<DataRadioStation>>
+    fun getHistoryStations(): Flow<List<RadioStationEntity>>
 
     @Query("SELECT * FROM radio_stations WHERE isFavorite = 1 ORDER BY favoriteOrder ASC, Name COLLATE NOCASE ASC")
-    suspend fun getFavoriteStationsList(): List<DataRadioStation>
+    suspend fun getFavoriteStationsList(): List<RadioStationEntity>
 
     @Query("SELECT * FROM radio_stations WHERE lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT 25")
-    suspend fun getHistoryStationsList(): List<DataRadioStation>
+    suspend fun getHistoryStationsList(): List<RadioStationEntity>
 
     @Query("SELECT * FROM radio_stations WHERE StationUuid = :uuid LIMIT 1")
-    fun getStationByUuidFlow(uuid: String): Flow<DataRadioStation?>
+    fun getStationByUuidFlow(uuid: String): Flow<RadioStationEntity?>
 
     @Query("SELECT * FROM radio_stations WHERE StationUuid = :uuid LIMIT 1")
-    suspend fun getStationByUuid(uuid: String): DataRadioStation?
+    suspend fun getStationByUuid(uuid: String): RadioStationEntity?
 
     @Query("SELECT isFavorite FROM radio_stations WHERE StationUuid = :uuid LIMIT 1")
     fun isFavoriteFlow(uuid: String): Flow<Boolean?>
@@ -36,13 +37,13 @@ interface RadioStationDao {
     suspend fun isFavorite(uuid: String): Boolean?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOrUpdate(station: DataRadioStation)
+    suspend fun insertOrUpdate(station: RadioStationEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(stations: List<DataRadioStation>)
+    suspend fun insertAll(stations: List<RadioStationEntity>)
 
     @Update
-    suspend fun update(station: DataRadioStation)
+    suspend fun update(station: RadioStationEntity)
 
     @Query("UPDATE radio_stations SET isFavorite = :isFav, favoriteOrder = :order WHERE StationUuid = :uuid")
     suspend fun setFavorite(uuid: String, isFav: Boolean, order: Int = 0)
@@ -60,7 +61,7 @@ interface RadioStationDao {
     suspend fun clearHistory()
 
     @Delete
-    suspend fun delete(station: DataRadioStation)
+    suspend fun delete(station: RadioStationEntity)
 
     @Query("DELETE FROM radio_stations WHERE StationUuid = :uuid")
     suspend fun deleteByUuid(uuid: String)

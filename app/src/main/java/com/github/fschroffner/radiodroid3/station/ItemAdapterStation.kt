@@ -24,7 +24,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
@@ -40,7 +39,6 @@ import com.github.fschroffner.radiodroid3.di.AppEntryPoint
 import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
 import com.github.fschroffner.radiodroid3.interfaces.IAdapterRefreshable
-import com.github.fschroffner.radiodroid3.players.PlayStationTask
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.utils.RecyclerItemMoveAndSwipeHelper
 import com.github.fschroffner.radiodroid3.utils.RecyclerItemSwipeHelper
@@ -77,7 +75,7 @@ open class ItemAdapterStation(
     private var shouldLoadIcons = false
     private var refreshable: IAdapterRefreshable? = null
 
-    private val updateUIReceiver: BroadcastReceiver
+    private var updateUIReceiver: BroadcastReceiver? = null
     private var expandedPosition = -1
     var playingStationPosition = -1
 
@@ -136,30 +134,22 @@ open class ItemAdapterStation(
     }
 
     init {
-
-        favouriteManager = EntryPoints.get(activity.applicationContext, AppEntryPoint::class.java).favouriteManager()
-
-        val intentFilter = IntentFilter(DataRadioStation.RADIO_STATION_LOCAL_INFO_CHAGED)
-
-        updateUIReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent?) {
-                intent ?: return
-                if (intent.action == DataRadioStation.RADIO_STATION_LOCAL_INFO_CHAGED) {
-                    val uuid = intent.getStringExtra(DataRadioStation.RADIO_STATION_UUID)
-                    notifyChangedByStationUuid(uuid)
-                }
-            }
-        }
-
-        LocalBroadcastManager.getInstance(context).registerReceiver(updateUIReceiver, intentFilter)
-
         val entryPoint = EntryPoints.get(activity.applicationContext, AppEntryPoint::class.java)
+        favouriteManager = entryPoint.favouriteManager()
         val repo = entryPoint.mediaControllerRepository()
+
         (activity as? androidx.lifecycle.LifecycleOwner)?.let { lifecycleOwner ->
             lifecycleOwner.lifecycleScope.launch {
                 lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    repo.playbackState.collect { state ->
-                        highlightCurrentStation(state.station?.StationUuid, state.isPlaying)
+                    launch {
+                        repo.playbackState.collect { state ->
+                            highlightCurrentStation(state.station?.StationUuid, state.isPlaying)
+                        }
+                    }
+                    launch {
+                        favouriteManager.stationChangedFlow.collect { uuid ->
+                            notifyChangedByStationUuid(uuid)
+                        }
                     }
                 }
             }
@@ -342,9 +332,10 @@ open class ItemAdapterStation(
                 val ctx = context
                 holder.buttonPlayInternalOrExternal!!.contentDescription = context.getString(R.string.detail_play_in_external_player)
                 holder.buttonPlayInternalOrExternal!!.setImageDrawable(IconicsDrawable(context, CommunityMaterial.Icon2.cmd_play_box_outline).size(IconicsSize.dp(24)))
+                val stationPlaybackUseCase = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).stationPlaybackUseCase()
                 holder.buttonPlayInternalOrExternal!!.setOnClickListener {
-                    Utils.playAndWarnIfMetered(ctx, station, PlayerType.EXTERNAL) {
-                        PlayStationTask.playExternal(station, ctx).execute()
+                    stationPlaybackUseCase.playAndWarnIfMetered(ctx, station, PlayerType.EXTERNAL) {
+                        stationPlaybackUseCase.playExternal(station, ctx)
                     }
                 }
             }
@@ -383,7 +374,7 @@ open class ItemAdapterStation(
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
-        LocalBroadcastManager.getInstance(context).unregisterReceiver(updateUIReceiver)
+        updateUIReceiver = null
     }
 
     fun getFilter(): StationsFilter {

@@ -1,11 +1,13 @@
 package com.github.fschroffner.radiodroid3
 
 import android.content.Context
+import com.github.fschroffner.radiodroid3.data.mapper.toDataRadioStation
+import com.github.fschroffner.radiodroid3.data.mapper.toEntity
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,21 +18,27 @@ class HistoryManager @Inject constructor(
 
     override fun getSaveId() = "history"
 
-    override val stationsFlow: Flow<List<DataRadioStation>>
-        get() = stationDao?.getHistoryStations() ?: emptyFlow()
+    override val stationsFlow: Flow<List<DataRadioStation>> =
+        stationDao.getHistoryStations().map { list -> list.map { it.toDataRadioStation() } }
 
     override fun add(station: DataRadioStation) {
         station.lastPlayed = System.currentTimeMillis()
-        val existing = getById(station.StationUuid)
-        if (existing != null) {
-            existing.lastPlayed = station.lastPlayed
-            listStations.remove(existing)
-            listStations.add(0, existing)
-            Save()
-            return
+        if (stationDao != null) {
+            coroutineScope.launch {
+                stationDao.insertOrUpdate(station.toEntity())
+            }
+        } else {
+            val existing = getById(station.StationUuid)
+            if (existing != null) {
+                existing.lastPlayed = station.lastPlayed
+                listStations.remove(existing)
+                listStations.add(0, existing)
+                Save()
+                return
+            }
+            cutList(MAXSIZE - 1)
+            super.addFront(station)
         }
-        cutList(MAXSIZE - 1)
-        super.addFront(station)
     }
 
     override fun remove(id: String): Int {

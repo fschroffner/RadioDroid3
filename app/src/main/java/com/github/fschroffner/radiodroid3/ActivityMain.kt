@@ -7,17 +7,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.net.Uri
-
 import android.os.Build
 import android.os.Bundle
-import android.text.TextUtils
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.SeekBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -25,58 +20,51 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
-import androidx.coordinatorlayout.widget.CoordinatorLayout
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.IntentCompat
 import androidx.core.view.GravityCompat
-import androidx.core.view.MenuItemCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentTransaction
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.bytehamster.lib.preferencesearch.SearchPreferenceResult
 import com.bytehamster.lib.preferencesearch.SearchPreferenceResultListener
+import com.github.fschroffner.radiodroid3.cast.CastAwareActivity
+import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
+import com.github.fschroffner.radiodroid3.navigation.MainNavigationController
+import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
+import com.github.fschroffner.radiodroid3.players.PlayState
+import com.github.fschroffner.radiodroid3.players.selector.PlayerType
+import com.github.fschroffner.radiodroid3.station.StationsFilter
+import com.github.fschroffner.radiodroid3.ui.player.PlayerBottomSheetManager
+import com.github.fschroffner.radiodroid3.ui.player.SleepTimerDialogHelper
+import com.github.fschroffner.radiodroid3.ui.playlist.PlaylistFileManager
+import com.github.fschroffner.radiodroid3.ui.search.MainSearchManager
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.tabs.TabLayout
 import com.mikepenz.iconics.Iconics
 import com.rustamg.filedialogs.FileDialog
-import com.rustamg.filedialogs.OpenFileDialog
-import com.rustamg.filedialogs.SaveFileDialog
-import com.github.fschroffner.radiodroid3.cast.CastAwareActivity
-import com.github.fschroffner.radiodroid3.interfaces.IFragmentSearchable
-import com.github.fschroffner.radiodroid3.players.PlayStationTask
-import com.github.fschroffner.radiodroid3.players.selector.PlayerType
-import com.github.fschroffner.radiodroid3.service.PlayerService
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.github.fschroffner.radiodroid3.station.DataRadioStation
-import com.github.fschroffner.radiodroid3.station.StationsFilter
-import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
 import okhttp3.OkHttpClient
-import javax.inject.Inject
 import java.io.File
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.OutputStream
-import java.io.OutputStreamWriter
-import java.util.Date
+import javax.inject.Inject
 
-@dagger.hilt.android.AndroidEntryPoint
-class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
+/**
+ * Main application activity acting as a lightweight host container.
+ * Responsibilities (Navigation, BottomSheet, Playlists, Search) are delegated to focused controllers.
+ */
+@AndroidEntryPoint
+class ActivityMain : AppCompatActivity(),
+    SearchView.OnQueryTextListener,
     NavigationView.OnNavigationItemSelectedListener,
     BottomNavigationView.OnNavigationItemSelectedListener,
     FileDialog.OnFileSelectedListener,
@@ -90,6 +78,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     @Inject lateinit var okHttpClient: OkHttpClient
     @Inject lateinit var appPreferencesDataStore: AppPreferencesDataStore
     @Inject lateinit var mediaControllerRepository: MediaControllerRepository
+    @Inject lateinit var stationPlaybackUseCase: com.github.fschroffner.radiodroid3.player.StationPlaybackUseCase
+    @Inject lateinit var loadingStateHolder: com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
 
     companion object {
         const val EXTRA_SEARCH_TAG = "search_tag"
@@ -98,74 +88,36 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         const val FRAGMENT_FROM_BACKSTACK = 777
         const val ACTION_SHOW_LOADING = "com.github.fschroffner.radiodroid3.show_loading"
         const val ACTION_HIDE_LOADING = "com.github.fschroffner.radiodroid3.hide_loading"
-        // Intent action/extra used by launcher shortcuts and TV channel tiles to open the app and
-        // play a station by UUID. Previously lived on the now-removed MediaSessionCallback.
         const val ACTION_PLAY_STATION_BY_UUID = "PLAY_STATION_BY_UUID"
         const val EXTRA_STATION_UUID = "STATION_UUID"
         private const val TAG = "RadioDroid"
         const val PERM_REQ_STORAGE_FAV_SAVE = 1
         const val PERM_REQ_STORAGE_FAV_LOAD = 2
-        private const val ACTION_SAVE_FILE = 1
-        private const val ACTION_LOAD_FILE = 2
     }
 
-    private val requestNotificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+    private val requestNotificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
         if (!isGranted) {
             Log.w(TAG, "Notification permission denied.")
         }
     }
 
-    private val saveFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val uri = result.data?.data
-            Log.d(TAG, "Choosen save path: $uri")
-
-
-
-            try {
-                val os: OutputStream = contentResolver.openOutputStream(uri!!)!!
-                val writer = OutputStreamWriter(os)
-                if (selectedMenuItem == R.id.nav_item_starred) {
-                    favouriteManager.SaveM3UWriter(writer)
-                } else if (selectedMenuItem == R.id.nav_item_history) {
-                    historyManager.SaveM3UWriter(writer)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Unable to write to file $e")
-            }
-        }
-    }
-
-    private val loadFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val uri = result.data?.data
-            Log.d(TAG, "Choosen load path: $uri")
-
-
-            try {
-                val `is`: InputStream = contentResolver.openInputStream(uri!!)!!
-                val reader = InputStreamReader(`is`)
-                favouriteManager.LoadM3USimple(reader)
-            } catch (e: Exception) {
-                Log.e(TAG, "Unable to load to file $e")
-            }
-        }
-    }
-
-    private val TAG_SEARCH_URL = "json/stations/bytagexact"
-    private val SAVE_LAST_MENU_ITEM = "LAST_MENU_ITEM"
-
-    private var mSearchView: SearchView? = null
-    private lateinit var appBarLayout: AppBarLayout
-    private lateinit var tabsView: TabLayout
     lateinit var mDrawerLayout: DrawerLayout
     lateinit var mNavigationView: NavigationView
     lateinit var mBottomNavigationView: BottomNavigationView
     lateinit var mFragmentManager: FragmentManager
+    private lateinit var appBarLayout: AppBarLayout
+    private lateinit var tabsView: TabLayout
 
-    private lateinit var playerBottomSheet: BottomSheetBehavior<View>
-    private lateinit var smallPlayerFragment: FragmentPlayerSmall
-    private lateinit var fullPlayerFragment: FragmentPlayerFull
+    lateinit var navigationController: MainNavigationController
+        private set
+    lateinit var playerBottomSheetManager: PlayerBottomSheetManager
+        private set
+    lateinit var playlistFileManager: PlaylistFileManager
+        private set
+    lateinit var searchManager: MainSearchManager
+        private set
 
     var broadcastReceiver: BroadcastReceiver? = null
 
@@ -176,12 +128,13 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     var menuItemLoad: MenuItem? = null
     var menuItemIconsView: MenuItem? = null
     var menuItemListView: MenuItem? = null
+    private var mSearchView: SearchView? = null
 
     private lateinit var sharedPref: SharedPreferences
-    private var selectedMenuItem = -1
-    private var instanceStateWasSaved = false
-    private var lastExitTry: Date? = null
     private var meteredConnectionAlertDialog: AlertDialog? = null
+
+    val selectedMenuItem: Int
+        get() = if (::navigationController.isInitialized) navigationController.selectedMenuItem else -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -204,34 +157,77 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         }
         ViewCompat.requestApplyInsets(findViewById(R.id.main_content))
 
-        Log.d(TAG, "FilesDir: ${filesDir.absolutePath}")
-        Log.d(TAG, "CacheDir: ${cacheDir.absolutePath}")
-        try {
-            val dir = File(filesDir.absolutePath)
-            if (dir.isDirectory) {
-                val children = dir.list()
-                for (aChildren in children) {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "delete file:$aChildren")
-                    try { File(dir, aChildren).delete() } catch (e: Exception) {}
-                }
-            }
-        } catch (e: Exception) {}
+        cleanInternalFilesDirectory()
 
         val myToolbar = findViewById<Toolbar>(R.id.my_awesome_toolbar)
         setSupportActionBar(myToolbar)
 
         mediaControllerRepository.connect()
 
-        selectedMenuItem = sharedPref.getInt("last_selectedMenuItem", -1)
-        instanceStateWasSaved = savedInstanceState != null
         mFragmentManager = supportFragmentManager
-
         appBarLayout = findViewById(R.id.app_bar_layout)
         tabsView = findViewById(R.id.tabs)
         mDrawerLayout = findViewById(R.id.drawerLayout)
         mNavigationView = findViewById(R.id.my_navigation_view)
         mBottomNavigationView = findViewById(R.id.bottom_navigation)
 
+        setupNavigationViews()
+        setupControllers()
+
+        castHandler.onCreate(this)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        observePlaybackAndConnectionState()
+        navigationController.setupStartUpFragment(savedInstanceState != null)
+        setupBackNavigation()
+    }
+
+    private fun setupControllers() {
+        playerBottomSheetManager = PlayerBottomSheetManager(
+            activity = this,
+            fragmentManager = mFragmentManager,
+            bottomSheetView = findViewById(R.id.bottom_sheet),
+            appBarLayout = appBarLayout,
+            containerViewId = R.id.containerView
+        )
+        playerBottomSheetManager.setup()
+
+        navigationController = MainNavigationController(
+            activity = this,
+            fragmentManager = mFragmentManager,
+            drawerLayout = mDrawerLayout,
+            navigationView = mNavigationView,
+            bottomNavigationView = mBottomNavigationView,
+            appBarLayout = appBarLayout,
+            sharedPref = sharedPref,
+            historyManager = historyManager,
+            favouriteManager = favouriteManager,
+            onBottomSheetCollapseRequested = { playerBottomSheetManager.collapse() },
+            onServiceShutdownRequested = { mediaControllerRepository.shutdownService() }
+        )
+
+        playlistFileManager = PlaylistFileManager(
+            activity = this,
+            fragmentManager = mFragmentManager,
+            favouriteManager = favouriteManager,
+            historyManager = historyManager,
+            selectedMenuItemProvider = { navigationController.selectedMenuItem }
+        )
+
+        searchManager = MainSearchManager(
+            context = this,
+            fragmentManager = mFragmentManager,
+            tabsView = tabsView,
+            bottomNavigationView = mBottomNavigationView
+        )
+    }
+
+    private fun setupNavigationViews() {
         if (Utils.bottomNavigationEnabled(this)) {
             mBottomNavigationView.setOnNavigationItemSelectedListener(this)
             mNavigationView.visibility = View.GONE
@@ -244,105 +240,29 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             mDrawerLayout.addDrawerListener(mDrawerToggle)
             mDrawerToggle.syncState()
 
-            supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-            supportActionBar!!.setHomeButtonEnabled(true)
+            supportActionBar?.setDisplayHomeAsUpEnabled(true)
+            supportActionBar?.setHomeButtonEnabled(true)
         }
+    }
 
-        var foundSmall = mFragmentManager.findFragmentById(R.id.fragment_player_small) as? FragmentPlayerSmall
-        var foundFull = mFragmentManager.findFragmentById(R.id.fragment_player_full) as? FragmentPlayerFull
-
-        if (foundSmall == null || foundFull == null) {
-            foundSmall = FragmentPlayerSmall()
-            foundFull = FragmentPlayerFull()
-
-            val fragmentTransaction = mFragmentManager.beginTransaction()
-            fragmentTransaction.hide(foundFull)
-            fragmentTransaction.replace(R.id.fragment_player_small, foundSmall)
-            fragmentTransaction.replace(R.id.fragment_player_full, foundFull)
-            fragmentTransaction.commit()
-        }
-
-        smallPlayerFragment = foundSmall
-        fullPlayerFragment = foundFull
-
-        smallPlayerFragment.setCallback(object : FragmentPlayerSmall.Callback {
-            override fun onToggle() { toggleBottomSheetState() }
-        })
-        fullPlayerFragment.setTouchInterceptListener(object : FragmentPlayerFull.TouchInterceptListener {
-            override fun requestDisallowInterceptTouchEvent(disallow: Boolean) {
-                findViewById<View>(R.id.bottom_sheet).parent.requestDisallowInterceptTouchEvent(disallow)
+    private fun setupBackNavigation() {
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (!navigationController.handleBackPressed()) {
+                    finish()
+                }
             }
         })
+    }
 
-        val coordinatorLayoutParams = appBarLayout.layoutParams as CoordinatorLayout.LayoutParams
-        val appBarLayoutBehavior = object : AppBarLayout.Behavior() {
-            override fun onStartNestedScroll(parent: CoordinatorLayout, child: AppBarLayout, directTargetChild: View, target: View, nestedScrollAxes: Int, type: Int): Boolean {
-                return playerBottomSheet.state == BottomSheetBehavior.STATE_COLLAPSED
-            }
-        }
-        coordinatorLayoutParams.behavior = appBarLayoutBehavior
-
-        @Suppress("UNCHECKED_CAST")
-        playerBottomSheet = BottomSheetBehavior.from(findViewById<View>(R.id.bottom_sheet)) as BottomSheetBehavior<View>
-        playerBottomSheet.setBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-            private var oldState = BottomSheetBehavior.STATE_COLLAPSED
-
-            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                if (newState == BottomSheetBehavior.STATE_DRAGGING && oldState == BottomSheetBehavior.STATE_EXPANDED) {
-                    if (fullPlayerFragment.isScrolled()) {
-                        playerBottomSheet.state = BottomSheetBehavior.STATE_EXPANDED
-                        return
-                    }
-                }
-
-                if (newState == BottomSheetBehavior.STATE_EXPANDED) {
-                    if (smallPlayerFragment.context == null) return
-                    appBarLayout.setExpanded(false)
-                    smallPlayerFragment.setRole(FragmentPlayerSmall.Role.HEADER)
-
-                    val ft = mFragmentManager.beginTransaction()
-                    ft.hide(mFragmentManager.findFragmentById(R.id.containerView)!!)
-                    ft.commit()
-                } else if (newState == BottomSheetBehavior.STATE_COLLAPSED) {
-                    appBarLayout.setExpanded(true)
-                    smallPlayerFragment.setRole(FragmentPlayerSmall.Role.PLAYER)
-                    fullPlayerFragment.resetScroll()
-
-                    val ft = mFragmentManager.beginTransaction()
-                    ft.hide(fullPlayerFragment)
-                    ft.commit()
-                }
-
-                if (oldState == BottomSheetBehavior.STATE_EXPANDED && newState != BottomSheetBehavior.STATE_EXPANDED) {
-                    val ft = mFragmentManager.beginTransaction()
-                    ft.show(mFragmentManager.findFragmentById(R.id.containerView)!!)
-                    ft.commit()
-                }
-
-                if (oldState == BottomSheetBehavior.STATE_COLLAPSED && newState != oldState) {
-                    fullPlayerFragment.init()
-
-                    val ft = mFragmentManager.beginTransaction()
-                    ft.show(fullPlayerFragment)
-                    ft.commit()
-                }
-
-                oldState = newState
-            }
-
-            override fun onSlide(bottomSheet: View, slideOffset: Float) {}
-        })
-
-        castHandler.onCreate(this)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-
+    private fun observePlaybackAndConnectionState() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    loadingStateHolder.isLoading.collect { isLoading ->
+                        findViewById<View>(R.id.progressBarLoading)?.visibility = if (isLoading) View.VISIBLE else View.GONE
+                    }
+                }
                 launch {
                     mediaControllerRepository.playbackState.collect { state ->
                         if (state.isPlaying) {
@@ -356,16 +276,15 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                         meteredConnectionAlertDialog?.cancel()
                         meteredConnectionAlertDialog = null
                         when (playerType) {
-                            PlayerType.RADIODROID -> showMeteredConnectionDialog(Runnable {
-                                mediaControllerRepository.getCurrentStation()?.let { Utils.play(this@ActivityMain, it) }
-                            })
+                            PlayerType.RADIODROID -> showMeteredConnectionDialog {
+                                mediaControllerRepository.getCurrentStation()?.let { stationPlaybackUseCase.playStation(it) }
+                            }
                             PlayerType.EXTERNAL -> {
                                 val currentStation = mediaControllerRepository.getCurrentStation()
                                 if (currentStation != null) {
-                                    showMeteredConnectionDialog(Runnable {
-                                        @Suppress("DEPRECATION")
-                                        PlayStationTask.playExternal(currentStation, this@ActivityMain).execute()
-                                    })
+                                    showMeteredConnectionDialog {
+                                        stationPlaybackUseCase.playExternal(currentStation, this@ActivityMain)
+                                    }
                                 }
                             }
                             else -> Log.e(TAG, "unexpected PlayerType '$playerType'")
@@ -374,94 +293,11 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
                 }
             }
         }
-
-        setupStartUpFragment()
-
-        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (playerBottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
-                    playerBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
-                    return
-                }
-
-                val backStackCount = mFragmentManager.backStackEntryCount
-
-                if (backStackCount > 0) {
-                    val backStackEntry = mFragmentManager.getBackStackEntryAt(mFragmentManager.backStackEntryCount - 1)
-                    if (backStackEntry.name == "SearchPreferenceFragment") {
-                        mFragmentManager.popBackStack()
-                        return
-                    }
-                    val parsedId = backStackEntry.name!!.toInt()
-                    if (parsedId == FRAGMENT_FROM_BACKSTACK) {
-                        mFragmentManager.popBackStack()
-                        invalidateOptionsMenu()
-                        return
-                    }
-                }
-
-                if (Utils.bottomNavigationEnabled(this@ActivityMain)) {
-                    if (lastExitTry != null && Date().time < lastExitTry!!.time + 3 * 1000) {
-                        mediaControllerRepository.shutdownService()
-                        finish()
-                    } else {
-                        Toast.makeText(this@ActivityMain, R.string.alert_press_back_to_exit, Toast.LENGTH_SHORT).show()
-                        lastExitTry = Date()
-                        return
-                    }
-                }
-
-                if (backStackCount > 1) {
-                    val backStackEntry = mFragmentManager.getBackStackEntryAt(mFragmentManager.backStackEntryCount - 2)
-                    selectedMenuItem = backStackEntry.name!!.toInt()
-
-                    if (!Utils.bottomNavigationEnabled(this@ActivityMain)) {
-                        mNavigationView.setCheckedItem(selectedMenuItem)
-                    }
-                    invalidateOptionsMenu()
-                    mFragmentManager.popBackStack()
-                } else {
-                    finish()
-                }
-            }
-        })
     }
 
     override fun onNavigationItemSelected(menuItem: MenuItem): Boolean {
-        selectedMenuItem = menuItem.itemId
-        return navigateToSelectedMenuItem()
-    }
-
-    private fun navigateToSelectedMenuItem(): Boolean {
-        if (playerBottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
-            playerBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
-        }
-
-        mSearchView?.clearFocus()
-        mDrawerLayout.closeDrawers()
-
-        val backStackTag = selectedMenuItem.toString()
-        val f: Fragment = when (selectedMenuItem) {
-            R.id.nav_item_stations -> FragmentTabs()
-            R.id.nav_item_starred -> FragmentStarred()
-            R.id.nav_item_history -> FragmentHistory()
-            R.id.nav_item_settings -> FragmentSettings()
-            else -> return false
-        }
-
-        mFragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
-        val fragmentTransaction = mFragmentManager.beginTransaction()
-        if (Utils.bottomNavigationEnabled(this))
-            fragmentTransaction.replace(R.id.containerView, f).commit()
-        else
-            fragmentTransaction.replace(R.id.containerView, f).addToBackStack(backStackTag).commit()
-
-        LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(ACTION_HIDE_LOADING))
-        invalidateOptionsMenu()
-        checkMenuItems()
-        appBarLayout.setExpanded(true)
-
-        return false
+        searchManager.clearFocus()
+        return navigationController.onNavigationItemSelected(menuItem.itemId)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -470,28 +306,8 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        if (BuildConfig.DEBUG) Log.d(TAG, "on request permissions result:$requestCode")
-
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        when (requestCode) {
-            PERM_REQ_STORAGE_FAV_LOAD -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    LoadFavourites()
-                } else {
-                    Log.w(TAG, "permission not granted -> simple load")
-                    LoadFavouritesSimple()
-                }
-            }
-            PERM_REQ_STORAGE_FAV_SAVE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    SaveFavourites()
-                } else {
-                    Log.w(TAG, "permission not granted -> simple save")
-                    SaveFavouritesSimple()
-                }
-            }
-        }
+        playlistFileManager.handlePermissionsResult(requestCode, grantResults)
     }
 
     override fun onDestroy() {
@@ -502,21 +318,34 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     }
 
     override fun onPause() {
-        sharedPref.edit().putInt("last_selectedMenuItem", selectedMenuItem).apply()
-
-        if (BuildConfig.DEBUG) Log.d(TAG, "PAUSED")
-
+        navigationController.saveSelectedMenuItem()
         broadcastReceiver?.let { LocalBroadcastManager.getInstance(this).unregisterReceiver(it) }
-
         super.onPause()
 
-        if (mediaControllerRepository.playbackState.value.playState == com.github.fschroffner.radiodroid3.players.PlayState.Idle) {
+        if (mediaControllerRepository.playbackState.value.playState == PlayState.Idle) {
             mediaControllerRepository.shutdownService()
         }
 
-
         castHandler.onPause()
         castHandler.setActivity(null)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        setupBroadcastReceiver()
+        mediaControllerRepository.connect()
+
+        castHandler.onResume()
+        castHandler.setActivity(this)
+
+        if (playerBottomSheetManager.isExpanded()) {
+            appBarLayout.setExpanded(false)
+        }
+
+        intent?.let {
+            handleIntent(it)
+            setIntent(null)
+        }
     }
 
     private fun handleIntent(intent: Intent) {
@@ -524,19 +353,19 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         val extras = intent.extras ?: return
 
         if (ACTION_PLAY_STATION_BY_UUID == action) {
-            val context = applicationContext
             val stationUUID = extras.getString(EXTRA_STATION_UUID)
-            if (TextUtils.isEmpty(stationUUID)) return
+            if (stationUUID.isNullOrEmpty()) return
             intent.removeExtra(EXTRA_STATION_UUID)
 
             val httpClient = okHttpClient
+            val context = applicationContext
 
             lifecycleScope.launch {
                 val station = withContext(Dispatchers.IO) {
-                    Utils.getStationByUuid(httpClient, context, stationUUID!!)
+                    Utils.getStationByUuid(httpClient, context, stationUUID)
                 }
                 if (!isFinishing && station != null) {
-                    Utils.showPlaySelection(this@ActivityMain, station, supportFragmentManager)
+                    stationPlaybackUseCase.showPlaySelection(this@ActivityMain, station, supportFragmentManager)
 
                     val currentFragment = mFragmentManager.fragments.lastOrNull()
                     if (currentFragment is FragmentHistory) {
@@ -546,34 +375,9 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             }
         } else {
             val searchTag = extras.getString(EXTRA_SEARCH_TAG)
-            Log.d("MAIN", "received search request for tag 1: $searchTag")
             if (searchTag != null) {
-                Log.d("MAIN", "received search request for tag 2: $searchTag")
                 Search(StationsFilter.SearchStyle.ByTagExact, searchTag)
             }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        if (BuildConfig.DEBUG) Log.d(TAG, "RESUMED")
-
-        setupBroadcastReceiver()
-
-        mediaControllerRepository.connect()
-
-        castHandler.onResume()
-        castHandler.setActivity(this)
-
-        if (playerBottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
-            appBarLayout.setExpanded(false)
-        }
-
-        val intent = intent
-        if (intent != null) {
-            handleIntent(intent)
-            setIntent(null)
         }
     }
 
@@ -589,130 +393,57 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
         menuItemLoad = menu.findItem(R.id.action_load)
         menuItemListView = menu.findItem(R.id.action_list_view)
         menuItemIconsView = menu.findItem(R.id.action_icons_view)
-        mSearchView = MenuItemCompat.getActionView(menuItemSearch) as SearchView
-        mSearchView!!.setOnQueryTextListener(this)
-        mSearchView!!.setOnQueryTextFocusChangeListener(object : View.OnFocusChangeListener {
-            private var prevTabsVisibility = View.GONE
-            override fun onFocusChange(v: View, hasFocus: Boolean) {
-                if (Utils.bottomNavigationEnabled(this@ActivityMain)) {
-                    mBottomNavigationView.visibility = if (hasFocus) View.GONE else View.VISIBLE
-                }
-                if (hasFocus) {
-                    prevTabsVisibility = tabsView.visibility
-                    tabsView.visibility = View.GONE
-                } else {
-                    tabsView.visibility = prevTabsVisibility
-                }
-            }
-        })
 
-        menuItemSleepTimer!!.isVisible = false
-        menuItemSearch!!.isVisible = false
-        menuItemDelete!!.isVisible = false
-        menuItemSave!!.isVisible = false
-        menuItemLoad!!.isVisible = false
-        menuItemListView!!.isVisible = false
-        menuItemIconsView!!.isVisible = false
+        mSearchView = searchManager.setupSearchMenuItem(menuItemSearch!!)
 
+        menuItemSleepTimer?.isVisible = false
+        menuItemSearch?.isVisible = false
+        menuItemDelete?.isVisible = false
+        menuItemSave?.isVisible = false
+        menuItemLoad?.isVisible = false
+        menuItemListView?.isVisible = false
+        menuItemIconsView?.isVisible = false
 
-        when (selectedMenuItem) {
+        when (navigationController.selectedMenuItem) {
             R.id.nav_item_stations -> {
-                menuItemSleepTimer!!.isVisible = true
-                menuItemSearch!!.isVisible = true
+                menuItemSleepTimer?.isVisible = true
+                menuItemSearch?.isVisible = true
                 myToolbar.setTitle(R.string.nav_item_stations)
             }
             R.id.nav_item_starred -> {
-                menuItemSleepTimer!!.isVisible = true
-                menuItemSave!!.isVisible = true
-                menuItemLoad!!.isVisible = true
-                menuItemSave!!.setTitle(R.string.nav_item_save_playlist)
+                menuItemSleepTimer?.isVisible = true
+                menuItemSave?.isVisible = true
+                menuItemLoad?.isVisible = true
+                menuItemSave?.setTitle(R.string.nav_item_save_playlist)
 
                 if (sharedPref.getBoolean("icons_only_favorites_style", false)) {
-                    menuItemListView!!.isVisible = true
+                    menuItemListView?.isVisible = true
                 } else if (sharedPref.getBoolean("load_icons", false)) {
-                    menuItemIconsView!!.isVisible = true
+                    menuItemIconsView?.isVisible = true
                 }
                 if (favouriteManager.isEmpty()) {
-                    menuItemDelete!!.isVisible = false
+                    menuItemDelete?.isVisible = false
                 } else {
-                    menuItemDelete!!.isVisible = true
-                    menuItemDelete!!.setTitle(R.string.action_delete_favorites)
+                    menuItemDelete?.isVisible = true
+                    menuItemDelete?.setTitle(R.string.action_delete_favorites)
                 }
                 myToolbar.setTitle(R.string.nav_item_starred)
             }
             R.id.nav_item_history -> {
-                menuItemSleepTimer!!.isVisible = true
-                menuItemSave!!.isVisible = true
-                menuItemSave!!.setTitle(R.string.nav_item_save_history_playlist)
+                menuItemSleepTimer?.isVisible = true
+                menuItemSave?.isVisible = true
+                menuItemSave?.setTitle(R.string.nav_item_save_history_playlist)
 
                 if (!historyManager.isEmpty()) {
-                    menuItemDelete!!.isVisible = true
-                    menuItemDelete!!.setTitle(R.string.action_delete_history)
+                    menuItemDelete?.isVisible = true
+                    menuItemDelete?.setTitle(R.string.action_delete_history)
                 }
                 myToolbar.setTitle(R.string.nav_item_history)
             }
         }
 
         castHandler.getRouteItem(applicationContext, menu)
-
         return true
-    }
-
-    override fun onFileSelected(dialog: FileDialog, file: File) {
-        try {
-            Log.i("MAIN", "save to ${file.parent}/${file.name}")
-
-
-
-
-            if (dialog is SaveFileDialog) {
-                if (selectedMenuItem == R.id.nav_item_starred) {
-                    favouriteManager.SaveM3U(file.parent, file.name)
-                } else if (selectedMenuItem == R.id.nav_item_history) {
-                    historyManager.SaveM3U(file.parent, file.name)
-                }
-            } else if (dialog is OpenFileDialog) {
-                favouriteManager.LoadM3U(file.parent, file.name)
-            }
-        } catch (e: Exception) {
-            Log.e("MAIN", e.toString())
-        }
-    }
-
-    fun SaveFavourites() {
-        val dialog = SaveFileDialog()
-        dialog.setStyle(DialogFragment.STYLE_NO_TITLE, Utils.getThemeResId(this))
-        val args = Bundle()
-        args.putString(FileDialog.EXTENSION, ".m3u")
-        dialog.arguments = args
-        dialog.show(supportFragmentManager, SaveFileDialog::class.java.name)
-    }
-
-    fun SaveFavouritesSimple() {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "audio/x-mpegurl"
-            putExtra(Intent.EXTRA_TITLE, "playlist.m3u")
-        }
-        saveFileLauncher.launch(intent)
-    }
-
-    fun LoadFavourites() {
-        val dialogOpen = OpenFileDialog()
-        dialogOpen.setStyle(DialogFragment.STYLE_NO_TITLE, Utils.getThemeResId(this))
-        val argsOpen = Bundle()
-        argsOpen.putString(FileDialog.EXTENSION, ".m3u")
-        dialogOpen.arguments = argsOpen
-        dialogOpen.show(supportFragmentManager, OpenFileDialog::class.java.name)
-    }
-
-    fun LoadFavouritesSimple() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "audio/x-mpegurl"
-            putExtra(Intent.EXTRA_TITLE, "playlist.m3u")
-        }
-        loadFileLauncher.launch(intent)
     }
 
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
@@ -723,157 +454,117 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
             }
             R.id.action_save -> {
                 try {
-                    if (Utils.verifyStoragePermissions(this, PERM_REQ_STORAGE_FAV_SAVE)) SaveFavourites()
+                    if (Utils.verifyStoragePermissions(this, PERM_REQ_STORAGE_FAV_SAVE)) {
+                        playlistFileManager.saveFavourites()
+                    }
                 } catch (e: Exception) {
-                    Log.e("MAIN", e.toString())
+                    Log.e(TAG, e.toString())
                 }
                 return true
             }
             R.id.action_load -> {
                 try {
-                    if (Utils.verifyStoragePermissions(this, PERM_REQ_STORAGE_FAV_LOAD)) LoadFavourites()
+                    if (Utils.verifyStoragePermissions(this, PERM_REQ_STORAGE_FAV_LOAD)) {
+                        playlistFileManager.loadFavourites()
+                    }
                 } catch (e: Exception) {
-                    Log.e("MAIN", e.toString())
+                    Log.e(TAG, e.toString())
                 }
                 return true
             }
-            R.id.action_set_sleep_timer -> { changeTimer(); return true }
+            R.id.action_set_sleep_timer -> {
+                SleepTimerDialogHelper.show(this, mediaControllerRepository, sharedPref)
+                return true
+            }
             R.id.action_delete -> {
-                if (selectedMenuItem == R.id.nav_item_history) {
-                    AlertDialog.Builder(this)
-                        .setMessage(getString(R.string.alert_delete_history))
-                        .setCancelable(true)
-                        .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                            historyManager.clear()
-                            Toast.makeText(applicationContext, getString(R.string.notify_deleted_history), Toast.LENGTH_SHORT).show()
-                            recreate()
-                        }
-                        .setNegativeButton(getString(R.string.no), null)
-                        .show()
-                }
-                if (selectedMenuItem == R.id.nav_item_starred) {
-                    AlertDialog.Builder(this)
-                        .setMessage(getString(R.string.alert_delete_favorites))
-                        .setCancelable(true)
-                        .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                            favouriteManager.clear()
-                            Toast.makeText(applicationContext, getString(R.string.notify_deleted_favorites), Toast.LENGTH_SHORT).show()
-                            recreate()
-                        }
-                        .setNegativeButton(getString(R.string.no), null)
-                        .show()
-                }
+                showDeleteConfirmationDialog()
                 return true
             }
-            R.id.action_list_view -> { appPreferencesDataStore.putBooleanAsync("icons_only_favorites_style", false); sharedPref.edit().putBoolean("icons_only_favorites_style", false).apply(); recreate(); return true }
-            R.id.action_icons_view -> { appPreferencesDataStore.putBooleanAsync("icons_only_favorites_style", true); sharedPref.edit().putBoolean("icons_only_favorites_style", true).apply(); recreate(); return true }
+            R.id.action_list_view -> {
+                appPreferencesDataStore.putBooleanAsync("icons_only_favorites_style", false)
+                sharedPref.edit().putBoolean("icons_only_favorites_style", false).apply()
+                recreate()
+                return true
+            }
+            R.id.action_icons_view -> {
+                appPreferencesDataStore.putBooleanAsync("icons_only_favorites_style", true)
+                sharedPref.edit().putBoolean("icons_only_favorites_style", true).apply()
+                recreate()
+                return true
+            }
         }
         return super.onOptionsItemSelected(menuItem)
     }
 
-    fun toggleBottomSheetState() {
-        if (playerBottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
-            playerBottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
-        } else {
-            playerBottomSheet.state = BottomSheetBehavior.STATE_EXPANDED
+    private fun showDeleteConfirmationDialog() {
+        if (navigationController.selectedMenuItem == R.id.nav_item_history) {
+            AlertDialog.Builder(this)
+                .setMessage(getString(R.string.alert_delete_history))
+                .setCancelable(true)
+                .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                    historyManager.clear()
+                    Toast.makeText(applicationContext, getString(R.string.notify_deleted_history), Toast.LENGTH_SHORT).show()
+                    recreate()
+                }
+                .setNegativeButton(getString(R.string.no), null)
+                .show()
+        } else if (navigationController.selectedMenuItem == R.id.nav_item_starred) {
+            AlertDialog.Builder(this)
+                .setMessage(getString(R.string.alert_delete_favorites))
+                .setCancelable(true)
+                .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                    favouriteManager.clear()
+                    Toast.makeText(applicationContext, getString(R.string.notify_deleted_favorites), Toast.LENGTH_SHORT).show()
+                    recreate()
+                }
+                .setNegativeButton(getString(R.string.no), null)
+                .show()
         }
     }
 
-    private fun setupStartUpFragment() {
-        if (instanceStateWasSaved) {
-            invalidateOptionsMenu()
-            checkMenuItems()
-            return
-        }
+    fun toggleBottomSheetState() = playerBottomSheetManager.toggleBottomSheetState()
 
-        val hm = historyManager
-        val fm = favouriteManager
+    fun Search(searchStyle: StationsFilter.SearchStyle, query: String) =
+        navigationController.navigateToSearch(searchStyle, query)
 
-        val startupAction = sharedPref.getString("startup_action", resources.getString(R.string.startup_show_history))!!
+    fun SearchStations(query: String) = searchManager.searchStations(query)
 
-        if (startupAction == resources.getString(R.string.startup_show_history) && hm.isEmpty()) {
-            selectMenuItem(R.id.nav_item_stations); return
-        }
-        if (startupAction == resources.getString(R.string.startup_show_favorites) && fm.isEmpty()) {
-            selectMenuItem(R.id.nav_item_stations); return
-        }
+    override fun onQueryTextSubmit(query: String): Boolean = searchManager.onQueryTextSubmit(query)
 
-        when {
-            startupAction == resources.getString(R.string.startup_show_history) -> selectMenuItem(R.id.nav_item_history)
-            startupAction == resources.getString(R.string.startup_show_favorites) -> selectMenuItem(R.id.nav_item_starred)
-            startupAction == resources.getString(R.string.startup_show_all_stations) || selectedMenuItem < 0 -> selectMenuItem(R.id.nav_item_stations)
-            else -> selectMenuItem(selectedMenuItem)
-        }
+    override fun onQueryTextChange(newText: String): Boolean = searchManager.onQueryTextChange(newText)
+
+    override fun onFileSelected(dialog: FileDialog, file: File) =
+        playlistFileManager.onFileSelected(dialog, file)
+
+    fun SaveFavourites() = playlistFileManager.saveFavourites()
+    fun SaveFavouritesSimple() = playlistFileManager.saveFavouritesSimple()
+    fun LoadFavourites() = playlistFileManager.loadFavourites()
+    fun LoadFavouritesSimple() = playlistFileManager.loadFavouritesSimple()
+
+    fun getToolbar(): Toolbar? = findViewById(R.id.my_awesome_toolbar)
+
+    override fun onSearchResultClicked(result: SearchPreferenceResult) {
+        result.closeSearchPage(this)
+        supportFragmentManager.popBackStack()
+        val f = FragmentSettings.openNewSettingsSubFragment(this, result.screen)
+        result.highlight(f)
     }
 
-    private fun selectMenuItem(itemId: Int) {
-        val item = if (Utils.bottomNavigationEnabled(this))
-            mBottomNavigationView.menu.findItem(itemId)
-        else
-            mNavigationView.menu.findItem(itemId)
-
-        if (item != null) {
-            onNavigationItemSelected(item)
-        } else {
-            selectedMenuItem = R.id.nav_item_stations
-            navigateToSelectedMenuItem()
-        }
+    override fun invalidateOptionsMenuForCast() {
+        invalidateOptionsMenu()
     }
 
-    private fun checkMenuItems() {
-        mBottomNavigationView.menu.findItem(selectedMenuItem)?.isChecked = true
-        mNavigationView.menu.findItem(selectedMenuItem)?.isChecked = true
-    }
-
-    fun Search(searchStyle: StationsFilter.SearchStyle, query: String) {
-        Log.d("MAIN", "Search() searchstyle=$searchStyle query=$query")
-        val currentFragment = mFragmentManager.fragments.last()
-        if (currentFragment is FragmentTabs) {
-            currentFragment.Search(searchStyle, query)
-        } else {
-            val backStackTag = R.id.nav_item_stations.toString()
-            val f = FragmentTabs()
-            val fragmentTransaction = mFragmentManager.beginTransaction()
-            if (Utils.bottomNavigationEnabled(this)) {
-                fragmentTransaction.replace(R.id.containerView, f).commit()
-                mBottomNavigationView.menu.findItem(R.id.nav_item_stations).isChecked = true
-            } else {
-                fragmentTransaction.replace(R.id.containerView, f).addToBackStack(backStackTag).commit()
-                mNavigationView.menu.findItem(R.id.nav_item_stations).isChecked = true
-            }
-            f.Search(searchStyle, query)
-            selectedMenuItem = R.id.nav_item_stations
-            invalidateOptionsMenu()
-        }
-    }
-
-    fun SearchStations(query: String) {
-        Log.d("MAIN", "SearchStations() $query")
-        val currentFragment = mFragmentManager.fragments.last()
-        if (currentFragment is IFragmentSearchable) {
-            currentFragment.Search(StationsFilter.SearchStyle.ByName, query)
-        }
-    }
-
-    override fun onQueryTextSubmit(query: String): Boolean = true
-
-    override fun onQueryTextChange(newText: String): Boolean {
-        SearchStations(newText)
-        return true
-    }
-
-    private fun showMeteredConnectionDialog(playFunc: Runnable) {
-        val res = resources
-        val title = res.getString(R.string.alert_metered_connection_title)
-        val text = res.getString(R.string.alert_metered_connection_message)
+    private fun showMeteredConnectionDialog(playAction: () -> Unit) {
+        val title = resources.getString(R.string.alert_metered_connection_title)
+        val text = resources.getString(R.string.alert_metered_connection_message)
         meteredConnectionAlertDialog = AlertDialog.Builder(this)
             .setTitle(title)
             .setMessage(text)
             .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(android.R.string.ok) { _, _ -> playFunc.run() }
+            .setPositiveButton(android.R.string.ok) { _, _ -> playAction() }
             .setOnDismissListener { meteredConnectionAlertDialog = null }
             .create()
-        meteredConnectionAlertDialog!!.show()
+        meteredConnectionAlertDialog?.show()
     }
 
     private fun setupBroadcastReceiver() {
@@ -893,62 +584,21 @@ class ActivityMain : AppCompatActivity(), SearchView.OnQueryTextListener,
     }
 
     private fun showLoadingIcon() {
-        findViewById<View>(R.id.progressBarLoading).visibility = View.VISIBLE
+        loadingStateHolder.showLoading()
     }
 
     private fun hideLoadingIcon() {
-        findViewById<View>(R.id.progressBarLoading).visibility = View.GONE
+        loadingStateHolder.hideLoading()
     }
 
-    private fun changeTimer() {
-        val seekDialog = AlertDialog.Builder(this)
-        val seekView = View.inflate(this, R.layout.layout_timer_chooser, null)
-
-        seekDialog.setTitle(R.string.sleep_timer_title)
-        seekDialog.setView(seekView)
-
-        val seekTextView = seekView.findViewById<TextView>(R.id.timerTextView)
-        val seekBar = seekView.findViewById<SeekBar>(R.id.timerSeekBar)
-        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                seekTextView.text = progress.toString()
+    private fun cleanInternalFilesDirectory() {
+        try {
+            val dir = File(filesDir.absolutePath)
+            if (dir.isDirectory) {
+                dir.list()?.forEach { child ->
+                    try { File(dir, child).delete() } catch (_: Exception) {}
+                }
             }
-            override fun onStartTrackingTouch(seekBar: SeekBar) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar) {}
-        })
-
-        val currenTimerSeconds = mediaControllerRepository.playbackState.value.sleepTimerSeconds
-        val currentTimer = when {
-            currenTimerSeconds <= 0 -> sharedPref.getInt("sleep_timer_default_minutes", 10).toLong()
-            currenTimerSeconds < 60 -> 1L
-            else -> currenTimerSeconds / 60
-        }
-        seekBar.progress = currentTimer.toInt()
-
-        seekDialog.setPositiveButton(R.string.sleep_timer_apply) { _, _ ->
-            mediaControllerRepository.clearTimer()
-            mediaControllerRepository.addTimer(seekBar.progress * 60)
-            sharedPref.edit().putInt("sleep_timer_default_minutes", seekBar.progress).apply()
-        }
-
-        seekDialog.setNegativeButton(R.string.sleep_timer_clear) { _, _ ->
-            mediaControllerRepository.clearTimer()
-        }
-
-        seekDialog.create()
-        seekDialog.show()
-    }
-
-    fun getToolbar(): Toolbar? = findViewById(R.id.my_awesome_toolbar)
-
-    override fun onSearchResultClicked(result: SearchPreferenceResult) {
-        result.closeSearchPage(this)
-        supportFragmentManager.popBackStack()
-        val f = FragmentSettings.openNewSettingsSubFragment(this, result.screen)
-        result.highlight(f)
-    }
-
-    override fun invalidateOptionsMenuForCast() {
-        invalidateOptionsMenu()
+        } catch (_: Exception) {}
     }
 }

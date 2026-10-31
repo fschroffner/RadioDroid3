@@ -12,7 +12,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -82,8 +82,7 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
     private fun loadBrowse(forceUpdate: Boolean) {
         if (relativeUrl.isEmpty()) return
         if (context != null) {
-            LocalBroadcastManager.getInstance(requireContext())
-                .sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
+            LoadingStateHolder.show()
         }
         stationsViewModel.load(relativeUrl, hideBroken(), forceUpdate)
     }
@@ -121,8 +120,7 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
 
     private fun dismissLoadingIndicator() {
         if (context != null) {
-            LocalBroadcastManager.getInstance(requireContext())
-                .sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+            LoadingStateHolder.hide()
         }
     }
 
@@ -161,7 +159,7 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
             adapter.setFilterListener { searchStatus ->
                 val currentBinding = _binding ?: return@setFilterListener
                 currentBinding.layoutError.visibility = if (searchStatus == StationsFilter.SearchStatus.ERROR) View.VISIBLE else View.GONE
-                LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+                LoadingStateHolder.hide()
                 currentBinding.swiperefresh.isRefreshing = false
             }
             btnRetry.setOnClickListener { Search(lastSearchStyle, lastQuery) }
@@ -210,7 +208,7 @@ class FragmentStations : Fragment(), IFragmentSearchable, IFragmentRefreshable {
         if (_binding != null && searchEnabled) {
             Log.d("STATIONS", "query a = $query")
             if (!TextUtils.isEmpty(query)) {
-                LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
+                LoadingStateHolder.show()
             }
             stationsFilter!!.setSearchStyle(searchStyle)
             stationsFilter!!.filter(query)

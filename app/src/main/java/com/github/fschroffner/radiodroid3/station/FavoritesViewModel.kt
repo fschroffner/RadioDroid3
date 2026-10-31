@@ -46,14 +46,14 @@ class FavoritesViewModel @Inject constructor(
         _errorMessage
     ) { stations, isRefreshing, errorMessage ->
         FavoritesUiState(
-            stations = if (stations.isNotEmpty()) stations else favouriteManager.listStations,
+            stations = stations,
             isRefreshing = isRefreshing,
             errorMessage = errorMessage
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = FavoritesUiState(stations = favouriteManager.listStations)
+        initialValue = FavoritesUiState()
     )
 
     fun refresh() {
@@ -96,7 +96,6 @@ class FavoritesViewModel @Inject constructor(
     }
 
     fun saveOrder() {
-        favouriteManager.Save()
-        favouriteManager.notifyObservers()
+        favouriteManager.saveOrderToDatabase()
     }
 }

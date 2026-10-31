@@ -2,27 +2,43 @@ package com.github.fschroffner.radiodroid3.players
 
 import android.content.Context
 import android.content.SharedPreferences
-
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.media3.common.Player
 import androidx.preference.PreferenceManager
 import com.github.fschroffner.radiodroid3.BuildConfig
+import com.github.fschroffner.radiodroid3.FavouriteManager
+import com.github.fschroffner.radiodroid3.HistoryManager
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.di.AppEntryPoint
-import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
+import com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
 import com.github.fschroffner.radiodroid3.players.exoplayer.ExoPlayerWrapper
 import com.github.fschroffner.radiodroid3.players.mediaplayer.MediaPlayerWrapper
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.live.ShoutcastInfo
 import com.github.fschroffner.radiodroid3.station.live.StreamLiveInfo
+import dagger.hilt.EntryPoints
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener {
+class RadioPlayer(
+    private val mainContext: Context,
+    private val injectedHttpClient: OkHttpClient? = null,
+    private val injectedHistoryManager: HistoryManager? = null,
+    private val injectedFavouriteManager: FavouriteManager? = null
+) : PlayerWrapper.PlayListener {
 
     private val TAG = "RadioPlayer"
 
@@ -41,8 +57,10 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
     private lateinit var playerListener: PlayerListener
     private var playState = PlayState.Idle
     private var lastLiveInfo: StreamLiveInfo? = null
-    private var playStationTask: PlayStationTask? = null
     private var streamName: String = ""
+
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var playJob: Job? = null
 
     private val bufferCheckRunnable = object : Runnable {
         override fun run() {
@@ -82,8 +100,9 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
             prefs.getString("stream_read_timeout", null)?.toIntOrNull() ?: 30
         }.coerceAtLeast(10)
 
-
-        val client = EntryPoints.get(mainContext.applicationContext, AppEntryPoint::class.java).okHttpClient().newBuilder()
+        val baseClient = injectedHttpClient
+            ?: EntryPoints.get(mainContext.applicationContext, AppEntryPoint::class.java).okHttpClient()
+        val client = baseClient.newBuilder()
             .connectTimeout(connectTimeout.toLong(), TimeUnit.SECONDS)
             .readTimeout(readTimeout.toLong(), TimeUnit.SECONDS)
             .followRedirects(true)
@@ -96,20 +115,60 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
 
     fun play(station: DataRadioStation) {
         setState(PlayState.PrePlaying, -1)
-        playStationTask = PlayStationTask(station, mainContext,
-            { url -> RadioPlayer@ this.play(url, station.Name) },
-            { result ->
-                playStationTask = null
-                if (result == PlayStationTask.ExecutionResult.FAILURE) {
-                    onPlayerError(R.string.error_station_load)
+        cancelStationLinkRetrieval()
+
+        val hm = injectedHistoryManager ?: EntryPoints.get(mainContext.applicationContext, AppEntryPoint::class.java).historyManager()
+        hm.add(station)
+
+        val fm = injectedFavouriteManager ?: EntryPoints.get(mainContext.applicationContext, AppEntryPoint::class.java).favouriteManager()
+        val sharedPref = PreferenceManager.getDefaultSharedPreferences(mainContext)
+        if (sharedPref.getBoolean("auto_favorite", false)) {
+            if (!fm.has(station.StationUuid)) {
+                fm.add(station)
+                Toast.makeText(mainContext, mainContext.getString(R.string.notify_autostarred), Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        LoadingStateHolder.show()
+
+        playJob = coroutineScope.launch {
+            val client = injectedHttpClient ?: EntryPoints.get(mainContext.applicationContext, AppEntryPoint::class.java).okHttpClient()
+            val resolvedUrl = withContext(Dispatchers.IO) {
+                var streamUrl: String? = null
+                if (station.hasValidUuid()) {
+                    try {
+                        streamUrl = Utils.getRealStationLink(client, mainContext.applicationContext, station.StationUuid)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "getRealStationLink failed: $e")
+                    }
                 }
-            })
-        playStationTask!!.execute()
+                if (streamUrl.isNullOrBlank()) {
+                    streamUrl = station.playableUrl?.takeIf { it.isNotBlank() }
+                        ?: station.StreamUrl.takeIf { it.isNotBlank() }
+                }
+                val resolved = streamUrl?.let { Utils.resolvePlaylistIfNeeded(client, it) }
+                resolved?.takeIf { it.isNotBlank() }
+                    ?: station.playableUrl?.takeIf { it.isNotBlank() }
+                    ?: station.StreamUrl.takeIf { it.isNotBlank() }
+            }
+
+            LoadingStateHolder.hide()
+
+            if (resolvedUrl != null) {
+                station.playableUrl = resolvedUrl
+                this@RadioPlayer.play(resolvedUrl, station.Name)
+            } else {
+                onPlayerError(R.string.error_station_load)
+            }
+        }
     }
 
     private fun cancelStationLinkRetrieval() {
-        playStationTask?.cancel(true)
-        playStationTask = null
+        if (playJob?.isActive == true) {
+            playJob?.cancel()
+            LoadingStateHolder.hide()
+        }
+        playJob = null
     }
 
     fun pause() {
@@ -135,6 +194,8 @@ class RadioPlayer(private val mainContext: Context) : PlayerWrapper.PlayListener
     }
 
     fun destroy() {
+        cancelStationLinkRetrieval()
+        coroutineScope.cancel()
         stop()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
             playerThread?.looper?.let { playerThreadHandler.post { playerThread.quit() } }

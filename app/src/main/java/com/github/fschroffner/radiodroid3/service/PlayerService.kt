@@ -72,6 +72,7 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     @Inject lateinit var historyManager: HistoryManager
     @Inject lateinit var injectedTrackHistoryRepository: TrackHistoryRepository
     @Inject lateinit var appPreferencesDataStore: AppPreferencesDataStore
+    @Inject lateinit var okHttpClient: okhttp3.OkHttpClient
 
     companion object {
         const val METERED_CONNECTION_WARNING_KEY = "warn_no_wifi"
@@ -145,8 +146,8 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
     private lateinit var audioWarning: AudioWarning
     private lateinit var trackHistoryUpdater: TrackHistoryUpdater
 
-    private val becomingNoisyReceiver = BecomingNoisyReceiver()
-    private val headsetConnectionReceiver = HeadsetConnectionReceiver()
+    private lateinit var becomingNoisyReceiver: BecomingNoisyReceiver
+    private lateinit var headsetConnectionReceiver: HeadsetConnectionReceiver
     private val connectivityChecker = ConnectivityChecker()
 
     private var pauseReason = PauseReason.NONE
@@ -352,7 +353,15 @@ class PlayerService : MediaLibraryService(), RadioPlayer.PlayerListener {
         playbackLocks = PlaybackLocks(this, audioManager, afChangeListener)
         audioWarning = AudioWarning(handler, audioWarningCallback)
 
-        radioPlayer = RadioPlayer(this)
+        becomingNoisyReceiver = BecomingNoisyReceiver(
+            injectedPreferences = appPreferencesDataStore
+        )
+        headsetConnectionReceiver = HeadsetConnectionReceiver(
+            injectedPreferences = appPreferencesDataStore,
+            injectedHistoryManager = historyManager
+        )
+
+        radioPlayer = RadioPlayer(this, okHttpClient, historyManager, favouriteManager)
         radioPlayer.setPlayerListener(this)
 
         browseTree = RadioBrowseTree(this, favouriteManager, historyManager)

@@ -95,6 +95,6 @@ class LfmMetadataSearcher(private val httpClient: OkHttpClient) {
     }
 
     companion object {
-        private const val API_GET_TRACK_METADATA = "http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key=%s&artist=%s&track=%s&format=json"
+        private const val API_GET_TRACK_METADATA = "https://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key=%s&artist=%s&track=%s&format=json"
     }
 }

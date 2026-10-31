@@ -15,8 +15,9 @@ import com.mikepenz.iconics.utils.sizeDp
 import com.github.fschroffner.radiodroid3.R
 
 import com.github.fschroffner.radiodroid3.Utils
-import com.github.fschroffner.radiodroid3.players.PlayStationTask
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
+import dagger.hilt.EntryPoints
 
 object StationPopupMenu {
     fun open(view: View, context: Context, activity: FragmentActivity, station: DataRadioStation, itemAdapterStation: ItemAdapterStation): MaterialPopupMenu {
@@ -41,8 +42,10 @@ object StationPopupMenu {
                         labelRes = R.string.context_menu_play_in_external_player
                         iconDrawable = IconicsDrawable(context, CommunityMaterial.Icon2.cmd_play_box_outline).sizeDp(24)
                         callback = {
-                            Utils.playAndWarnIfMetered(context, station,
-                                    PlayerType.EXTERNAL) { PlayStationTask.playExternal(station, context).execute() }
+                            val useCase = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).stationPlaybackUseCase()
+                            useCase.playAndWarnIfMetered(context, station, PlayerType.EXTERNAL) {
+                                useCase.playExternal(station, context)
+                            }
                         }
                     }
                 }

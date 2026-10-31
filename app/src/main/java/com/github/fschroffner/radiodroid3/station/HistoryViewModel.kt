@@ -46,14 +46,14 @@ class HistoryViewModel @Inject constructor(
         _errorMessage
     ) { stations, isRefreshing, errorMessage ->
         HistoryUiState(
-            stations = if (stations.isNotEmpty()) stations else historyManager.listStations,
+            stations = stations,
             isRefreshing = isRefreshing,
             errorMessage = errorMessage
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = HistoryUiState(stations = historyManager.listStations)
+        initialValue = HistoryUiState()
     )
 
     fun refresh() {

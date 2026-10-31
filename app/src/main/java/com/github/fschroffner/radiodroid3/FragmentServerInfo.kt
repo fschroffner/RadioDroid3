@@ -9,7 +9,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
 import com.github.fschroffner.radiodroid3.adapters.ItemAdapterStatistics
 import com.github.fschroffner.radiodroid3.data.DataStatistics
 import com.github.fschroffner.radiodroid3.databinding.LayoutStatisticsBinding
@@ -45,7 +45,7 @@ open class FragmentServerInfo : Fragment(), IFragmentRefreshable {
 
     private fun download(forceUpdate: Boolean) {
         val currentContext = context ?: return
-        LocalBroadcastManager.getInstance(currentContext).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
+        LoadingStateHolder.show()
         val httpClient = EntryPoints.get(currentContext.applicationContext, AppEntryPoint::class.java).okHttpClient()
 
         lifecycleScope.launch {
@@ -55,7 +55,7 @@ open class FragmentServerInfo : Fragment(), IFragmentRefreshable {
                 }
             }
             if (context != null) {
-                LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+                LoadingStateHolder.hide()
             }
             if (result != null) {
                 itemAdapterStatistics?.clear()

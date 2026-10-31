@@ -53,6 +53,7 @@ class PlayerViewModel @Inject constructor(
     val historyManager: HistoryManager,
     val trackHistoryRepository: TrackHistoryRepository,
     val trackMetadataSearcher: TrackMetadataSearcher,
+    val stationPlaybackUseCase: StationPlaybackUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -66,8 +67,7 @@ class PlayerViewModel @Inject constructor(
         _albumArtUrl
     ) { playbackState, favorites, artUrl ->
         val currentStation = playbackState.station ?: historyManager.getFirst()
-        val favList = if (favorites.isNotEmpty()) favorites else favouriteManager.listStations
-        val isFav = currentStation != null && (favList.any { it.StationUuid == currentStation.StationUuid } || favouriteManager.has(currentStation.StationUuid))
+        val isFav = currentStation != null && favorites.any { it.StationUuid == currentStation.StationUuid }
 
         PlayerUiState(
             station = currentStation,
@@ -210,5 +210,13 @@ class PlayerViewModel @Inject constructor(
 
     fun clearTimer() {
         mediaControllerRepository.clearTimer()
+    }
+
+    fun playStation(station: DataRadioStation) {
+        stationPlaybackUseCase.playStation(station)
+    }
+
+    fun showPlaySelection(targetContext: Context, station: DataRadioStation, fragmentManager: androidx.fragment.app.FragmentManager) {
+        stationPlaybackUseCase.showPlaySelection(targetContext, station, fragmentManager)
     }
 }

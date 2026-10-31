@@ -7,15 +7,15 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.github.fschroffner.radiodroid3.data.local.entity.RadioStationEntity
 import com.github.fschroffner.radiodroid3.history.TrackHistoryDao
 import com.github.fschroffner.radiodroid3.history.TrackHistoryEntry
 import com.github.fschroffner.radiodroid3.history.TrackHistoryEntry.Companion.MAX_UNKNOWN_TRACK_DURATION
-import com.github.fschroffner.radiodroid3.station.DataRadioStation
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-@Database(entities = [TrackHistoryEntry::class, DataRadioStation::class], version = 2)
+@Database(entities = [TrackHistoryEntry::class, RadioStationEntity::class], version = 2)
 @TypeConverters(Converters::class)
 abstract class RadioDroidDatabase : RoomDatabase() {
     abstract fun songHistoryDao(): TrackHistoryDao

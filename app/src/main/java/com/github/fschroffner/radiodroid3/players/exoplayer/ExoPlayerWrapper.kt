@@ -1,10 +1,10 @@
 package com.github.fschroffner.radiodroid3.players.exoplayer
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -62,18 +62,18 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
     private var context: Context? = null
     private var audioSource: MediaSource? = null
     private var fullStopTask: Runnable? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
-    private val networkChangedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(ctx: Context, intent: Intent) {
-            val p = player
-            val src = audioSource
-            if (fullStopTask != null && p != null && src != null && Utils.hasAnyConnection(ctx)) {
-                Log.i(TAG, "Regained connection. Resuming playback.")
-                cancelStopTask()
-                p.setMediaSource(src)
-                p.prepare()
-                p.playWhenReady = true
-            }
+    private fun handleNetworkRegained() {
+        val p = player
+        val src = audioSource
+        val ctx = context
+        if (fullStopTask != null && p != null && src != null && ctx != null && Utils.hasAnyConnection(ctx)) {
+            Log.i(TAG, "Regained connection via NetworkCallback. Resuming playback.")
+            cancelStopTask()
+            p.setMediaSource(src)
+            p.prepare()
+            p.playWhenReady = true
         }
     }
 
@@ -133,14 +133,7 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
         player!!.playWhenReady = true
 
         if (!isReceiverRegistered) {
-            val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.registerReceiver(networkChangedReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-            } else {
-                @Suppress("DEPRECATION")
-                context.registerReceiver(networkChangedReceiver, filter)
-            }
-            isReceiverRegistered = true
+            registerNetworkCallback(context)
         }
     }
 
@@ -268,9 +261,40 @@ class ExoPlayerWrapper : PlayerWrapper, IcyDataSource.IcyDataSourceListener, Pla
         currentPlaybackTransferredBytes += length
     }
 
+    private fun registerNetworkCallback(ctx: Context) {
+        val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                playerThreadHandler?.post {
+                    handleNetworkRegained()
+                }
+            }
+        }
+        networkCallback = callback
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                cm.registerDefaultNetworkCallback(callback)
+            } else {
+                val request = NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build()
+                cm.registerNetworkRequest(request, callback)
+            }
+            isReceiverRegistered = true
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to register NetworkCallback: $e")
+        }
+    }
+
     private fun unregisterNetworkReceiver() {
-        if (isReceiverRegistered) {
-            context!!.unregisterReceiver(networkChangedReceiver)
+        if (isReceiverRegistered && networkCallback != null) {
+            val cm = context?.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            try {
+                cm?.unregisterNetworkCallback(networkCallback!!)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to unregister NetworkCallback: $e")
+            }
+            networkCallback = null
             isReceiverRegistered = false
         }
     }

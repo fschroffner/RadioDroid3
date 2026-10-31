@@ -6,11 +6,13 @@ import com.github.fschroffner.radiodroid3.FallbackStationsManager
 import com.github.fschroffner.radiodroid3.FavouriteManager
 import com.github.fschroffner.radiodroid3.HistoryManager
 import com.github.fschroffner.radiodroid3.data.datastore.AppPreferencesDataStore
+import com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
 import com.github.fschroffner.radiodroid3.database.RadioDroidDatabase
 import com.github.fschroffner.radiodroid3.history.TrackHistoryDao
 import com.github.fschroffner.radiodroid3.history.TrackHistoryRepository
 import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
 import com.github.fschroffner.radiodroid3.player.RadioPlayerController
+import com.github.fschroffner.radiodroid3.player.StationPlaybackUseCase
 import com.github.fschroffner.radiodroid3.station.RadioStationDao
 import com.github.fschroffner.radiodroid3.station.live.metadata.TrackMetadataSearcher
 import dagger.hilt.EntryPoint
@@ -35,4 +37,6 @@ interface AppEntryPoint {
     fun trackMetadataSearcher(): TrackMetadataSearcher
     fun radioPlayerController(): RadioPlayerController
     fun mediaControllerRepository(): MediaControllerRepository
+    fun loadingStateHolder(): LoadingStateHolder
+    fun stationPlaybackUseCase(): StationPlaybackUseCase
 }

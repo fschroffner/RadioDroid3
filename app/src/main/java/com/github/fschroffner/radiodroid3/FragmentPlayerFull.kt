@@ -134,7 +134,7 @@ class FragmentPlayerFull : Fragment() {
 
         binding.buttonPlay.setOnClickListener {
             playerViewModel.playPause { station ->
-                Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
+                playerViewModel.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
             }
         }
 

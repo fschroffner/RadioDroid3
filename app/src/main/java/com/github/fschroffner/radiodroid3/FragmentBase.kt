@@ -8,7 +8,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
 import androidx.preference.PreferenceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -52,7 +52,7 @@ open class FragmentBase : Fragment() {
             val cache = Utils.getCacheFile(requireActivity(), relativeUrl!!)
             if (cache == null || forceUpdate) {
                 if (context != null && displayProgress) {
-                    LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
+                    LoadingStateHolder.show()
                 }
 
                 val httpClient = dagger.hilt.EntryPoints.get(requireContext().applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).okHttpClient()
@@ -64,7 +64,7 @@ open class FragmentBase : Fragment() {
                     }
                     DownloadFinished()
                     if (context != null) {
-                        LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+                        LoadingStateHolder.hide()
                     }
                     if (BuildConfig.DEBUG) Log.d(TAG, "Download relativeUrl finished:$relativeUrl")
                     if (result != null) {

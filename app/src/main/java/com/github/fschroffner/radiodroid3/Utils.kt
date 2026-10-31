@@ -33,7 +33,6 @@ import com.mikepenz.iconics.IconicsColor
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.IconicsSize
 import com.mikepenz.iconics.typeface.IIcon
-import com.github.fschroffner.radiodroid3.players.PlayStationTask
 import com.github.fschroffner.radiodroid3.players.selector.PlayerSelectorDialog
 import com.github.fschroffner.radiodroid3.players.selector.PlayerType
 import com.github.fschroffner.radiodroid3.proxy.ProxySettings
@@ -303,14 +302,18 @@ object Utils {
             })
     }
 
+    @Deprecated("Inject StationPlaybackUseCase or MediaControllerRepository directly instead of using static Utils.")
     @JvmStatic
-    fun getCurrentOrLastStation(ctx: Context): DataRadioStation? {
-        val entryPoint = dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
-        var station = entryPoint.mediaControllerRepository().getCurrentStation()
-        if (station == null) {
-            station = entryPoint.historyManager().getFirst()
-        }
-        return station
+    fun getCurrentOrLastStation(
+        ctx: Context,
+        mediaControllerRepository: com.github.fschroffner.radiodroid3.player.MediaControllerRepository? = null,
+        historyManager: HistoryManager? = null
+    ): DataRadioStation? {
+        val repo = mediaControllerRepository
+            ?: dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).mediaControllerRepository()
+        val hm = historyManager
+            ?: dagger.hilt.EntryPoints.get(ctx.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).historyManager()
+        return repo.getCurrentStation() ?: hm.getFirst()
     }
 
     @JvmStatic
@@ -322,31 +325,46 @@ object Utils {
         playerSelectorDialogFragment.show(fragmentManager, PlayerSelectorDialog.FRAGMENT_TAG)
     }
 
+    @Deprecated("Inject StationPlaybackUseCase instead of using static Utils.")
     @JvmStatic
-    fun showPlaySelection(context: Context, station: DataRadioStation, fragmentManager: FragmentManager) {
+    fun showPlaySelection(
+        context: Context,
+        station: DataRadioStation,
+        fragmentManager: FragmentManager,
+        castHandler: CastHandler? = null,
+        mediaControllerRepository: com.github.fschroffner.radiodroid3.player.MediaControllerRepository? = null
+    ) {
         val sharedPref = PreferenceManager.getDefaultSharedPreferences(context)
         val externalAvailable = sharedPref.getBoolean("play_external", false)
-        val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
-        val castHandler = entryPoint.castHandler()
-        val castAvailable = castHandler.isCastSessionAvailable
+        val ch = castHandler
+            ?: dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).castHandler()
+        val castAvailable = ch.isCastSessionAvailable
 
         if (castAvailable && !externalAvailable) {
-            PlayStationTask(station, context.applicationContext,
-                { url -> castHandler.playRemote(station.Name, url, station.IconUrl) },
-                null).execute()
+            val useCase = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).stationPlaybackUseCase()
+            useCase.playCast(station, context.applicationContext)
         } else if (externalAvailable) {
             showPlayerSelectorDialog(context, fragmentManager, station)
         } else {
-            playAndWarnIfMetered(context, station, PlayerType.RADIODROID) { play(station) }
+            playAndWarnIfMetered(context, station, PlayerType.RADIODROID, Runnable {
+                play(context, station, mediaControllerRepository)
+            }, mediaControllerRepository)
         }
     }
 
     @JvmStatic
-    fun playAndWarnIfMetered(context: Context, station: DataRadioStation, playerType: PlayerType, playFunc: Runnable) {
-        val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
+    fun playAndWarnIfMetered(
+        context: Context,
+        station: DataRadioStation,
+        playerType: PlayerType,
+        playFunc: Runnable,
+        mediaControllerRepository: com.github.fschroffner.radiodroid3.player.MediaControllerRepository? = null
+    ) {
+        val repo = mediaControllerRepository
+            ?: dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).mediaControllerRepository()
         playAndWarnIfMetered(context, station, playerType, playFunc) { station1, playerType1 ->
-            entryPoint.mediaControllerRepository().setStation(station1)
-            entryPoint.mediaControllerRepository().warnAboutMeteredConnection(playerType1)
+            repo.setStation(station1)
+            repo.warnAboutMeteredConnection(playerType1)
         }
     }
 
@@ -417,10 +435,16 @@ object Utils {
         RadioDroidApp.instance?.let { play(it, station) }
     }
 
+    @Deprecated("Inject MediaControllerRepository directly instead of using static Utils.")
     @JvmStatic
-    fun play(context: Context, station: DataRadioStation) {
-        val entryPoint = dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java)
-        entryPoint.mediaControllerRepository().playStation(station)
+    fun play(
+        context: Context,
+        station: DataRadioStation,
+        mediaControllerRepository: com.github.fschroffner.radiodroid3.player.MediaControllerRepository? = null
+    ) {
+        val repo = mediaControllerRepository
+            ?: dagger.hilt.EntryPoints.get(context.applicationContext, com.github.fschroffner.radiodroid3.di.AppEntryPoint::class.java).mediaControllerRepository()
+        repo.playStation(station)
     }
 
     @JvmStatic

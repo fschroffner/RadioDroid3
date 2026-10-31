@@ -10,7 +10,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.github.fschroffner.radiodroid3.data.loading.LoadingStateHolder
 import com.google.android.material.snackbar.Snackbar
 import com.github.fschroffner.radiodroid3.ActivityMain
 import com.github.fschroffner.radiodroid3.FavouriteManager
@@ -58,7 +58,7 @@ object StationActions {
     }
 
     private fun retrieveAndCopyStreamUrlToClipboard(context: Context, station: DataRadioStation) {
-        LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
+        LoadingStateHolder.show()
         val contextRef = WeakReference(context)
         scope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -67,7 +67,7 @@ object StationActions {
                 Utils.getRealStationLink(httpClient, ctx, station.StationUuid)
             }
             val ctx = contextRef.get() ?: return@launch
-            LocalBroadcastManager.getInstance(ctx).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+            LoadingStateHolder.hide()
             if (result != null) {
                 val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                 if (clipboard != null) {
@@ -107,7 +107,7 @@ object StationActions {
 
     @JvmStatic
     fun share(context: Context, station: DataRadioStation) {
-        LocalBroadcastManager.getInstance(context).sendBroadcast(Intent(ActivityMain.ACTION_SHOW_LOADING))
+        LoadingStateHolder.show()
         val contextRef = WeakReference(context)
         scope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -116,7 +116,7 @@ object StationActions {
                 Utils.getRealStationLink(httpClient, ctx, station.StationUuid)
             }
             val ctx = contextRef.get() ?: return@launch
-            LocalBroadcastManager.getInstance(ctx).sendBroadcast(Intent(ActivityMain.ACTION_HIDE_LOADING))
+            LoadingStateHolder.hide()
             if (result != null) {
                 val share = Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"

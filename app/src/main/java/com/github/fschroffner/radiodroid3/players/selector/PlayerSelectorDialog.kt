@@ -10,15 +10,22 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.github.fschroffner.radiodroid3.CastHandler
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
-import dagger.hilt.EntryPoints
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class PlayerSelectorDialog(
     private val stationToPlay: DataRadioStation? = null
 ) : BottomSheetDialogFragment() {
+
+    @Inject lateinit var mediaControllerRepository: MediaControllerRepository
+    @Inject lateinit var castHandler: CastHandler
+    @Inject lateinit var stationPlaybackUseCase: com.github.fschroffner.radiodroid3.player.StationPlaybackUseCase
 
     private lateinit var recyclerViewPlayers: RecyclerView
     private lateinit var playerSelectorAdapter: PlayerSelectorAdapter
@@ -29,7 +36,13 @@ class PlayerSelectorDialog(
         recyclerViewPlayers = view.findViewById(R.id.recyclerViewPlayers)
         recyclerViewPlayers.layoutManager = GridLayoutManager(context, 2, RecyclerView.VERTICAL, false)
 
-        playerSelectorAdapter = PlayerSelectorAdapter(requireContext(), stationToPlay)
+        playerSelectorAdapter = PlayerSelectorAdapter(
+            context = requireContext(),
+            stationToPlay = stationToPlay,
+            mediaControllerRepository = mediaControllerRepository,
+            castHandler = castHandler,
+            stationPlaybackUseCase = stationPlaybackUseCase
+        )
         recyclerViewPlayers.adapter = playerSelectorAdapter
 
         return view
@@ -37,10 +50,9 @@ class PlayerSelectorDialog(
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val entryPoint = EntryPoints.get(requireContext().applicationContext, AppEntryPoint::class.java)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                entryPoint.mediaControllerRepository().playbackState.collect {
+                mediaControllerRepository.playbackState.collect {
                     playerSelectorAdapter.notifyRadioDroidPlaybackStateChanged()
                 }
             }

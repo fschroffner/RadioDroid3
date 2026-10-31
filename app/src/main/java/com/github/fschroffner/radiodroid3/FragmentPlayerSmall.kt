@@ -65,12 +65,12 @@ class FragmentPlayerSmall : Fragment() {
 
         binding.buttonPlay.setOnClickListener {
             viewModel.playPause { station ->
-                Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
+                viewModel.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
             }
         }
 
         binding.buttonMore.setOnClickListener {
-            val station = viewModel.uiState.value.station ?: Utils.getCurrentOrLastStation(requireContext()) ?: return@setOnClickListener
+            val station = viewModel.uiState.value.station ?: viewModel.getCurrentOrLastStation() ?: return@setOnClickListener
             showPlayerMenu(station, viewModel.uiState.value.isFavorite)
         }
 
@@ -108,7 +108,7 @@ class FragmentPlayerSmall : Fragment() {
 
         viewModel.tryPlayAtStart(autoPlay, autoOff, timeout) { station ->
             if (isAdded) {
-                Utils.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
+                viewModel.showPlaySelection(requireContext(), station, requireActivity().supportFragmentManager)
             }
         }
     }

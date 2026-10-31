@@ -3,115 +3,201 @@ package com.github.fschroffner.radiodroid3.station
 import android.os.Parcelable
 import android.text.TextUtils
 import android.util.Log
-import androidx.room.Entity
-import androidx.room.Ignore
-import androidx.room.PrimaryKey
+import com.github.fschroffner.radiodroid3.data.mapper.toDataRadioStation
+import com.github.fschroffner.radiodroid3.data.mapper.toDomain
+import com.github.fschroffner.radiodroid3.data.mapper.toDto
+import com.github.fschroffner.radiodroid3.data.remote.dto.StationDtoParser
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
-import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 
+/**
+ * Radio station UI model and backward-compatibility bridge.
+ *
+ * Internally uses standardized Kotlin camelCase naming conventions.
+ * JSON serialization delegates to [StationDtoParser] (Gson DTOs) instead of manual org.json loops.
+ * Room persistence is completely decoupled and handled by [com.github.fschroffner.radiodroid3.data.local.entity.RadioStationEntity].
+ */
 @Parcelize
-@Entity(tableName = "radio_stations")
 class DataRadioStation() : Parcelable {
-    @PrimaryKey
-    var StationUuid: String = ""
-    var Name: String = ""
-    var ChangeUuid: String = ""
-    var StreamUrl: String = ""
-    var HomePageUrl: String = ""
-    var IconUrl: String = ""
-    var Country: String = ""
-    var CountryCode: String? = null
-    var State: String = ""
-    var TagsAll: String = ""
-    var Language: String = ""
-    var ClickCount: Int = 0
-    var ClickTrend: Int = 0
-    var Votes: Int = 0
-    var RefreshRetryCount: Int = 0
-    var Bitrate: Int = 0
-    var Codec: String? = null
-    var Working: Boolean = true
-    var Hls: Boolean = false
-    var DeletedOnServer: Boolean = false
 
+    var stationUuid: String = ""
+    var name: String = ""
+    var changeUuid: String = ""
+    var streamUrl: String = ""
+    var homePageUrl: String = ""
+    var iconUrl: String = ""
+    var country: String = ""
+    var countryCode: String? = null
+    var state: String = ""
+    var tagsAll: String = ""
+    var language: String = ""
+    var clickCount: Int = 0
+    var clickTrend: Int = 0
+    var votes: Int = 0
+    var refreshRetryCount: Int = 0
+    var bitrate: Int = 0
+    var codec: String? = null
+    var working: Boolean = true
+    var hls: Boolean = false
+    var deletedOnServer: Boolean = false
     var isFavorite: Boolean = false
     var favoriteOrder: Int = 0
     var lastPlayed: Long? = null
 
-    @Ignore
     @IgnoredOnParcel
     var playableUrl: String? = null
 
-    @Deprecated("Use StationUuid instead")
-    @Ignore
+    @Deprecated("Use stationUuid instead")
     @IgnoredOnParcel
-    var StationId: String = ""
+    var stationId: String = ""
 
-    fun hasIcon(): Boolean = !TextUtils.isEmpty(IconUrl)
+    // Backward-compatibility PascalCase accessors
+    @Deprecated("Use stationUuid instead", ReplaceWith("stationUuid"))
+    var StationUuid: String
+        get() = stationUuid
+        set(value) { stationUuid = value }
+
+    @Deprecated("Use name instead", ReplaceWith("name"))
+    var Name: String
+        get() = name
+        set(value) { name = value }
+
+    @Deprecated("Use changeUuid instead", ReplaceWith("changeUuid"))
+    var ChangeUuid: String
+        get() = changeUuid
+        set(value) { changeUuid = value }
+
+    @Deprecated("Use streamUrl instead", ReplaceWith("streamUrl"))
+    var StreamUrl: String
+        get() = streamUrl
+        set(value) { streamUrl = value }
+
+    @Deprecated("Use homePageUrl instead", ReplaceWith("homePageUrl"))
+    var HomePageUrl: String
+        get() = homePageUrl
+        set(value) { homePageUrl = value }
+
+    @Deprecated("Use iconUrl instead", ReplaceWith("iconUrl"))
+    var IconUrl: String
+        get() = iconUrl
+        set(value) { iconUrl = value }
+
+    @Deprecated("Use country instead", ReplaceWith("country"))
+    var Country: String
+        get() = country
+        set(value) { country = value }
+
+    @Deprecated("Use countryCode instead", ReplaceWith("countryCode"))
+    var CountryCode: String?
+        get() = countryCode
+        set(value) { countryCode = value }
+
+    @Deprecated("Use state instead", ReplaceWith("state"))
+    var State: String
+        get() = state
+        set(value) { state = value }
+
+    @Deprecated("Use tagsAll instead", ReplaceWith("tagsAll"))
+    var TagsAll: String
+        get() = tagsAll
+        set(value) { tagsAll = value }
+
+    @Deprecated("Use language instead", ReplaceWith("language"))
+    var Language: String
+        get() = language
+        set(value) { language = value }
+
+    @Deprecated("Use clickCount instead", ReplaceWith("clickCount"))
+    var ClickCount: Int
+        get() = clickCount
+        set(value) { clickCount = value }
+
+    @Deprecated("Use clickTrend instead", ReplaceWith("clickTrend"))
+    var ClickTrend: Int
+        get() = clickTrend
+        set(value) { clickTrend = value }
+
+    @Deprecated("Use votes instead", ReplaceWith("votes"))
+    var Votes: Int
+        get() = votes
+        set(value) { votes = value }
+
+    @Deprecated("Use refreshRetryCount instead", ReplaceWith("refreshRetryCount"))
+    var RefreshRetryCount: Int
+        get() = refreshRetryCount
+        set(value) { refreshRetryCount = value }
+
+    @Deprecated("Use bitrate instead", ReplaceWith("bitrate"))
+    var Bitrate: Int
+        get() = bitrate
+        set(value) { bitrate = value }
+
+    @Deprecated("Use codec instead", ReplaceWith("codec"))
+    var Codec: String?
+        get() = codec
+        set(value) { codec = value }
+
+    @Deprecated("Use working instead", ReplaceWith("working"))
+    var Working: Boolean
+        get() = working
+        set(value) { working = value }
+
+    @Deprecated("Use hls instead", ReplaceWith("hls"))
+    var Hls: Boolean
+        get() = hls
+        set(value) { hls = value }
+
+    @Deprecated("Use deletedOnServer instead", ReplaceWith("deletedOnServer"))
+    var DeletedOnServer: Boolean
+        get() = deletedOnServer
+        set(value) { deletedOnServer = value }
+
+    @Deprecated("Use stationId instead", ReplaceWith("stationId"))
+    var StationId: String
+        get() = stationId
+        set(value) { stationId = value }
+
+    fun hasIcon(): Boolean = !TextUtils.isEmpty(iconUrl)
 
     fun fixStationFields() {
-        if (IconUrl.isNullOrBlank()) IconUrl = ""
+        if (iconUrl.isBlank()) iconUrl = ""
     }
 
-    fun hasValidUuid(): Boolean = !TextUtils.isEmpty(StationUuid)
+    fun hasValidUuid(): Boolean = !TextUtils.isEmpty(stationUuid)
 
     fun copyPropertiesFrom(station: DataRadioStation) {
-        StationUuid = station.StationUuid
-        @Suppress("DEPRECATION") StationId = station.StationId
-        ChangeUuid = station.ChangeUuid
-        Name = station.Name
-        HomePageUrl = station.HomePageUrl
-        StreamUrl = station.StreamUrl
-        IconUrl = station.IconUrl
-        Country = station.Country
-        CountryCode = station.CountryCode
-        State = station.State
-        TagsAll = station.TagsAll
-        Language = station.Language
-        ClickCount = station.ClickCount
-        ClickTrend = station.ClickTrend
-        Votes = station.Votes
-        RefreshRetryCount = station.RefreshRetryCount
-        Bitrate = station.Bitrate
-        Codec = station.Codec
-        Working = station.Working
+        stationUuid = station.stationUuid
+        @Suppress("DEPRECATION") stationId = station.stationId
+        changeUuid = station.changeUuid
+        name = station.name
+        homePageUrl = station.homePageUrl
+        streamUrl = station.streamUrl
+        iconUrl = station.iconUrl
+        country = station.country
+        countryCode = station.countryCode
+        state = station.state
+        tagsAll = station.tagsAll
+        language = station.language
+        clickCount = station.clickCount
+        clickTrend = station.clickTrend
+        votes = station.votes
+        refreshRetryCount = station.refreshRetryCount
+        bitrate = station.bitrate
+        codec = station.codec
+        working = station.working
         isFavorite = station.isFavorite
         favoriteOrder = station.favoriteOrder
         lastPlayed = station.lastPlayed
+        playableUrl = station.playableUrl
     }
 
     fun toJson(): JSONObject? {
         return try {
-            JSONObject().apply {
-                @Suppress("DEPRECATION")
-                if (TextUtils.isEmpty(StationUuid)) put("id", StationId) else put("stationuuid", StationUuid)
-                put("changeuuid", ChangeUuid)
-                put("name", Name)
-                put("homepage", HomePageUrl)
-                put("url", StreamUrl)
-                put("favicon", IconUrl)
-                put("country", Country)
-                put("countrycode", CountryCode)
-                put("state", State)
-                put("tags", TagsAll)
-                put("language", Language)
-                put("clickcount", ClickCount)
-                put("clicktrend", ClickTrend)
-                if (RefreshRetryCount > 0) put("refreshretrycount", RefreshRetryCount)
-                put("votes", Votes)
-                put("bitrate", "$Bitrate")
-                put("codec", Codec)
-                put("lastcheckok", if (Working) "1" else "0")
-                put("DeletedOnServer", if (DeletedOnServer) "1" else "0")
-                put("isFavorite", if (isFavorite) "1" else "0")
-                put("favoriteOrder", favoriteOrder)
-                if (lastPlayed != null) put("lastPlayed", lastPlayed)
-            }
-        } catch (e: JSONException) {
-            Log.e(TAG, "toJson() $e")
+            val dto = toDomain().toDto()
+            JSONObject(StationDtoParser.toJson(dto))
+        } catch (e: Exception) {
+            Log.e(TAG, "toJson() error: $e")
             null
         }
     }
@@ -125,66 +211,13 @@ class DataRadioStation() : Parcelable {
 
         @JvmStatic
         fun DecodeJson(result: String?): List<DataRadioStation> {
-            val list = mutableListOf<DataRadioStation>()
-            if (result != null && TextUtils.isGraphic(result)) {
-                try {
-                    val jsonArray = JSONArray(result)
-                    for (i in 0 until jsonArray.length()) {
-                        try {
-                            list.add(decodeObject(jsonArray.getJSONObject(i)))
-                        } catch (e: Exception) {
-                            Log.e(TAG, "DecodeJson() #2 $e")
-                        }
-                    }
-                } catch (e: JSONException) {
-                    Log.e(TAG, "DecodeJson() #1 $e")
-                }
-            }
-            return list
+            val dtos = StationDtoParser.parseList(result)
+            return dtos.map { it.toDomain().toDataRadioStation() }
         }
 
         @JvmStatic
         fun DecodeJsonSingle(result: String?): DataRadioStation? {
-            if (result != null && TextUtils.isGraphic(result)) {
-                return try {
-                    decodeObject(JSONObject(result))
-                } catch (e: JSONException) {
-                    Log.e(TAG, "DecodeJsonSingle() $e")
-                    null
-                }
-            }
-            return null
-        }
-
-        private fun decodeObject(obj: JSONObject): DataRadioStation {
-            val station = DataRadioStation()
-            station.Name = obj.getString("name")
-            station.StreamUrl = if (obj.has("url")) obj.getString("url") else ""
-            if (obj.has("stationuuid")) station.StationUuid = obj.getString("stationuuid")
-            @Suppress("DEPRECATION")
-            if (!station.hasValidUuid()) station.StationId = obj.optString("id", "")
-            if (obj.has("changeuuid")) station.ChangeUuid = obj.getString("changeuuid")
-            station.Votes = obj.getInt("votes")
-            station.RefreshRetryCount = if (obj.has("refreshretrycount")) obj.getInt("refreshretrycount") else 0
-            station.HomePageUrl = obj.getString("homepage")
-            station.TagsAll = obj.getString("tags")
-            station.Country = obj.getString("country")
-            if (obj.has("countrycode")) station.CountryCode = obj.getString("countrycode")
-            station.State = obj.getString("state")
-            station.IconUrl = obj.getString("favicon")
-            station.Language = obj.getString("language")
-            station.ClickCount = obj.getInt("clickcount")
-            if (obj.has("clicktrend")) station.ClickTrend = obj.getInt("clicktrend")
-            if (obj.has("bitrate")) station.Bitrate = obj.getInt("bitrate")
-            if (obj.has("codec")) station.Codec = obj.getString("codec")
-            if (obj.has("lastcheckok")) station.Working = obj.getInt("lastcheckok") != 0
-            if (obj.has("hls")) station.Hls = obj.getInt("hls") != 0
-            if (obj.has("DeletedOnServer")) station.DeletedOnServer = obj.getInt("DeletedOnServer") != 0
-            if (obj.has("isFavorite")) station.isFavorite = obj.optBoolean("isFavorite", false) || obj.optInt("isFavorite", 0) == 1
-            if (obj.has("favoriteOrder")) station.favoriteOrder = obj.optInt("favoriteOrder", 0)
-            if (obj.has("lastPlayed")) station.lastPlayed = obj.optLong("lastPlayed")
-            station.fixStationFields()
-            return station
+            return StationDtoParser.parseSingle(result)?.toDomain()?.toDataRadioStation()
         }
     }
 }

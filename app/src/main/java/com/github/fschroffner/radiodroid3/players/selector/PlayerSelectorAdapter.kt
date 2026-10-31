@@ -9,17 +9,22 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
+import com.github.fschroffner.radiodroid3.CastHandler
 import com.github.fschroffner.radiodroid3.R
-import com.github.fschroffner.radiodroid3.di.AppEntryPoint
-import dagger.hilt.EntryPoints
 import com.github.fschroffner.radiodroid3.Utils
-import com.github.fschroffner.radiodroid3.players.PlayStationTask
+import com.github.fschroffner.radiodroid3.di.AppEntryPoint
+import com.github.fschroffner.radiodroid3.player.MediaControllerRepository
+import com.github.fschroffner.radiodroid3.player.StationPlaybackUseCase
 import com.github.fschroffner.radiodroid3.service.PauseReason
 import com.github.fschroffner.radiodroid3.station.DataRadioStation
+import dagger.hilt.EntryPoints
 
 class PlayerSelectorAdapter(
     private val context: Context,
-    private val stationToPlay: DataRadioStation?
+    private val stationToPlay: DataRadioStation?,
+    private val mediaControllerRepository: MediaControllerRepository? = null,
+    private val castHandler: CastHandler? = null,
+    private val stationPlaybackUseCase: StationPlaybackUseCase? = null
 ) : RecyclerView.Adapter<PlayerSelectorAdapter.PlayerItemViewHolder>() {
 
     inner class PlayerItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -32,14 +37,13 @@ class PlayerSelectorAdapter(
     private val viewTypes = mutableListOf<Int>()
 
     init {
-        val entryPoint = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
-
+        val ch = castHandler ?: EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).castHandler()
         val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         showPlayInExternal = prefs.getBoolean("play_external", false) && stationToPlay != null
 
         if (stationToPlay != null) { viewTypes.add(PlayerType.RADIODROID.value) }
         if (showPlayInExternal) { viewTypes.add(PlayerType.EXTERNAL.value) }
-        if (entryPoint.castHandler().isCastSessionAvailable) { viewTypes.add(PlayerType.CAST.value) }
+        if (ch.isCastSessionAvailable) { viewTypes.add(PlayerType.CAST.value) }
     }
 
     fun notifyRadioDroidPlaybackStateChanged() {
@@ -57,8 +61,9 @@ class PlayerSelectorAdapter(
         when (holder.itemViewType) {
             PlayerType.RADIODROID.value -> {
                 holder.textViewDescription.setText(R.string.app_name)
-                val entryPoint = EntryPoints.get(context.applicationContext, AppEntryPoint::class.java)
-                val repo = entryPoint.mediaControllerRepository()
+                val repo = mediaControllerRepository
+                    ?: EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).mediaControllerRepository()
+
                 if (repo.isPlaying()) {
                     holder.btnPlay.setImageResource(R.drawable.ic_pause_circle)
                     holder.btnPlay.contentDescription = context.resources.getString(R.string.detail_pause)
@@ -70,23 +75,31 @@ class PlayerSelectorAdapter(
                     if (repo.isPlaying()) {
                         repo.pause(PauseReason.USER)
                     } else {
-                        Utils.playAndWarnIfMetered(context, stationToPlay!!, PlayerType.RADIODROID) {
-                            Utils.play(context, stationToPlay)
-                        }
+                        Utils.playAndWarnIfMetered(context, stationToPlay!!, PlayerType.RADIODROID, Runnable {
+                            Utils.play(context, stationToPlay, repo)
+                        }, repo)
                     }
                 }
             }
             PlayerType.EXTERNAL.value -> {
                 holder.textViewDescription.setText(R.string.action_play_in_external)
                 holder.btnPlay.setOnClickListener {
-                    Utils.playAndWarnIfMetered(context, stationToPlay!!, PlayerType.EXTERNAL) {
-                        PlayStationTask.playExternal(stationToPlay, context).execute()
-                    }
+                    val useCase = stationPlaybackUseCase
+                        ?: EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).stationPlaybackUseCase()
+                    val repo = mediaControllerRepository
+                        ?: EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).mediaControllerRepository()
+                    Utils.playAndWarnIfMetered(context, stationToPlay!!, PlayerType.EXTERNAL, Runnable {
+                        useCase.playExternal(stationToPlay, context)
+                    }, repo)
                 }
             }
             PlayerType.CAST.value -> {
+                val useCase = stationPlaybackUseCase
+                    ?: EntryPoints.get(context.applicationContext, AppEntryPoint::class.java).stationPlaybackUseCase()
                 holder.textViewDescription.setText(R.string.media_route_menu_title)
-                holder.btnPlay.setOnClickListener { PlayStationTask.playCAST(stationToPlay!!, context).execute() }
+                holder.btnPlay.setOnClickListener {
+                    useCase.playCast(stationToPlay!!, context)
+                }
             }
         }
     }

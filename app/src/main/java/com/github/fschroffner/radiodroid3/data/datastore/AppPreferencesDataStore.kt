@@ -26,7 +26,11 @@ import javax.inject.Singleton
 
 private val Context.preferencesDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "radiodroid_preferences",
-    produceMigrations = { emptyList() }
+    produceMigrations = { context ->
+        listOf(
+            SharedPreferencesMigration(context, "${context.packageName}_preferences")
+        )
+    }
 )
 
 @Singleton
