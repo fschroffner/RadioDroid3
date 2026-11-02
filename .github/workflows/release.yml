@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release tag (e.g. v0.86)'
+        description: 'Release tag (e.g. v1.0.0)'
         required: true
-        default: 'v0.86'
+        default: 'v1.0.0'
 
 jobs:
   release:
@@ -38,6 +38,6 @@ jobs:
           TAG="${{ github.ref_name }}"
         fi
         gh release create "$TAG" "$APK_PATH" \
-          --title "RadioDroid $TAG" \
+          --title "FloRadio $TAG" \
           --generate-notes \
         || gh release upload "$TAG" "$APK_PATH" --clobber

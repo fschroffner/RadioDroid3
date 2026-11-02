@@ -3,5 +3,5 @@
     <!-- Exclude temporary cache and sensitive preferences -->
     <exclude domain="root" path="cache" />
     <exclude domain="sharedpref" path="proxy_preferences.xml" />
-    <exclude domain="sharedpref" path="com.github.fschroffner.radiodroid3_preferences.xml" />
+    <exclude domain="sharedpref" path="com.github.fschroffner.floradio_preferences.xml" />
 </full-backup-content>

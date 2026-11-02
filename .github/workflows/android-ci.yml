@@ -1,4 +1,4 @@
-name: RadioDroid CI
+name: FloRadio CI
 
 on:
   push:

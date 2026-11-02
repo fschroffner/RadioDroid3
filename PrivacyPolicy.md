@@ -1,33 +1,38 @@
-# Privacy Policy for RadioDroid
+# Privacy Policy for FloRadio
 
-Last updated: 2023/09/28
+Last updated: 2026/11/02
 
-Welcome to RadioDroid! We are committed to protecting the privacy of our users. This Privacy Policy outlines how we handle and protect your information while you use RadioDroid.
+Welcome to FloRadio! We are committed to protecting the privacy of our users. This Privacy Policy outlines how we handle and protect your information while you use FloRadio.
 
 ## Introduction
 
-RadioDroid is an open-source Android application designed to play radio streams. We prioritize the privacy of our users, and in alignment with that, this app does not collect, store, or share any personal data.
+FloRadio is a modern, privacy-focused open-source Android application designed to stream radio stations from the community directory radio-browser.info. We prioritize your privacy: the app does not collect, store, track, or share any personal data.
 
-## Data We Don't Collect
+## Data We Do Not Collect
 
-We do not collect, store, or process any personal data when you use RadioDroid. Our primary function is to play radio streams, and for that, we don’t need to access or store any personal information from you.
+We do not collect, track, or process any personal data. Our sole function is to play live radio streams and display station metadata. All favorites and playback history are stored strictly locally on your device.
 
 ## Permissions
 
-The app might require certain device permissions to function optimally, like [e.g., "internet access" for streaming]. These permissions do not involve accessing personal data, and are only in place to ensure the app functions as intended.
+The app requires standard Android permissions necessary for streaming audio:
+- **Internet / Network State:** To fetch station directories and stream audio over WiFi or mobile networks.
+- **Foreground Service / Media Playback:** To keep the stream playing when the app is in the background or the screen is turned off.
+- **Notifications:** To display playback controls and currently playing track info in the system media notification.
 
-## Open Source Nature
+None of these permissions are used to collect or transmit personal information.
 
-As an open-source project, the source code of RadioDroid is available for public view at [https://github.com/segler-alex/RadioDroid]. This ensures a transparent operation where you can review the codebase to understand how the app functions.
+## Open Source
 
-## Links to Other Websites
+FloRadio is open-source software licensed under the GNU General Public License v3 (GPLv3). The complete source code is publicly accessible on GitHub:
+[https://github.com/fschroffner/FloRadio](https://github.com/fschroffner/FloRadio)
 
-Our app may contain links to other websites, for instance, radio websites or related resources. Note that these third-party websites are not operated by us, so we advise you to review the Privacy Policy of these websites. We have no control over and assume no responsibility for the content, privacy policies, or practices of any third-party websites or services.
+## Third-Party Services & Links
 
-## Changes to This Privacy Policy
+- **Radio Browser:** FloRadio queries the community-driven [Radio Browser API](https://www.radio-browser.info) to search for and list stations.
+- **Stream Hosts:** Connecting to an audio stream connects your device directly to the third-party server hosting that station's stream.
+- **External Links:** Station websites or social links opened from within the app are subject to the respective third party's privacy policies.
 
-While we do not foresee changes in our approach to privacy, we may update our Privacy Policy from time to time. We will notify users of any changes by posting the new Privacy Policy on this page.
+## Contact
 
-## Contact Us
-
-If you have any questions about our Privacy Policy, please contact us at [mailto:segler_alex@web.de]
+If you have any questions or feedback regarding FloRadio, please open an issue on GitHub:
+[https://github.com/fschroffner/FloRadio/issues](https://github.com/fschroffner/FloRadio/issues)

@@ -1,0 +1,204 @@
+package com.github.fschroffner.floradio
+
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
+import android.media.audiofx.AudioEffect
+import android.os.Build
+import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
+import android.util.Log
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.FragmentTransaction
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
+import androidx.preference.PreferenceScreen
+import com.bytehamster.lib.preferencesearch.SearchConfiguration
+import com.bytehamster.lib.preferencesearch.SearchPreference
+import com.mikepenz.iconics.typeface.library.community.material.CommunityMaterial
+import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
+import com.github.fschroffner.floradio.proxy.ProxySettingsDialog
+
+@dagger.hilt.android.AndroidEntryPoint
+class FragmentSettings : PreferenceFragmentCompat(),
+    SharedPreferences.OnSharedPreferenceChangeListener,
+    PreferenceFragmentCompat.OnPreferenceStartScreenCallback {
+
+    @javax.inject.Inject lateinit var favouriteManager: FavouriteManager
+    @javax.inject.Inject lateinit var dataStoreBridge: com.github.fschroffner.floradio.data.datastore.DataStorePreferenceBridge
+
+    companion object {
+        @JvmStatic
+        fun openNewSettingsSubFragment(activity: ActivityMain, key: String): FragmentSettings {
+            val f = FragmentSettings()
+            f.arguments = Bundle().apply { putString(ARG_PREFERENCE_ROOT, key) }
+            activity.supportFragmentManager.beginTransaction()
+                .replace(R.id.containerView, f)
+                .addToBackStack(ActivityMain.FRAGMENT_FROM_BACKSTACK.toString())
+                .commit()
+            return f
+        }
+    }
+
+    override fun onPreferenceStartScreen(caller: PreferenceFragmentCompat, screen: PreferenceScreen): Boolean {
+        openNewSettingsSubFragment(requireActivity() as ActivityMain, screen.key)
+        return true
+    }
+
+    private fun isToplevel() = preferenceScreen == null || preferenceScreen.key == "pref_toplevel"
+
+    private fun refreshToplevelIcons() {
+        findPreference<Preference>("pref_category_ui")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_monitor)
+        findPreference<Preference>("pref_category_startup")?.icon = Utils.IconicsIcon(requireContext(),GoogleMaterial.Icon.gmd_flight_takeoff)
+        findPreference<Preference>("pref_category_interaction")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon.cmd_gesture_tap)
+        findPreference<Preference>("pref_category_player")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_play)
+        findPreference<Preference>("pref_category_connectivity")?.icon = Utils.IconicsIcon(requireContext(),GoogleMaterial.Icon.gmd_import_export)
+        findPreference<Preference>("pref_category_other")?.icon = Utils.IconicsIcon(requireContext(),CommunityMaterial.Icon2.cmd_information_outline)
+    }
+
+    private fun refreshToolbar() {
+        val activity = activity as? ActivityMain ?: return
+        val toolbar = activity.getToolbar() ?: return
+        val screen = preferenceScreen ?: return
+
+        toolbar.title = screen.title
+
+        if (Utils.bottomNavigationEnabled(activity)) {
+            if (isToplevel()) {
+                activity.supportActionBar?.setDisplayHomeAsUpEnabled(false)
+                activity.supportActionBar?.setDisplayShowHomeEnabled(false)
+            } else {
+                activity.supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                activity.supportActionBar?.setDisplayShowHomeEnabled(true)
+            }
+            toolbar.setNavigationOnClickListener { activity.onBackPressed() }
+        }
+    }
+
+    override fun onCreatePreferences(bundle: Bundle?, s: String?) {
+        setPreferencesFromResource(R.xml.preferences, s)
+        refreshToolbar()
+
+        findPreference<Preference>("theme_name")?.setOnPreferenceChangeListener { _, newValue ->
+            val themeStr = newValue?.toString()
+            if (!themeStr.isNullOrBlank()) {
+                val sp = preferenceManager.sharedPreferences ?: PreferenceManager.getDefaultSharedPreferences(requireContext())
+                sp.edit().putString("theme_name", themeStr).commit()
+                dataStoreBridge.putString("theme_name", themeStr)
+                val act = requireActivity()
+                Utils.applyTheme(act)
+                act.recreate()
+            }
+            true
+        }
+
+        when (s) {
+            null -> {
+                refreshToplevelIcons()
+                val searchPreference = findPreference<Preference>("searchPreference") as SearchPreference
+                val config: SearchConfiguration = searchPreference.searchConfiguration
+                config.setActivity(requireActivity() as AppCompatActivity)
+                config.index(R.xml.preferences)
+            }
+            "pref_category_player" -> {
+                findPreference<Preference>("equalizer")?.setOnPreferenceClickListener {
+                    val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
+                    if (requireContext().packageManager.resolveActivity(intent, 0) == null) {
+                        Toast.makeText(context, R.string.error_no_equalizer_found, Toast.LENGTH_SHORT).show()
+                    } else {
+                        intent.putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
+                        startActivityForResult(intent, ActivityMain.LAUNCH_EQUALIZER_REQUEST)
+                    }
+                    false
+                }
+            }
+            "pref_category_connectivity" -> {
+                findPreference<Preference>("settings_proxy")?.setOnPreferenceClickListener {
+                    ProxySettingsDialog().apply { isCancelable = true }
+                        .show(parentFragmentManager, "")
+                    false
+                }
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
+                    findPreference<Preference>("settings_retry_timeout")?.isVisible = false
+                    findPreference<Preference>("settings_retry_delay")?.isVisible = false
+                }
+            }
+            "pref_category_other" -> {
+                findPreference<Preference>("show_statistics")?.setOnPreferenceClickListener {
+                    (requireActivity() as ActivityMain).getToolbar()?.setTitle(R.string.settings_statistics)
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .replace(R.id.containerView, FragmentServerInfo())
+                        .addToBackStack(ActivityMain.FRAGMENT_FROM_BACKSTACK.toString())
+                        .commit()
+                    false
+                }
+            }
+        }
+
+        val batPref = preferenceScreen.findPreference<Preference>(getString(R.string.key_ignore_battery_optimization))
+        if (batPref != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                updateBatteryPrefDescription(batPref)
+                batPref.setOnPreferenceClickListener {
+                    startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                    updateBatteryPrefDescription(batPref)
+                    true
+                }
+            } else {
+                batPref.parent?.removePreference(batPref)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
+        refreshToolbar()
+        if (isToplevel()) refreshToplevelIcons()
+        val batPref = preferenceScreen.findPreference<Preference>(getString(R.string.key_ignore_battery_optimization))
+        if (batPref != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            updateBatteryPrefDescription(batPref)
+        }
+    }
+
+    override fun onPause() {
+        preferenceManager.sharedPreferences?.unregisterOnSharedPreferenceChangeListener(this)
+        super.onPause()
+    }
+
+    @RequiresApi(23)
+    private fun updateBatteryPrefDescription(batPref: Preference) {
+        val pm = requireContext().getSystemService(Context.POWER_SERVICE) as PowerManager
+        batPref.setSummary(
+            if (pm.isIgnoringBatteryOptimizations(requireContext().packageName))
+                R.string.settings_ignore_battery_optimization_summary_on
+            else
+                R.string.settings_ignore_battery_optimization_summary_off
+        )
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+        if (BuildConfig.DEBUG) Log.d("AAA", "changed key:$key")
+        key?.let { k ->
+            when (val v = sharedPreferences.all[k]) {
+                is String -> dataStoreBridge.putString(k, v)
+                is Boolean -> dataStoreBridge.putBoolean(k, v)
+                is Int -> dataStoreBridge.putInt(k, v)
+                is Long -> dataStoreBridge.putLong(k, v)
+                else -> {}
+            }
+        }
+        when (key) {
+            "theme_name", "circular_icons", "bottom_navigation" -> {
+                if (key == "circular_icons") {
+                    favouriteManager.updateShortcuts()
+                }
+                requireActivity().recreate()
+            }
+        }
+    }
+}

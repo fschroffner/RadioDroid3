@@ -1,0 +1,114 @@
+package com.github.fschroffner.floradio.player
+
+import com.github.fschroffner.floradio.data.mapper.toDomain
+import com.github.fschroffner.floradio.players.PlayState
+import com.github.fschroffner.floradio.station.DataRadioStation
+import com.github.fschroffner.floradio.station.FavoritesUiState
+import com.github.fschroffner.floradio.station.HistoryUiState
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+class PlayerUiStateTest {
+
+    @Test
+    fun testDefaultPlayerUiState() {
+        val state = PlayerUiState()
+        assertFalse(state.isPlaying)
+        assertEquals(PlayState.Idle, state.playState)
+        assertNull(state.station)
+        assertFalse(state.isFavorite)
+        assertFalse(state.isConnected)
+        assertEquals(0L, state.bufferedSeconds)
+        assertEquals(0L, state.transferredBytes)
+        assertEquals(0L, state.sleepTimerSeconds)
+        assertNull(state.albumArtUrl)
+    }
+
+    @Test
+    fun testPlayerUiStateUpdate() {
+        val station = DataRadioStation().apply {
+            StationUuid = "fav-uuid-1"
+            Name = "Jazz FM"
+            IconUrl = "https://example.com/icon.png"
+        }
+
+        val state = PlayerUiState(
+            station = station,
+            isPlaying = true,
+            playState = PlayState.Playing,
+            isConnected = true,
+            isFavorite = true,
+            bufferedSeconds = 12L,
+            transferredBytes = 1048576L,
+            albumArtUrl = "https://example.com/album.png"
+        )
+
+        assertTrue(state.isPlaying)
+        assertTrue(state.isFavorite)
+        assertEquals("Jazz FM", state.station?.Name)
+        assertEquals("https://example.com/album.png", state.albumArtUrl)
+    }
+
+    @Test
+    fun testFavoritesUiState() {
+        val defaultState = FavoritesUiState()
+        assertTrue(defaultState.stations.isEmpty())
+        assertFalse(defaultState.isRefreshing)
+        assertNull(defaultState.errorMessage)
+
+        val station = DataRadioStation().apply {
+            StationUuid = "fav-1"
+            Name = "Rock Antenne"
+        }
+        val populated = FavoritesUiState(
+            stations = listOf(station),
+            domainStations = listOf(station.toDomain()),
+            isRefreshing = true,
+            errorMessage = null
+        )
+        assertEquals(1, populated.stations.size)
+        assertEquals(1, populated.domainStations.size)
+        assertTrue(populated.isRefreshing)
+        assertEquals("Rock Antenne", populated.stations[0].Name)
+        assertEquals("Rock Antenne", populated.domainStations[0].name)
+    }
+
+    @Test
+    fun testHistoryUiState() {
+        val defaultState = HistoryUiState()
+        assertTrue(defaultState.stations.isEmpty())
+        assertTrue(defaultState.domainStations.isEmpty())
+        assertFalse(defaultState.isRefreshing)
+        assertNull(defaultState.errorMessage)
+
+        val station = DataRadioStation().apply {
+            StationUuid = "hist-1"
+            Name = "BBC World Service"
+        }
+        val populated = HistoryUiState(
+            stations = listOf(station),
+            domainStations = listOf(station.toDomain()),
+            isRefreshing = false,
+            errorMessage = "Connection timeout"
+        )
+        assertEquals(1, populated.stations.size)
+        assertEquals(1, populated.domainStations.size)
+        assertFalse(populated.isRefreshing)
+        assertEquals("Connection timeout", populated.errorMessage)
+        assertEquals("BBC World Service", populated.domainStations[0].name)
+    }
+
+    @Test
+    fun testDomainStationInPlaybackState() {
+        val station = DataRadioStation().apply {
+            StationUuid = "domain-test-uuid"
+            Name = "Lounge FM"
+        }
+        val playback = PlaybackState(station = station)
+        assertEquals("domain-test-uuid", playback.domainStation?.stationUuid)
+        assertEquals("Lounge FM", playback.domainStation?.name)
+    }
+}

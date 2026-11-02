@@ -1,4 +1,4 @@
-# RadioDroid 3 ProGuard / R8 Rules
+# FloRadio ProGuard / R8 Rules
 
 # --- Kotlin & Coroutines ---
 -keepattributes *Annotation*, InnerClasses, EnclosingMethod, Signature, SourceFile, LineNumberTable
@@ -12,26 +12,26 @@
 -keep class * implements com.google.gson.JsonDeserializer
 
 # Retain all DTOs and models serialized/deserialized with Gson
--keep class com.github.fschroffner.radiodroid3.data.remote.dto.** { *; }
--keep class com.github.fschroffner.radiodroid3.proxy.ProxySettings { *; }
--keep class com.github.fschroffner.radiodroid3.station.live.metadata.lastfm.data.** { *; }
+-keep class com.github.fschroffner.floradio.data.remote.dto.** { *; }
+-keep class com.github.fschroffner.floradio.proxy.ProxySettings { *; }
+-keep class com.github.fschroffner.floradio.station.live.metadata.lastfm.data.** { *; }
 
 # --- Room ---
 -keep class * extends androidx.room.RoomDatabase
 -dontwarn androidx.room.paging.**
--keep class com.github.fschroffner.radiodroid3.data.local.entity.** { *; }
--keep class com.github.fschroffner.radiodroid3.history.TrackHistoryEntry { *; }
+-keep class com.github.fschroffner.floradio.data.local.entity.** { *; }
+-keep class com.github.fschroffner.floradio.history.TrackHistoryEntry { *; }
 
 # --- Domain Models, Data Classes & Parcelables ---
 -keepclassmembers class * implements android.os.Parcelable {
     public static final ** CREATOR;
 }
--keepnames class com.github.fschroffner.radiodroid3.domain.model.** { *; }
--keepnames class com.github.fschroffner.radiodroid3.station.DataRadioStation { *; }
--keepnames class com.github.fschroffner.radiodroid3.station.live.** { *; }
--keepnames class com.github.fschroffner.radiodroid3.players.PlayState { *; }
--keepnames class com.github.fschroffner.radiodroid3.players.selector.PlayerType { *; }
--keepnames class com.github.fschroffner.radiodroid3.service.PauseReason { *; }
+-keepnames class com.github.fschroffner.floradio.domain.model.** { *; }
+-keepnames class com.github.fschroffner.floradio.station.DataRadioStation { *; }
+-keepnames class com.github.fschroffner.floradio.station.live.** { *; }
+-keepnames class com.github.fschroffner.floradio.players.PlayState { *; }
+-keepnames class com.github.fschroffner.floradio.players.selector.PlayerType { *; }
+-keepnames class com.github.fschroffner.floradio.service.PauseReason { *; }
 
 # --- Media3 / ExoPlayer ---
 -dontwarn androidx.media3.**
@@ -54,8 +54,8 @@
 -keep class me.xdrop.fuzzywuzzy.** { *; }
 
 # --- Custom Views & Preferences referenced from XML ---
--keep class com.github.fschroffner.radiodroid3.views.** { *; }
--keep class com.github.fschroffner.radiodroid3.views.IntEditTextPreference { *; }
+-keep class com.github.fschroffner.floradio.views.** { *; }
+-keep class com.github.fschroffner.floradio.views.IntEditTextPreference { *; }
 -keepclassmembers class * extends androidx.preference.Preference {
     public <init>(android.content.Context, android.util.AttributeSet);
     public <init>(android.content.Context, android.util.AttributeSet, int);

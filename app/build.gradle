@@ -57,7 +57,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.github.fschroffner.radiodroid3"
+        applicationId "com.github.fschroffner.floradio"
         minSdk = 21
         targetSdk = 35
 
@@ -69,14 +69,14 @@ android {
         // Define your application name here.
         // It must neither be present in /res/values/strings.xml
         // nor in /res/values/string_no_translate.xml
-        resValue 'string', 'app_name_untranslated', 'RadioDroid 3'
+        resValue 'string', 'app_name_untranslated', 'FloRadio'
 
         // There is no easy way to get available locales during runtime, and especially before
         // tests setup.
         def escapedLocales = getAvailableLocales().collect { "\"" + it + "\"" }
         buildConfigField "String[]", "AVAILABLE_LOCALES", String.format("{ %s }", escapedLocales.join(","))
 
-        testInstrumentationRunner "com.github.fschroffner.radiodroid3.tests.CustomTestRunner"
+        testInstrumentationRunner "com.github.fschroffner.floradio.tests.CustomTestRunner"
 
         // The following argument makes the Android Test Orchestrator run its
         // "pm clear" command after each test invocation. This command ensures
@@ -120,7 +120,7 @@ android {
         warningsAsErrors = false
         disable 'MissingTranslation'
     }
-    namespace = 'com.github.fschroffner.radiodroid3'
+    namespace = 'com.github.fschroffner.floradio'
 
     testOptions {
         execution = 'ANDROIDX_TEST_ORCHESTRATOR'
